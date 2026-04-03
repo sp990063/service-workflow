@@ -18,6 +18,16 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'forms',
+    loadComponent: () => import('./features/forms/forms-list.component').then(m => m.FormsListComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'form-fill/:id',
+    loadComponent: () => import('./features/form-fill/form-fill.component').then(m => m.FormFillComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'workflow-designer',
     loadComponent: () => import('./features/workflow-designer/workflow-designer.component').then(m => m.WorkflowDesignerComponent),
     canActivate: [authGuard]

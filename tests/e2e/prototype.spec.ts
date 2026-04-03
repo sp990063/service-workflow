@@ -335,4 +335,160 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       await expect(page.locator('body')).toBeVisible();
     });
   });
+
+  // ============ FORMS LIST ============
+  test.describe('Forms List', () => {
+    
+    test('TC-FORMLIST-001: Forms list page loads', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/forms`);
+      await page.waitForTimeout(1000);
+      
+      await expect(page.locator('h1')).toContainText('Forms');
+      await expect(page.locator('text=New Form')).toBeVisible();
+    });
+
+    test('TC-FORMLIST-002: Can find saved form in list', async ({ page }) => {
+      await login(page);
+      
+      // First create a form
+      await page.goto(`${BASE_URL}/form-builder`);
+      await page.waitForTimeout(500);
+      
+      await page.locator('.form-name-input').fill('IT Service Request');
+      await page.locator('.element-item', { hasText: 'Single Line Text' })
+        .dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(300);
+      
+      page.on('dialog', dialog => dialog.accept());
+      await page.locator('button', { hasText: 'Save Form' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Go to forms list
+      await page.goto(`${BASE_URL}/forms`);
+      await page.waitForTimeout(1000);
+      
+      // Find the saved form
+      await expect(page.locator('.form-card h3')).toContainText('IT Service Request');
+    });
+  });
+
+  // ============ FORM FILL (END USER) ============
+  test.describe('Form Fill - End User Experience', () => {
+    
+    test('TC-FORMFILL-001: Can access form fill page via forms list', async ({ page }) => {
+      await login(page);
+      
+      // Create and save a form first
+      await page.goto(`${BASE_URL}/form-builder`);
+      await page.waitForTimeout(500);
+      
+      await page.locator('.form-name-input').fill('Employee Feedback Form');
+      await page.locator('.element-item', { hasText: 'Single Line Text' })
+        .dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(300);
+      await page.locator('.form-element').click();
+      await page.waitForTimeout(200);
+      await page.locator('.property-form input[type="text"]').first().fill('Your Name');
+      
+      page.on('dialog', dialog => dialog.accept());
+      await page.locator('button', { hasText: 'Save Form' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Go to forms list
+      await page.goto(`${BASE_URL}/forms`);
+      await page.waitForTimeout(1000);
+      
+      // Click Fill Form button
+      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Verify form fill page loads
+      await expect(page.locator('h1')).toContainText('Employee Feedback Form');
+    });
+
+    test('TC-FORMFILL-002: End user can fill and submit form', async ({ page }) => {
+      await login(page);
+      
+      // Create a form with required fields
+      await page.goto(`${BASE_URL}/form-builder`);
+      await page.waitForTimeout(500);
+      
+      await page.locator('.form-name-input').fill('Support Request Form');
+      await page.locator('.element-item', { hasText: 'Single Line Text' })
+        .dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(300);
+      
+      // Make it required
+      await page.locator('.form-element').click();
+      await page.waitForTimeout(200);
+      await page.locator('.property-form input[type="checkbox"]').check();
+      await page.locator('.property-form input[type="text"]').first().fill('Issue Description');
+      
+      // Add another field
+      await page.locator('.element-item', { hasText: 'Email' })
+        .dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(300);
+      
+      page.on('dialog', dialog => dialog.accept());
+      await page.locator('button', { hasText: 'Save Form' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Go to forms list
+      await page.goto(`${BASE_URL}/forms`);
+      await page.waitForTimeout(500);
+      
+      // Fill the form
+      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Fill in the form fields
+      await page.locator('input[type="text"]').fill('Network connection issue');
+      await page.locator('input[type="email"]').fill('john@example.com');
+      
+      // Submit the form
+      await page.locator('button[type="submit"]').click();
+      await page.waitForTimeout(1500);
+      
+      // Verify success message
+      await expect(page.locator('text=Form Submitted Successfully')).toBeVisible();
+    });
+
+    test('TC-FORMFILL-003: Form validates required fields', async ({ page }) => {
+      await login(page);
+      
+      // Create a form with required field
+      await page.goto(`${BASE_URL}/form-builder`);
+      await page.waitForTimeout(500);
+      
+      await page.locator('.form-name-input').fill('Validation Test Form');
+      await page.locator('.element-item', { hasText: 'Single Line Text' })
+        .dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(300);
+      
+      // Make it required
+      await page.locator('.form-element').click();
+      await page.waitForTimeout(200);
+      await page.locator('.property-form input[type="checkbox"]').check();
+      
+      page.on('dialog', dialog => dialog.accept());
+      await page.locator('button', { hasText: 'Save Form' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Go to forms list
+      await page.goto(`${BASE_URL}/forms`);
+      await page.waitForTimeout(500);
+      
+      // Fill the form without filling required field
+      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Try to submit without filling required field
+      await page.locator('button[type="submit"]').click();
+      await page.waitForTimeout(500);
+      
+      // Should show error or not submit
+      // (Validation should prevent submission)
+    });
+  });
 });

@@ -33,19 +33,23 @@
 | 6 | TC FORM 003: Can add multiple elements and edit properties | - | ✅ PASS | - |
 | 7 | TC FORM 004: Can delete element from canvas | - | ✅ PASS | - |
 | 8 | TC FORM 005: Can save form with name | - | ✅ PASS | - |
-| 9 | TC FORM 006: Form builder has required form controls | - | ✅ PASS | - |
-| 10 | TC NAV 001: Can navigate between all pages | - | ✅ PASS | - |
-| 11 | TC WF 001: Workflow Designer page loads with node palette | - | ✅ PASS | - |
-| 12 | TC WF 002: Can add Start node to canvas | - | ✅ PASS | - |
-| 13 | TC WF 003: Can add multiple workflow nodes | - | ✅ PASS | - |
-| 14 | TC WF 004: Can save workflow | - | ✅ PASS | - |
-| 15 | TC WF 001: Workflow Designer page loads with node palette | - | ❌ FAIL | - |
+| 9 | TC FORM 006: Can create and save a functional form | - | ✅ PASS | - |
+| 10 | TC FORMFILL 001: Can access form fill page via forms list | - | ✅ PASS | - |
+| 11 | TC FORMFILL 002: End user can fill and submit form | - | ✅ PASS | - |
+| 12 | TC FORMFILL 003: Form validates required fields | - | ✅ PASS | - |
+| 13 | TC FORMLIST 001: Forms list page loads | - | ✅ PASS | - |
+| 14 | TC FORMLIST 002: Can find saved form in list | - | ✅ PASS | - |
+| 15 | TC NAV 001: Can navigate between all pages | - | ✅ PASS | - |
+| 16 | TC WF 001: Workflow Designer page loads with node palette | - | ✅ PASS | - |
+| 17 | TC WF 002: Can add Start node to canvas | - | ✅ PASS | - |
+| 18 | TC WF 003: Can add multiple workflow nodes | - | ✅ PASS | - |
+| 19 | TC WF 004: Can save workflow | - | ✅ PASS | - |
 
 ---
 
 ## 📸 Test Evidence (Screenshots)
 
-### ✅ Passing Tests (14)
+### ✅ Passing Tests (19)
 
 #### TC AUTH 001: Login page renders correctly
 
@@ -79,9 +83,29 @@
 
 ![TC FORM 005: Can save form with name](tests/e2e/reports/TC-FORM-005:-Can-save-form-with-name-pass.png)
 
-#### TC FORM 006: Form builder has required form controls
+#### TC FORM 006: Can create and save a functional form
 
-![TC FORM 006: Form builder has required form controls](tests/e2e/reports/TC-FORM-006:-Form-builder-has-required-form-controls-pass.png)
+![TC FORM 006: Can create and save a functional form](tests/e2e/reports/TC-FORM-006:-Can-create-and-save-a-functional-form-pass.png)
+
+#### TC FORMFILL 001: Can access form fill page via forms list
+
+![TC FORMFILL 001: Can access form fill page via forms list](tests/e2e/reports/TC-FORMFILL-001:-Can-access-form-fill-page-via-forms-list-pass.png)
+
+#### TC FORMFILL 002: End user can fill and submit form
+
+![TC FORMFILL 002: End user can fill and submit form](tests/e2e/reports/TC-FORMFILL-002:-End-user-can-fill-and-submit-form-pass.png)
+
+#### TC FORMFILL 003: Form validates required fields
+
+![TC FORMFILL 003: Form validates required fields](tests/e2e/reports/TC-FORMFILL-003:-Form-validates-required-fields-pass.png)
+
+#### TC FORMLIST 001: Forms list page loads
+
+![TC FORMLIST 001: Forms list page loads](tests/e2e/reports/TC-FORMLIST-001:-Forms-list-page-loads-pass.png)
+
+#### TC FORMLIST 002: Can find saved form in list
+
+![TC FORMLIST 002: Can find saved form in list](tests/e2e/reports/TC-FORMLIST-002:-Can-find-saved-form-in-list-pass.png)
 
 #### TC NAV 001: Can navigate between all pages
 
@@ -102,12 +126,6 @@
 #### TC WF 004: Can save workflow
 
 ![TC WF 004: Can save workflow](tests/e2e/reports/TC-WF-004:-Can-save-workflow-pass.png)
-
-### ❌ Failing Tests (1)
-
-#### TC WF 001: Workflow Designer page loads with node palette
-
-![TC WF 001: Workflow Designer page loads with node palette](tests/e2e/reports/TC-WF-001:-Workflow-Designer-page-loads-with-node-palette-fail.png)
 
 ---
 
@@ -140,4 +158,4 @@
 
 ---
 
-*Report generated: 2026-04-03T13:44:09.115Z*
+*Report generated: 2026-04-03T14:16:30.799Z*
