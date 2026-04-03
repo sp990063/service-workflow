@@ -10,9 +10,11 @@ interface WorkflowInstance {
   workflowId: string;
   workflowName: string;
   currentNodeId: string | null;
-  status: 'pending' | 'in-progress' | 'completed';
+  status: 'pending' | 'in-progress' | 'waiting-for-child' | 'completed';
   formData: Record<string, any>;
   history: Array<{ nodeId: string; action: string; timestamp: Date }>;
+  childInstanceId?: string;  // Child workflow instance if waiting
+  parentInstanceId?: string; // Parent instance if this is a child
 }
 
 @Component({
