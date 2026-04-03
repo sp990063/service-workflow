@@ -166,17 +166,65 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       });
     });
 
-    test('TC-FORM-006: Form builder has required form controls', async ({ page }) => {
+    test('TC-FORM-006: Can create and save a functional form', async ({ page }) => {
       await login(page);
       await page.goto(`${BASE_URL}/form-builder`);
       await page.waitForTimeout(1000);
       
-      // Check header actions exist
-      await expect(page.locator('button', { hasText: 'Clear' })).toBeVisible();
-      await expect(page.locator('button', { hasText: 'Save Form' })).toBeVisible();
+      // 1. Enter form name
+      const formNameInput = page.locator('.form-name-input');
+      await expect(formNameInput).toBeVisible();
+      await formNameInput.clear();
+      await formNameInput.fill('IT Service Request Form');
       
-      // Check form name input
-      await expect(page.locator('.form-name-input')).toBeVisible();
+      // 2. Add Text element via drag and drop
+      const textElement = page.locator('.element-item', { hasText: 'Single Line Text' });
+      await expect(textElement).toBeVisible();
+      await textElement.dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(500);
+      
+      // 3. Verify element was added to canvas
+      const formElement = page.locator('.form-element');
+      await expect(formElement).toBeVisible();
+      await expect(page.locator('.element-label')).toContainText('Single Line Text');
+      
+      // 4. Add Email element
+      const emailElement = page.locator('.element-item', { hasText: 'Email' });
+      await emailElement.dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(500);
+      
+      // 5. Verify second element was added
+      const allElements = page.locator('.form-element');
+      await expect(allElements).toHaveCount(2);
+      
+      // 6. Select first element to edit properties
+      await allElements.first().click();
+      await page.waitForTimeout(300);
+      
+      // 7. Verify properties panel shows
+      await expect(page.locator('text=Properties')).toBeVisible();
+      await expect(page.locator('.property-form input[type="text"]').first()).toBeVisible();
+      
+      // 8. Change element label
+      const labelInput = page.locator('.property-form input[type="text"]').first();
+      await labelInput.clear();
+      await labelInput.fill('Full Name');
+      await page.waitForTimeout(300);
+      
+      // 9. Verify label was updated
+      await expect(page.locator('.element-label').first()).toContainText('Full Name');
+      
+      // 10. Verify Clear and Save buttons work
+      await expect(page.locator('button', { hasText: 'Clear' })).toBeEnabled();
+      await expect(page.locator('button', { hasText: 'Save Form' })).toBeEnabled();
+      
+      // 11. Save the form (handle dialog)
+      page.on('dialog', async dialog => {
+        expect(dialog.message()).toContain('saved');
+        await dialog.accept();
+      });
+      await page.locator('button', { hasText: 'Save Form' }).click();
+      await page.waitForTimeout(1000);
     });
   });
 
