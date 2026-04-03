@@ -68,17 +68,7 @@ interface WorkflowInstance {
           
           <!-- Current Step Content -->
           <div class="step-content">
-            @if (!instance()?.currentNodeId) {
-              <!-- Start Workflow -->
-              <div class="start-section">
-                <div class="start-icon">▶</div>
-                <h2>Ready to Start</h2>
-                <p>This workflow has {{ workflow()!.nodes.length }} steps. Click the button below to begin.</p>
-                <button class="btn btn-primary btn-lg" (click)="startWorkflow()">
-                  Start Workflow
-                </button>
-              </div>
-            } @else if (instance()?.status === 'completed') {
+            @if (instance()?.status === 'completed') {
               <!-- Workflow Completed -->
               <div class="completed-section">
                 <div class="completed-icon">✓</div>
@@ -93,6 +83,16 @@ interface WorkflowInstance {
                   </ul>
                 </div>
                 <a routerLink="/workflows" class="btn btn-primary">Back to Workflows</a>
+              </div>
+            } @else if (!instance()?.currentNodeId) {
+              <!-- Start Workflow -->
+              <div class="start-section">
+                <div class="start-icon">▶</div>
+                <h2>Ready to Start</h2>
+                <p>This workflow has {{ workflow()!.nodes.length }} steps. Click the button below to begin.</p>
+                <button class="btn btn-primary btn-lg" (click)="startWorkflow()">
+                  Start Workflow
+                </button>
               </div>
             } @else {
               <!-- Active Step -->
