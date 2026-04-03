@@ -11,7 +11,8 @@ const NODE_TYPES = [
   { type: 'condition', label: 'Condition', icon: '◇', color: '#f59e0b' },
   { type: 'approval', label: 'Approval', icon: '✓', color: '#8b5cf6' },
   { type: 'parallel', label: 'Parallel', icon: '∥', color: '#06b6d4' },
-  { type: 'join', label: 'Join', icon: '⊥', color: '#06b6d4' }
+  { type: 'join', label: 'Join', icon: '⊥', color: '#06b6d4' },
+  { type: 'sub-workflow', label: 'Sub-Workflow', icon: '⊂', color: '#ec4899' }
 ];
 
 @Component({
@@ -148,6 +149,38 @@ const NODE_TYPES = [
                     [ngModel]="selectedNode()!.data['value']"
                     (ngModelChange)="updateNodeData('value', $event)"
                   >
+                </div>
+              }
+              @if (selectedNode()!.type === 'sub-workflow') {
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea 
+                    [ngModel]="selectedNode()!.data['description']"
+                    (ngModelChange)="updateNodeData('description', $event)"
+                    rows="3"
+                  ></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Child Workflow</label>
+                  <select 
+                    [ngModel]="selectedNode()!.data['childWorkflowId']"
+                    (ngModelChange)="updateNodeData('childWorkflowId', $event)"
+                  >
+                    <option value="">Select workflow...</option>
+                    @for (wf of workflows(); track wf.id) {
+                      <option [value]="wf.id">{{ wf.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="form-group checkbox">
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      [ngModel]="selectedNode()!.data['waitForCompletion']"
+                      (ngModelChange)="updateNodeData('waitForCompletion', $event)"
+                    >
+                    <span>Wait for completion</span>
+                  </label>
                 </div>
               }
               <button class="btn btn-danger" (click)="deleteNode()">Delete Node</button>
@@ -380,6 +413,7 @@ export class WorkflowDesignerComponent {
   connections = signal<WorkflowConnection[]>([]);
   selectedNodeId = signal<string | null>(null);
   connectingFrom = signal<string | null>(null);
+  workflows = signal<Workflow[]>([]);  // Available workflows for sub-workflow selection
   
   private dragNode: WorkflowNode | null = null;
   private dragOffset = { x: 0, y: 0 };
@@ -389,7 +423,11 @@ export class WorkflowDesignerComponent {
     return id ? this.nodes().find(n => n.id === id) || null : null;
   });
   
-  constructor(private storage: StorageService) {}
+  constructor(private storage: StorageService) {
+    // Load existing workflows for sub-workflow selection
+    const savedWorkflows = this.storage.get<Workflow[]>('workflows') || [];
+    this.workflows.set(savedWorkflows);
+  }
   
   getNodeColor(type: string): string {
     return this.nodeTypes.find(n => n.type === type)?.color || '#64748b';
