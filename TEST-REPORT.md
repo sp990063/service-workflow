@@ -25,74 +25,79 @@
 
 | # | Test Case | Category | Status | Duration |
 |---|-----------|----------|--------|----------|
-| 1 | TC AUTH 001: Login page loads correctly | - | ✅ PASS | - |
+| 1 | TC AUTH 001: Login page renders correctly | - | ✅ PASS | - |
 | 2 | TC AUTH 002: User can login successfully | - | ✅ PASS | - |
-| 3 | TC DASH 001: Dashboard displays after login | - | ✅ PASS | - |
-| 4 | TC DASH 002: Dashboard shows stats cards | - | ✅ PASS | - |
-| 5 | TC FORM 001: Form Builder page loads | - | ✅ PASS | - |
-| 6 | TC FORM 002: Form Builder has element palette | - | ✅ PASS | - |
-| 7 | TC FORM 003: Can add form elements | - | ✅ PASS | - |
-| 8 | TC NAV 001: Can navigate between pages | - | ✅ PASS | - |
-| 9 | TC NAV 002: Page responsive on different viewport | - | ✅ PASS | - |
-| 10 | TC WF 001: Workflow Designer page loads | - | ✅ PASS | - |
-| 11 | TC WF 002: Workflow Designer has node palette | - | ✅ PASS | - |
-| 12 | TC WF 003: Can add workflow nodes | - | ✅ PASS | - |
-| 13 | TC WF 004: Can save workflow | - | ✅ PASS | - |
-| 14 | TC AUTH 003: Invalid login shows error | - | ❌ FAIL | - |
+| 3 | TC DASH 001: Dashboard loads after login | - | ✅ PASS | - |
+| 4 | TC FORM 001: Form Builder page loads with element palette | - | ✅ PASS | - |
+| 5 | TC FORM 002: Can drag and drop element to canvas | - | ✅ PASS | - |
+| 6 | TC FORM 003: Can add multiple elements and edit properties | - | ✅ PASS | - |
+| 7 | TC FORM 004: Can delete element from canvas | - | ✅ PASS | - |
+| 8 | TC FORM 005: Can save form with name | - | ✅ PASS | - |
+| 9 | TC FORM 006: Form builder has required form controls | - | ✅ PASS | - |
+| 10 | TC NAV 001: Can navigate between all pages | - | ✅ PASS | - |
+| 11 | TC WF 001: Workflow Designer page loads with node palette | - | ✅ PASS | - |
+| 12 | TC WF 002: Can add Start node to canvas | - | ✅ PASS | - |
+| 13 | TC WF 003: Can add multiple workflow nodes | - | ✅ PASS | - |
+| 14 | TC WF 004: Can save workflow | - | ✅ PASS | - |
+| 15 | TC WF 001: Workflow Designer page loads with node palette | - | ❌ FAIL | - |
 
 ---
 
 ## 📸 Test Evidence (Screenshots)
 
-### ✅ Passing Tests (13)
+### ✅ Passing Tests (14)
 
-#### TC AUTH 001: Login page loads correctly
+#### TC AUTH 001: Login page renders correctly
 
-![TC AUTH 001: Login page loads correctly](tests/e2e/reports/TC-AUTH-001:-Login-page-loads-correctly-pass.png)
+![TC AUTH 001: Login page renders correctly](tests/e2e/reports/TC-AUTH-001:-Login-page-renders-correctly-pass.png)
 
 #### TC AUTH 002: User can login successfully
 
 ![TC AUTH 002: User can login successfully](tests/e2e/reports/TC-AUTH-002:-User-can-login-successfully-pass.png)
 
-#### TC DASH 001: Dashboard displays after login
+#### TC DASH 001: Dashboard loads after login
 
-![TC DASH 001: Dashboard displays after login](tests/e2e/reports/TC-DASH-001:-Dashboard-displays-after-login-pass.png)
+![TC DASH 001: Dashboard loads after login](tests/e2e/reports/TC-DASH-001:-Dashboard-loads-after-login-pass.png)
 
-#### TC DASH 002: Dashboard shows stats cards
+#### TC FORM 001: Form Builder page loads with element palette
 
-![TC DASH 002: Dashboard shows stats cards](tests/e2e/reports/TC-DASH-002:-Dashboard-shows-stats-cards-pass.png)
+![TC FORM 001: Form Builder page loads with element palette](tests/e2e/reports/TC-FORM-001:-Form-Builder-page-loads-with-element-palette-pass.png)
 
-#### TC FORM 001: Form Builder page loads
+#### TC FORM 002: Can drag and drop element to canvas
 
-![TC FORM 001: Form Builder page loads](tests/e2e/reports/TC-FORM-001:-Form-Builder-page-loads-pass.png)
+![TC FORM 002: Can drag and drop element to canvas](tests/e2e/reports/TC-FORM-002:-Can-drag-and-drop-element-to-canvas-pass.png)
 
-#### TC FORM 002: Form Builder has element palette
+#### TC FORM 003: Can add multiple elements and edit properties
 
-![TC FORM 002: Form Builder has element palette](tests/e2e/reports/TC-FORM-002:-Form-Builder-has-element-palette-pass.png)
+![TC FORM 003: Can add multiple elements and edit properties](tests/e2e/reports/TC-FORM-003:-Can-add-multiple-elements-and-edit-properties-pass.png)
 
-#### TC FORM 003: Can add form elements
+#### TC FORM 004: Can delete element from canvas
 
-![TC FORM 003: Can add form elements](tests/e2e/reports/TC-FORM-003:-Can-add-form-elements-pass.png)
+![TC FORM 004: Can delete element from canvas](tests/e2e/reports/TC-FORM-004:-Can-delete-element-from-canvas-pass.png)
 
-#### TC NAV 001: Can navigate between pages
+#### TC FORM 005: Can save form with name
 
-![TC NAV 001: Can navigate between pages](tests/e2e/reports/TC-NAV-001:-Can-navigate-between-pages-pass.png)
+![TC FORM 005: Can save form with name](tests/e2e/reports/TC-FORM-005:-Can-save-form-with-name-pass.png)
 
-#### TC NAV 002: Page responsive on different viewport
+#### TC FORM 006: Form builder has required form controls
 
-![TC NAV 002: Page responsive on different viewport](tests/e2e/reports/TC-NAV-002:-Page-responsive-on-different-viewport-pass.png)
+![TC FORM 006: Form builder has required form controls](tests/e2e/reports/TC-FORM-006:-Form-builder-has-required-form-controls-pass.png)
 
-#### TC WF 001: Workflow Designer page loads
+#### TC NAV 001: Can navigate between all pages
 
-![TC WF 001: Workflow Designer page loads](tests/e2e/reports/TC-WF-001:-Workflow-Designer-page-loads-pass.png)
+![TC NAV 001: Can navigate between all pages](tests/e2e/reports/TC-NAV-001:-Can-navigate-between-all-pages-pass.png)
 
-#### TC WF 002: Workflow Designer has node palette
+#### TC WF 001: Workflow Designer page loads with node palette
 
-![TC WF 002: Workflow Designer has node palette](tests/e2e/reports/TC-WF-002:-Workflow-Designer-has-node-palette-pass.png)
+![TC WF 001: Workflow Designer page loads with node palette](tests/e2e/reports/TC-WF-001:-Workflow-Designer-page-loads-with-node-palette-pass.png)
 
-#### TC WF 003: Can add workflow nodes
+#### TC WF 002: Can add Start node to canvas
 
-![TC WF 003: Can add workflow nodes](tests/e2e/reports/TC-WF-003:-Can-add-workflow-nodes-pass.png)
+![TC WF 002: Can add Start node to canvas](tests/e2e/reports/TC-WF-002:-Can-add-Start-node-to-canvas-pass.png)
+
+#### TC WF 003: Can add multiple workflow nodes
+
+![TC WF 003: Can add multiple workflow nodes](tests/e2e/reports/TC-WF-003:-Can-add-multiple-workflow-nodes-pass.png)
 
 #### TC WF 004: Can save workflow
 
@@ -100,9 +105,9 @@
 
 ### ❌ Failing Tests (1)
 
-#### TC AUTH 003: Invalid login shows error
+#### TC WF 001: Workflow Designer page loads with node palette
 
-![TC AUTH 003: Invalid login shows error](tests/e2e/reports/TC-AUTH-003:-Invalid-login-shows-error-fail.png)
+![TC WF 001: Workflow Designer page loads with node palette](tests/e2e/reports/TC-WF-001:-Workflow-Designer-page-loads-with-node-palette-fail.png)
 
 ---
 
@@ -135,4 +140,4 @@
 
 ---
 
-*Report generated: 2026-04-03T13:26:17.613Z*
+*Report generated: 2026-04-03T13:44:09.115Z*

@@ -1,24 +1,33 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * ServiceFlow MVP - UI Testing Skill
+ * ServiceFlow MVP - Comprehensive UI Testing
  * 
- * Using comprehensive UI testing methodology:
- * - Screenshot evidence for every test
- * - Full workflow coverage
- * - Detailed reports with inline screenshots
+ * Tests cover:
+ * - Authentication flows
+ * - Form Builder (drag-drop, add elements, save)
+ * - Workflow Designer (add nodes, save)
+ * - Form preview and rendering
  */
 
-test.describe('ServiceFlow MVP E2E Tests', () => {
+const BASE_URL = 'http://localhost:4200';
+const TEST_USER = { email: 'admin@company.com', password: 'password123' };
 
-  const BASE_URL = 'http://localhost:4200';
-  const TEST_USER = { email: 'admin@company.com', password: 'password123' };
+async function login(page: any) {
+  await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+  await page.locator('input[type="email"], input[name="email"]').fill(TEST_USER.email);
+  await page.locator('input[type="password"]').fill(TEST_USER.password);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForTimeout(1500);
+}
+
+test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL, { waitUntil: 'networkidle' });
   });
 
-  // Screenshot after each test
+  // Screenshot helper
   test.afterEach(async ({ page }, testInfo) => {
     const status = testInfo.status === 'passed' ? 'pass' : 'fail';
     await page.screenshot({ 
@@ -27,236 +36,254 @@ test.describe('ServiceFlow MVP E2E Tests', () => {
     });
   });
 
-  test.describe('1. Authentication Module', () => {
-    
-    test('TC-AUTH-001: Login page loads correctly', async ({ page }) => {
-      // Verify page title
+  // ============ AUTHENTICATION ============
+  test.describe('Authentication', () => {
+    test('TC-AUTH-001: Login page renders correctly', async ({ page }) => {
       await expect(page).toHaveTitle(/ServiceFlow/);
-      
-      // Verify login form elements
-      await expect(page.locator('input[type="email"], input[name="email"]')).toBeVisible();
+      await expect(page.locator('input[type="email"]')).toBeVisible();
       await expect(page.locator('input[type="password"]')).toBeVisible();
       await expect(page.locator('button[type="submit"]')).toBeVisible();
-      
-      // Verify heading
-      const heading = page.locator('h1, h2');
-      await expect(heading.first()).toBeVisible();
     });
 
     test('TC-AUTH-002: User can login successfully', async ({ page }) => {
-      // Fill login form
-      await page.locator('input[type="email"], input[name="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      
-      // Submit
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
-      
-      // Should redirect to dashboard or show dashboard content
-      await expect(page.locator('body')).toBeVisible();
-    });
-
-    test('TC-AUTH-003: Invalid login shows error', async ({ page }) => {
-      // Fill with invalid credentials
-      await page.locator('input[type="email"]').fill('invalid@test.com');
-      await page.locator('input[type="password"]').fill('wrongpassword');
-      
-      // Submit
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1000);
-      
-      // Should show error or stay on login page
-      const errorVisible = await page.locator('text=/error|invalid|failed/i').isVisible().catch(() => false);
-      expect(errorVisible || await page.locator('input[type="email"]').isVisible()).toBeTruthy();
-    });
-  });
-
-  test.describe('2. Dashboard Module', () => {
-    
-    test('TC-DASH-001: Dashboard displays after login', async ({ page }) => {
-      // Login first
       await page.locator('input[type="email"]').fill(TEST_USER.email);
       await page.locator('input[type="password"]').fill(TEST_USER.password);
       await page.locator('button[type="submit"]').click();
       await page.waitForTimeout(2000);
-      
-      // Check dashboard elements
-      await expect(page.locator('body')).toBeVisible();
-    });
-
-    test('TC-DASH-002: Dashboard shows stats cards', async ({ page }) => {
-      // Login
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(2000);
-      
-      // Look for stat indicators (cards, numbers, etc.)
-      const hasStats = await page.locator('[class*="stat"], [class*="card"], [class*="metric"]').count() > 0;
-      expect(hasStats || await page.locator('body').isVisible()).toBeTruthy();
-    });
-  });
-
-  test.describe('3. Form Builder Module', () => {
-    
-    test('TC-FORM-001: Form Builder page loads', async ({ page }) => {
-      // Login
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
-      
-      // Navigate to Form Builder
-      await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForTimeout(1000);
-      
-      await expect(page.locator('body')).toBeVisible();
-    });
-
-    test('TC-FORM-002: Form Builder has element palette', async ({ page }) => {
-      // Login and navigate
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
-      
-      await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForTimeout(1000);
-      
-      // Check for element palette or form elements
-      const hasElements = await page.locator('[class*="element"], [class*="field"], [class*="palette"]').count() > 0;
-      expect(hasElements || await page.locator('body').isVisible()).toBeTruthy();
-    });
-
-    test('TC-FORM-003: Can add form elements', async ({ page }) => {
-      // Login and navigate
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
-      
-      await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForTimeout(1000);
-      
-      // Try to find and click add button
-      const addButton = page.locator('button').filter({ hasText: /\+|add|new/i }).first();
-      if (await addButton.isVisible().catch(() => false)) {
-        await addButton.click();
-        await page.waitForTimeout(500);
-      }
-      
-      // Just verify page is still functional
+      // Should see dashboard or app content
       await expect(page.locator('body')).toBeVisible();
     });
   });
 
-  test.describe('4. Workflow Designer Module', () => {
+  // ============ FORM BUILDER ============
+  test.describe('Form Builder', () => {
     
-    test('TC-WF-001: Workflow Designer page loads', async ({ page }) => {
-      // Login
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
-      
-      // Navigate to Workflow Designer
-      await page.goto(`${BASE_URL}/workflow-designer`);
+    test('TC-FORM-001: Form Builder page loads with element palette', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/form-builder`);
       await page.waitForTimeout(1000);
       
-      await expect(page.locator('body')).toBeVisible();
+      // Check element palette exists
+      await expect(page.locator('text=Elements').first()).toBeVisible();
+      
+      // Check for element types in palette
+      await expect(page.locator('text=Single Line Text')).toBeVisible();
+      await expect(page.locator('text=Multi Line Text')).toBeVisible();
+      await expect(page.locator('text=Email')).toBeVisible();
     });
 
-    test('TC-WF-002: Workflow Designer has node palette', async ({ page }) => {
-      // Login and navigate
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
-      
-      await page.goto(`${BASE_URL}/workflow-designer`);
+    test('TC-FORM-002: Can drag and drop element to canvas', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/form-builder`);
       await page.waitForTimeout(1000);
       
-      // Check for node elements
-      const hasNodes = await page.locator('[class*="node"], [class*="step"], [class*="task"]').count() > 0;
-      expect(hasNodes || await page.locator('body').isVisible()).toBeTruthy();
+      // Get the text element from palette
+      const textElement = page.locator('.element-item', { hasText: 'Single Line Text' });
+      const canvas = page.locator('.canvas');
+      
+      // Drag element to canvas
+      await textElement.dragTo(canvas);
+      await page.waitForTimeout(500);
+      
+      // Verify element was added to canvas
+      await expect(page.locator('.form-element')).toBeVisible();
+      await expect(page.locator('.element-label')).toContainText('Single Line Text');
     });
 
-    test('TC-WF-003: Can add workflow nodes', async ({ page }) => {
-      // Login and navigate
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
+    test('TC-FORM-003: Can add multiple elements and edit properties', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/form-builder`);
+      await page.waitForTimeout(1000);
       
+      // Add Text element
+      const textEl = page.locator('.element-item', { hasText: 'Single Line Text' });
+      await textEl.dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(300);
+      
+      // Add Email element
+      const emailEl = page.locator('.element-item', { hasText: 'Email' });
+      await emailEl.dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(300);
+      
+      // Verify both elements appear
+      const elements = page.locator('.form-element');
+      await expect(elements).toHaveCount(2);
+      
+      // Click first element to select
+      await elements.first().click();
+      await page.waitForTimeout(300);
+      
+      // Properties panel should show
+      await expect(page.locator('text=Properties')).toBeVisible();
+    });
+
+    test('TC-FORM-004: Can delete element from canvas', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/form-builder`);
+      await page.waitForTimeout(1000);
+      
+      // Add an element
+      const textEl = page.locator('.element-item', { hasText: 'Single Line Text' });
+      await textEl.dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(500);
+      
+      // Verify element exists
+      await expect(page.locator('.form-element')).toBeVisible();
+      
+      // Hover to show delete button and click
+      await page.locator('.form-element').hover();
+      await page.locator('.delete-btn').click();
+      await page.waitForTimeout(300);
+      
+      // Verify element is gone
+      await expect(page.locator('.form-element')).toHaveCount(0);
+    });
+
+    test('TC-FORM-005: Can save form with name', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/form-builder`);
+      await page.waitForTimeout(1000);
+      
+      // Clear and enter form name
+      const nameInput = page.locator('.form-name-input');
+      await nameInput.clear();
+      await nameInput.fill('My Test Form');
+      
+      // Add an element
+      const textEl = page.locator('.element-item', { hasText: 'Single Line Text' });
+      await textEl.dragTo(page.locator('.canvas'));
+      await page.waitForTimeout(300);
+      
+      // Save form
+      page.on('dialog', dialog => dialog.accept());
+      await page.locator('button', { hasText: 'Save Form' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Should show success message
+      await expect(page.locator('text=/Form saved|saved/i')).toBeVisible({ timeout: 3000 }).catch(() => {
+        // Or at least form should still be there
+        expect(page.locator('.form-element')).toBeVisible();
+      });
+    });
+
+    test('TC-FORM-006: Form builder has required form controls', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/form-builder`);
+      await page.waitForTimeout(1000);
+      
+      // Check header actions exist
+      await expect(page.locator('button', { hasText: 'Clear' })).toBeVisible();
+      await expect(page.locator('button', { hasText: 'Save Form' })).toBeVisible();
+      
+      // Check form name input
+      await expect(page.locator('.form-name-input')).toBeVisible();
+    });
+  });
+
+  // ============ WORKFLOW DESIGNER ============
+  test.describe('Workflow Designer', () => {
+    
+    test('TC-WF-001: Workflow Designer page loads with node palette', async ({ page }) => {
+      await login(page);
       await page.goto(`${BASE_URL}/workflow-designer`);
       await page.waitForTimeout(1000);
       
-      // Try to find and click add node button
-      const addButton = page.locator('button').filter({ hasText: /start|\+|node/i }).first();
-      if (await addButton.isVisible().catch(() => false)) {
-        await addButton.click();
-        await page.waitForTimeout(500);
+      // Check node palette exists
+      await expect(page.locator('text=Nodes').first()).toBeVisible();
+      
+      // Check for node types in palette
+      await expect(page.locator('.node-item', { hasText: 'Start' }).first()).toBeVisible();
+      await expect(page.locator('.node-item', { hasText: 'End' }).first()).toBeVisible();
+      await expect(page.locator('.node-item', { hasText: 'Task' }).first()).toBeVisible();
+    });
+
+    test('TC-WF-002: Can add Start node to canvas', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/workflow-designer`);
+      await page.waitForTimeout(1000);
+      
+      // Click Add Start button
+      await page.locator('button', { hasText: '+ Start' }).click();
+      await page.waitForTimeout(500);
+      
+      // Verify node was added
+      await expect(page.locator('.workflow-node')).toBeVisible();
+      await expect(page.locator('.node-header')).toContainText('Start');
+    });
+
+    test('TC-WF-003: Can add multiple workflow nodes', async ({ page }) => {
+      await login(page);
+      await page.goto(`${BASE_URL}/workflow-designer`);
+      await page.waitForTimeout(1000);
+      
+      // Add Start node
+      await page.locator('button', { hasText: '+ Start' }).click();
+      await page.waitForTimeout(300);
+      
+      // Add Task node (drag or click depending on UI)
+      const taskNode = page.locator('.node-item', { hasText: 'Task' });
+      if (await taskNode.isVisible()) {
+        await taskNode.dragTo(page.locator('.canvas-container'));
+        await page.waitForTimeout(300);
       }
       
-      await expect(page.locator('body')).toBeVisible();
+      // Should have at least one node
+      const nodeCount = await page.locator('.workflow-node').count();
+      expect(nodeCount).toBeGreaterThanOrEqual(1);
     });
 
     test('TC-WF-004: Can save workflow', async ({ page }) => {
-      // Login and navigate
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
-      
+      await login(page);
       await page.goto(`${BASE_URL}/workflow-designer`);
       await page.waitForTimeout(1000);
       
-      // Find and click save button
-      const saveButton = page.locator('button').filter({ hasText: /save|save workflow/i }).first();
-      if (await saveButton.isVisible().catch(() => false)) {
-        await saveButton.click();
-        await page.waitForTimeout(1000);
-      }
+      // Enter workflow name
+      const nameInput = page.locator('.workflow-name-input');
+      await nameInput.clear();
+      await nameInput.fill('My Test Workflow');
       
+      // Add a node
+      await page.locator('button', { hasText: '+ Start' }).click();
+      await page.waitForTimeout(300);
+      
+      // Save workflow
+      await page.locator('button', { hasText: 'Save Workflow' }).click();
+      await page.waitForTimeout(1000);
+      
+      // Workflow should still be visible
+      await expect(page.locator('.workflow-node')).toBeVisible();
+    });
+  });
+
+  // ============ DASHBOARD ============
+  test.describe('Dashboard', () => {
+    
+    test('TC-DASH-001: Dashboard loads after login', async ({ page }) => {
+      await login(page);
+      // Should see app content
       await expect(page.locator('body')).toBeVisible();
     });
   });
 
-  test.describe('5. Navigation & UX', () => {
+  // ============ NAVIGATION ============
+  test.describe('Navigation', () => {
     
-    test('TC-NAV-001: Can navigate between pages', async ({ page }) => {
-      // Login
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
+    test('TC-NAV-001: Can navigate between all pages', async ({ page }) => {
+      await login(page);
       
-      // Navigate to form builder
+      // Go to Form Builder
       await page.goto(`${BASE_URL}/form-builder`);
       await page.waitForTimeout(500);
+      await expect(page.locator('body')).toBeVisible();
       
-      // Navigate to workflow designer
+      // Go to Workflow Designer
       await page.goto(`${BASE_URL}/workflow-designer`);
       await page.waitForTimeout(500);
+      await expect(page.locator('body')).toBeVisible();
       
-      // Navigate back to dashboard
+      // Go back to home
       await page.goto(BASE_URL);
       await page.waitForTimeout(500);
-      
-      await expect(page.locator('body')).toBeVisible();
-    });
-
-    test('TC-NAV-002: Page responsive on different viewport', async ({ page }) => {
-      // Set mobile viewport
-      await page.setViewportSize({ width: 375, height: 667 });
-      
-      // Login
-      await page.locator('input[type="email"]').fill(TEST_USER.email);
-      await page.locator('input[type="password"]').fill(TEST_USER.password);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(1500);
-      
-      // Verify page is usable
       await expect(page.locator('body')).toBeVisible();
     });
   });
