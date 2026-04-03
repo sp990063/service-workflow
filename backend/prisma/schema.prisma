@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          Role      @default(USER)
+  department    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  formSubmissions  FormSubmission[]
+  approvalRequests ApprovalRequest[]
+  workflowInstances WorkflowInstance[]
+  notifications    Notification[]
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+model Form {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  elements    Json     // FormElement[]
+  version     Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  submissions FormSubmission[]
+}
+
+model FormSubmission {
+  id        String           @id @default(uuid())
+  formId    String
+  form      Form             @relation(fields: [formId], references: [id])
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  data      Json             // Submitted form data
+  status    SubmissionStatus @default(PENDING)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Workflow {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  nodes       Json     // WorkflowNode[]
+  connections Json     // WorkflowConnection[]
+  version     Int      @default(1)
+  isActive    Boolean  @default(true)
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  instances WorkflowInstance[]
+}
+
+model WorkflowInstance {
+  id               String         @id @default(uuid())
+  workflowId       String
+  workflow         Workflow       @relation(fields: [workflowId], references: [id])
+  userId           String
+  user             User           @relation(fields: [userId], references: [id])
+  currentNodeId    String?
+  status           InstanceStatus @default(PENDING)
+  formData         Json           @default("{}")
+  history          Json           @default("[]")
+  childInstanceId  String?        // For sub-workflow
+  parentInstanceId String?        // For sub-workflow
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  approvalRequests ApprovalRequest[]
+}
+
+enum InstanceStatus {
+  PENDING
+  IN_PROGRESS
+  WAITING_FOR_CHILD
+  COMPLETED
+  CANCELLED
+}
+
+model ApprovalRequest {
+  id          String    @id @default(uuid())
+  instanceId  String
+  instance    WorkflowInstance @relation(fields: [instanceId], references: [id])
+  nodeId      String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  decision    Decision?
+  comment     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum Decision {
+  APPROVED
+  REJECTED
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+enum NotificationType {
+  WORKFLOW_STARTED
+  WORKFLOW_COMPLETED
+  APPROVAL_REQUIRED
+  APPROVAL_GRANTED
+  APPROVAL_REJECTED
+  FORM_SUBMITTED
+}
