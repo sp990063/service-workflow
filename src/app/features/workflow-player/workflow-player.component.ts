@@ -164,6 +164,29 @@ interface WorkflowInstance {
                     </div>
                   }
                   
+                  <!-- Sub-Workflow: Trigger child workflow -->
+                  @if (currentNode()!.type === 'sub-workflow') {
+                    <div class="sub-workflow-section">
+                      <h4>Sub-Workflow</h4>
+                      <p>{{ currentNode()!.data['description'] || 'This step triggers a child workflow' }}</p>
+                      
+                      @if (!instance()?.childInstanceId) {
+                        <p class="child-workflow-name">Child: {{ getChildWorkflowName() }}</p>
+                        <button class="btn btn-primary" (click)="startSubWorkflow()">
+                          ▶ Start Sub-Workflow
+                        </button>
+                      } @else {
+                        <div class="waiting-message">
+                          <p>⏳ Waiting for sub-workflow to complete...</p>
+                          <p class="child-status">Child workflow is running</p>
+                          <button class="btn btn-secondary" (click)="checkSubWorkflowStatus()">
+                            Check Status
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                  
                   <!-- End node -->
                   @if (currentNode()!.type === 'end') {
                     <div class="end-section">
@@ -365,15 +388,36 @@ interface WorkflowInstance {
     }
     
     /* Task Form */
-    .task-form, .approval-section, .parallel-section, .condition-section, .end-section {
+    .task-form, .approval-section, .parallel-section, .condition-section, .end-section, .sub-workflow-section {
       background: var(--color-background);
       border-radius: var(--radius-lg);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
     }
-    .task-form h4, .approval-section h4, .parallel-section h4, .condition-section h4, .end-section h4 {
+    .task-form h4, .approval-section h4, .parallel-section h4, .condition-section h4, .end-section h4, .sub-workflow-section h4 {
       font-size: 1rem;
       margin-bottom: 0.75rem;
+    }
+    .sub-workflow-section {
+      background: #fdf4ff;
+      border: 1px solid #ec4899;
+    }
+    .sub-workflow-section .child-workflow-name {
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    .waiting-message {
+      padding: 1rem;
+      background: #fef3c7;
+      border-radius: var(--radius-md);
+      margin-top: 1rem;
+    }
+    .waiting-message p {
+      margin-bottom: 0.5rem;
+    }
+    .child-status {
+      font-size: 0.875rem;
+      color: #666;
     }
     .form-field {
       margin-bottom: 1rem;
@@ -565,6 +609,11 @@ export class WorkflowPlayerComponent implements OnInit {
     const wf = this.workflow();
     if (!inst || !wf) return;
     
+    // If waiting for child workflow, don't advance
+    if (inst.status === 'waiting-for-child') {
+      return;
+    }
+    
     // Find current node index
     const currentIdx = wf.nodes.findIndex(n => n.id === inst.currentNodeId);
     if (currentIdx < 0) return;
@@ -635,6 +684,113 @@ export class WorkflowPlayerComponent implements OnInit {
   
   completeParallel() {
     this.advanceWorkflow();
+  }
+  
+  startSubWorkflow() {
+    const inst = this.instance();
+    const currentNode = this.currentNode();
+    if (!inst || !currentNode || currentNode.type !== 'sub-workflow') return;
+    
+    const childWorkflowId = currentNode.data['childWorkflowId'] as string;
+    if (!childWorkflowId) {
+      alert('Please select a child workflow in the designer');
+      return;
+    }
+    
+    // Get the child workflow definition
+    const workflows = this.storage.get<any[]>('workflows') || [];
+    const childWorkflow = workflows.find((w: any) => w.id === childWorkflowId);
+    if (!childWorkflow) {
+      alert('Child workflow not found');
+      return;
+    }
+    
+    // Create child instance
+    const childInstances = this.storage.get<WorkflowInstance[]>('workflowInstances') || [];
+    const startNode = childWorkflow.nodes.find((n: any) => n.type === 'start');
+    
+    const childInstance: WorkflowInstance = {
+      id: crypto.randomUUID(),
+      workflowId: childWorkflowId,
+      workflowName: childWorkflow.name,
+      currentNodeId: startNode?.id || null,
+      status: 'in-progress',
+      formData: { ...inst.formData },  // Copy form data
+      history: startNode ? [{
+        nodeId: startNode.id,
+        action: `Started: ${startNode.data['label'] || startNode.type}`,
+        timestamp: new Date()
+      }] : [],
+      parentInstanceId: inst.id  // Link to parent
+    };
+    
+    childInstances.push(childInstance);
+    this.storage.set('workflowInstances', childInstances);
+    
+    // Update parent instance - now waiting for child
+    inst.childInstanceId = childInstance.id;
+    inst.status = 'waiting-for-child';
+    inst.history.push({
+      nodeId: currentNode.id,
+      action: `Started sub-workflow: ${childWorkflow.name}`,
+      timestamp: new Date()
+    });
+    
+    this.updateInstance(inst);
+  }
+  
+  checkSubWorkflowStatus() {
+    const inst = this.instance();
+    if (!inst?.childInstanceId) return;
+    
+    const childInstances = this.storage.get<WorkflowInstance[]>('workflowInstances') || [];
+    const childInstance = childInstances.find(i => i.id === inst.childInstanceId);
+    
+    if (childInstance?.status === 'completed') {
+      // Child done - resume parent workflow
+      this.resumeFromSubWorkflow();
+    }
+  }
+  
+  getChildWorkflowName(): string {
+    const currentNode = this.currentNode();
+    if (!currentNode || currentNode.type !== 'sub-workflow') return '';
+    
+    const childWorkflowId = currentNode.data['childWorkflowId'] as string;
+    if (!childWorkflowId) return 'Not selected';
+    
+    const workflows = this.storage.get<any[]>('workflows') || [];
+    const childWorkflow = workflows.find((w: any) => w.id === childWorkflowId);
+    return childWorkflow?.name || 'Unknown';
+  }
+  
+  resumeFromSubWorkflow() {
+    const inst = this.instance();
+    const currentNode = this.currentNode();
+    const wf = this.workflow();
+    if (!inst || !currentNode || !wf) return;
+    
+    // Find current node index and advance to next
+    const currentIdx = wf.nodes.findIndex(n => n.id === inst.currentNodeId);
+    if (currentIdx >= 0 && currentIdx < wf.nodes.length - 1) {
+      // Add sub-workflow node to history
+      inst.history.push({
+        nodeId: currentNode.id,
+        action: `Completed: ${currentNode.data['label'] || currentNode.type}`,
+        timestamp: new Date()
+      });
+      
+      const nextNode = wf.nodes[currentIdx + 1];
+      inst.currentNodeId = nextNode.id;
+      inst.childInstanceId = undefined;
+      inst.status = 'in-progress';
+      
+      if (nextNode.type === 'end') {
+        inst.status = 'completed';
+      }
+      
+      this.updateInstance(inst);
+    }
   }
   
   finishWorkflow() {
