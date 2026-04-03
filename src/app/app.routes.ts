@@ -31,5 +31,15 @@ export const routes: Routes = [
     path: 'workflow-designer',
     loadComponent: () => import('./features/workflow-designer/workflow-designer.component').then(m => m.WorkflowDesignerComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'workflows',
+    loadComponent: () => import('./features/workflows/workflows-list.component').then(m => m.WorkflowsListComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'workflow-player/:id',
+    loadComponent: () => import('./features/workflow-player/workflow-player.component').then(m => m.WorkflowPlayerComponent),
+    canActivate: [authGuard]
   }
 ];
