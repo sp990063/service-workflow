@@ -11,10 +11,70 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 128 |
+| Total Tests | 153 |
 | Passed | ~45 ✅ |
-| Failed | ~83 ❌ |
-| Pass Rate | ~35% |
+| Failed | ~108 ❌ |
+| Pass Rate | ~29% |
+
+---
+
+## 🧪 Complex Scenarios Test Suite (NEW)
+
+**File:** `tests/e2e/complex-scenarios.spec.ts`  
+**Tests:** 25  
+**Date Added:** 2026-04-04
+
+### SCN-COMPLEX-001: Leave Request (Conditional Approval)
+
+| Test ID | Description | Type |
+|---------|-------------|------|
+| SCN-COMPLEX-001-P | Leave request approved when days <= 3 (Manager only) | Positive |
+| SCN-COMPLEX-001-P2 | Leave request - parallel approval when days > 3 (Manager + Director) | Positive |
+| SCN-COMPLEX-001-N1 | Employee cannot approve own request | Negative |
+| SCN-COMPLEX-001-N2 | Employee can cancel pending request | Negative |
+
+### SCN-COMPLEX-002: Expense Reimbursement (Parallel Approval)
+
+| Test ID | Description | Type |
+|---------|-------------|------|
+| SCN-COMPLEX-002-P | Expense approved by both Manager AND Finance | Positive |
+| SCN-COMPLEX-002-N1 | Missing receipts blocks submission | Negative |
+| SCN-COMPLEX-002-N2 | Partial approval (Manager but not Finance) keeps pending | Negative |
+
+### SCN-COMPLEX-003: IT Equipment Order (Sequential + Parallel)
+
+| Test ID | Description | Type |
+|---------|-------------|------|
+| SCN-COMPLEX-003-P | IT equipment order - sequential then parallel approval | Positive |
+| SCN-COMPLEX-003-N1 | Budget exceeded blocks order | Negative |
+| SCN-COMPLEX-003-N2 | Sequential blocking enforced (cannot skip to parallel) | Negative |
+
+### SCN-COMPLEX-004: Customer Onboarding (Sub-workflow)
+
+| Test ID | Description | Type |
+|---------|-------------|------|
+| SCN-COMPLEX-004-P | Customer onboarding - all sub-workflows complete | Positive |
+| SCN-COMPLEX-004-N1 | Missing customer info blocks start | Negative |
+| SCN-COMPLEX-004-N2 | Main workflow waits for all sub-workflows | Negative |
+
+### SCN-COMPLEX-005: Performance Review (Multi-stage with Conditions)
+
+| Test ID | Description | Type |
+|---------|-------------|------|
+| SCN-COMPLEX-005-P | Performance review - high rating proceeds to completion | Positive |
+| SCN-COMPLEX-005-N1 | Low rating triggers HR intervention | Negative |
+| SCN-COMPLEX-005-N2 | Late submission triggers escalation | Negative |
+
+**Workflows Seeded:**
+- Leave Request (<=3 Days) - Manager approval only
+- Leave Request (>3 Days) - Manager + Director parallel approval
+- Expense Reimbursement - Manager + Finance parallel approval
+- IT Equipment Order - Manager then IT + Finance parallel
+- Account Setup Sub-Workflow
+- Training Sub-Workflow
+- Support Plan Sub-Workflow
+- Customer Onboarding - Parallel sub-workflows
+- Performance Review - Multi-stage with HR intervention
 
 **Status:** Tests require stable environment. Many failures due to selector mismatches and test infrastructure issues.
 
