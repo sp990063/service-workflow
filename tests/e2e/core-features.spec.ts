@@ -25,6 +25,14 @@ async function login(page: any) {
 // ============ CONDITION NODE TESTS ============
 test.describe('Condition Node', () => {
 
+  test.afterEach(async ({ page }, testInfo) => {
+    const status = testInfo.status === 'passed' ? 'pass' : 'fail';
+    await page.screenshot({
+      path: `tests/e2e/reports/${testInfo.title.replace(/\s+/g, '-')}-${status}.png`,
+      fullPage: true
+    });
+  });
+
   test('TC-COND-001: Condition node exists in workflow designer palette', async ({ page }) => {
     await login(page);
     await page.goto(`${BASE_URL}/workflow-designer`);
@@ -126,6 +134,14 @@ test.describe('Condition Node', () => {
 // ============ PARALLEL SPLIT + JOIN TESTS ============
 test.describe('Parallel Split + Join Nodes', () => {
 
+  test.afterEach(async ({ page }, testInfo) => {
+    const status = testInfo.status === 'passed' ? 'pass' : 'fail';
+    await page.screenshot({
+      path: `tests/e2e/reports/${testInfo.title.replace(/\s+/g, '-')}-${status}.png`,
+      fullPage: true
+    });
+  });
+
   test('TC-PARALLEL-001: Parallel node exists in workflow designer palette', async ({ page }) => {
     await login(page);
     await page.goto(`${BASE_URL}/workflow-designer`);
@@ -225,6 +241,14 @@ test.describe('Parallel Split + Join Nodes', () => {
 // ============ DATE RANGE ELEMENT TESTS ============
 test.describe('Date Range Form Element', () => {
 
+  test.afterEach(async ({ page }, testInfo) => {
+    const status = testInfo.status === 'passed' ? 'pass' : 'fail';
+    await page.screenshot({
+      path: `tests/e2e/reports/${testInfo.title.replace(/\s+/g, '-')}-${status}.png`,
+      fullPage: true
+    });
+  });
+
   test('TC-DATERANGE-001: Date Range element exists in form builder palette', async ({ page }) => {
     await login(page);
     await page.goto(`${BASE_URL}/form-builder`);
@@ -291,6 +315,14 @@ test.describe('Date Range Form Element', () => {
 // ============ TIME ELEMENT TESTS ============
 test.describe('Time Form Element', () => {
 
+  test.afterEach(async ({ page }, testInfo) => {
+    const status = testInfo.status === 'passed' ? 'pass' : 'fail';
+    await page.screenshot({
+      path: `tests/e2e/reports/${testInfo.title.replace(/\s+/g, '-')}-${status}.png`,
+      fullPage: true
+    });
+  });
+
   test('TC-TIME-001: Time element exists in form builder palette', async ({ page }) => {
     await login(page);
     await page.goto(`${BASE_URL}/form-builder`);
@@ -336,6 +368,14 @@ test.describe('Time Form Element', () => {
 
 // ============ FILE UPLOAD ELEMENT TESTS ============
 test.describe('File Upload Form Element', () => {
+
+  test.afterEach(async ({ page }, testInfo) => {
+    const status = testInfo.status === 'passed' ? 'pass' : 'fail';
+    await page.screenshot({
+      path: `tests/e2e/reports/${testInfo.title.replace(/\s+/g, '-')}-${status}.png`,
+      fullPage: true
+    });
+  });
 
   test('TC-FILE-001: File Upload element exists in form builder palette', async ({ page }) => {
     await login(page);
@@ -383,6 +423,14 @@ test.describe('File Upload Form Element', () => {
 
 // ============ INTEGRATION TEST ============
 test.describe('Core Features Integration', () => {
+
+  test.afterEach(async ({ page }, testInfo) => {
+    const status = testInfo.status === 'passed' ? 'pass' : 'fail';
+    await page.screenshot({
+      path: `tests/e2e/reports/${testInfo.title.replace(/\s+/g, '-')}-${status}.png`,
+      fullPage: true
+    });
+  });
 
   test('TC-INTEGRATION-001: Can create complete workflow with all new node types', async ({ page }) => {
     await login(page);
