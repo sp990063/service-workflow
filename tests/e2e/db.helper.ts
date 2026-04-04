@@ -93,8 +93,12 @@ export class DbHelper {
 
   constructor(dbPath?: string) {
     const resolvedPath = dbPath || path.join(__dirname, '..', '..', 'backend', 'prisma', 'dev.db');
-    this.db = new Database(resolvedPath, { readonly: true });
-    this.db.pragma('journal_mode = WAL');
+    this.db = new Database(resolvedPath, { readonly: false });
+    try {
+      this.db.pragma('journal_mode = WAL');
+    } catch (e) {
+      // WAL mode might not be available or writable
+    }
   }
 
   // ─── User queries ───────────────────────────────────────────────────────────

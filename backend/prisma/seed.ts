@@ -230,6 +230,164 @@ async function main() {
     },
   });
 
+  // Create SDLC Process workflow (sub-workflow)
+  const sdlcWorkflow = await prisma.workflow.create({
+    data: {
+      name: 'SDLC Process',
+      description: 'Software Development Life Cycle - Requirements to Deployment',
+      category: 'IT',
+      nodes: JSON.stringify([
+        { id: 'sdlc-start', type: 'start', position: { x: 50, y: 200 }, data: { label: 'Start', description: 'SDLC begins' } },
+        { id: 'sdlc-req', type: 'task', position: { x: 200, y: 200 }, data: { label: 'Requirements', description: 'BA creates PRD', assigneeRole: 'BA' } },
+        { id: 'sdlc-design', type: 'task', position: { x: 350, y: 200 }, data: { label: 'Design', description: 'Architect creates design doc', assigneeRole: 'ARCHITECT' } },
+        { id: 'sdlc-dev', type: 'task', position: { x: 500, y: 200 }, data: { label: 'Development', description: 'Developer implements', assigneeRole: 'DEVELOPER' } },
+        { id: 'sdlc-test', type: 'task', position: { x: 650, y: 200 }, data: { label: 'Testing', description: 'QA performs testing', assigneeRole: 'QA' } },
+        { id: 'sdlc-uat', type: 'task', position: { x: 800, y: 200 }, data: { label: 'UAT', description: 'User acceptance testing', assigneeRole: 'USER' } },
+        { id: 'sdlc-deploy', type: 'task', position: { x: 950, y: 200 }, data: { label: 'Deployment', description: 'Ops deploys to production', assigneeRole: 'OPS' } },
+        { id: 'sdlc-end', type: 'end', position: { x: 1100, y: 200 }, data: { label: 'End', description: 'Enhancement delivered' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'sdlc-start', to: 'sdlc-req' },
+        { from: 'sdlc-req', to: 'sdlc-design' },
+        { from: 'sdlc-design', to: 'sdlc-dev' },
+        { from: 'sdlc-dev', to: 'sdlc-test' },
+        { from: 'sdlc-test', to: 'sdlc-uat' },
+        { from: 'sdlc-uat', to: 'sdlc-deploy' },
+        { from: 'sdlc-deploy', to: 'sdlc-end' },
+      ]),
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created workflow: ${sdlcWorkflow.name}`);
+
+  // Create System Enhancement Request form
+  const enhancementForm = await prisma.form.create({
+    data: {
+      name: 'System Enhancement Request',
+      description: 'Submit a system enhancement request for IT review',
+      elements: JSON.stringify([
+        { id: 'enh-title', type: 'text', label: 'Enhancement Title', placeholder: 'Enter enhancement title', required: true },
+        { id: 'enh-desc', type: 'textarea', label: 'Description', placeholder: 'Describe the enhancement', required: true },
+        { id: 'enh-type', type: 'select', label: 'Type', options: ['New Feature', 'Bug Fix', 'Improvement', 'Refactoring'], required: true },
+        { id: 'enh-priority', type: 'select', label: 'Priority', options: ['Low', 'Medium', 'High', 'Critical'], required: true },
+        { id: 'enh-budget', type: 'number', label: 'Estimated Budget (USD)', placeholder: '0', required: true },
+        { id: 'enh-justification', type: 'textarea', label: 'Business Justification', placeholder: 'Why is this needed?', required: true },
+      ]),
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created form: ${enhancementForm.name}`);
+
+  // Create System Enhancement Request workflow (main workflow with sub-workflow reference)
+  await prisma.workflow.create({
+    data: {
+      name: 'System Enhancement Request',
+      description: 'Submit and track system enhancement requests through SDLC',
+      category: 'IT',
+      nodes: JSON.stringify([
+        { id: 'enh-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start', description: 'Enhancement request received' } },
+        { id: 'enh-form', type: 'form', position: { x: 300, y: 200 }, data: { label: 'Submit Enhancement Request', formId: enhancementForm.id } },
+        { id: 'enh-sdlc', type: 'subWorkflow', position: { x: 500, y: 200 }, data: { label: 'Execute SDLC', childWorkflowId: sdlcWorkflow.id, waitForCompletion: true } },
+        { id: 'enh-end', type: 'end', position: { x: 700, y: 200 }, data: { label: 'End', description: 'Enhancement delivered' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'enh-start', to: 'enh-form' },
+        { from: 'enh-form', to: 'enh-sdlc' },
+        { from: 'enh-sdlc', to: 'enh-end' },
+      ]),
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created workflow: System Enhancement Request`);
+
+  // Create SDLC with Rejection workflow
+  await prisma.workflow.create({
+    data: {
+      name: 'SDLC with Rejection',
+      description: 'SDLC process with BA rejection at requirements stage',
+      category: 'IT',
+      nodes: JSON.stringify([
+        { id: 'rej-start', type: 'start', position: { x: 50, y: 200 }, data: { label: 'Start' } },
+        { id: 'rej-req', type: 'task', position: { x: 200, y: 200 }, data: { label: 'Requirements Review', assigneeRole: 'BA' } },
+        { id: 'rej-condition', type: 'condition', position: { x: 350, y: 200 }, data: { label: 'Feasible?', field: 'approved', operator: 'equals', value: 'true' } },
+        { id: 'rej-reject', type: 'task', position: { x: 500, y: 100 }, data: { label: 'Reject Request', assigneeRole: 'BA' } },
+        { id: 'rej-end-reject', type: 'end', position: { x: 650, y: 100 }, data: { label: 'Rejected' } },
+        { id: 'rej-end-approve', type: 'end', position: { x: 650, y: 300 }, data: { label: 'Approved' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'rej-start', to: 'rej-req' },
+        { from: 'rej-req', to: 'rej-condition' },
+        { from: 'rej-condition', to: 'rej-reject', condition: { field: 'approved', operator: 'equals', value: 'false' } },
+        { from: 'rej-condition', to: 'rej-end-approve', condition: { field: 'approved', operator: 'equals', value: 'true' } },
+        { from: 'rej-reject', to: 'rej-end-reject' },
+      ]),
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created workflow: SDLC with Rejection`);
+
+  // Create Budget Check Workflow
+  await prisma.workflow.create({
+    data: {
+      name: 'Budget Check Workflow',
+      description: 'Enhancement request blocked when budget exceeds limit',
+      category: 'IT',
+      nodes: JSON.stringify([
+        { id: 'bud-start', type: 'start', position: { x: 50, y: 200 }, data: { label: 'Start' } },
+        { id: 'bud-form', type: 'form', position: { x: 200, y: 200 }, data: { label: 'Submit Request', formId: enhancementForm.id } },
+        { id: 'bud-condition', type: 'condition', position: { x: 400, y: 200 }, data: { label: 'Budget Check', field: 'enh-budget', operator: 'lessThan', value: '10000' } },
+        { id: 'bud-approved', type: 'task', position: { x: 600, y: 100 }, data: { label: 'Approved Path', assigneeRole: 'MANAGER' } },
+        { id: 'bud-blocked', type: 'task', position: { x: 600, y: 300 }, data: { label: 'Budget Approval Needed', assigneeRole: 'ADMIN' } },
+        { id: 'bud-end', type: 'end', position: { x: 800, y: 200 }, data: { label: 'End' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'bud-start', to: 'bud-form' },
+        { from: 'bud-form', to: 'bud-condition' },
+        { from: 'bud-condition', to: 'bud-approved', condition: { field: 'enh-budget', operator: 'lessThan', value: '10000' } },
+        { from: 'bud-condition', to: 'bud-blocked', condition: { field: 'enh-budget', operator: 'greaterThanOrEqual', value: '10000' } },
+        { from: 'bud-approved', to: 'bud-end' },
+        { from: 'bud-blocked', to: 'bud-end' },
+      ]),
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created workflow: Budget Check Workflow`);
+
+  // Create Test Failure Blocking Workflow
+  await prisma.workflow.create({
+    data: {
+      name: 'Test Failure Blocking Workflow',
+      description: 'Blocks deployment when QA finds critical bugs',
+      category: 'IT',
+      nodes: JSON.stringify([
+        { id: 'tfb-start', type: 'start', position: { x: 50, y: 200 }, data: { label: 'Start' } },
+        { id: 'tfb-dev', type: 'task', position: { x: 200, y: 200 }, data: { label: 'Development', assigneeRole: 'DEVELOPER' } },
+        { id: 'tfb-test', type: 'task', position: { x: 350, y: 200 }, data: { label: 'QA Testing', assigneeRole: 'QA' } },
+        { id: 'tfb-condition', type: 'condition', position: { x: 500, y: 200 }, data: { label: 'Tests Pass?', field: 'testsPassed', operator: 'equals', value: 'true' } },
+        { id: 'tfb-deploy', type: 'task', position: { x: 650, y: 100 }, data: { label: 'Deploy to Production', assigneeRole: 'OPS' } },
+        { id: 'tfb-fix', type: 'task', position: { x: 650, y: 300 }, data: { label: 'Fix Issues', assigneeRole: 'DEVELOPER' } },
+        { id: 'tfb-end', type: 'end', position: { x: 800, y: 200 }, data: { label: 'End' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'tfb-start', to: 'tfb-dev' },
+        { from: 'tfb-dev', to: 'tfb-test' },
+        { from: 'tfb-test', to: 'tfb-condition' },
+        { from: 'tfb-condition', to: 'tfb-deploy', condition: { field: 'testsPassed', operator: 'equals', value: 'true' } },
+        { from: 'tfb-condition', to: 'tfb-fix', condition: { field: 'testsPassed', operator: 'equals', value: 'false' } },
+        { from: 'tfb-deploy', to: 'tfb-end' },
+        { from: 'tfb-fix', to: 'tfb-test' },
+      ]),
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created workflow: Test Failure Blocking Workflow`);
+
   console.log(`✅ Created workflow instance for ${employee.name}`);
 
   // Create notifications

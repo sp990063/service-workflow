@@ -11,12 +11,13 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 67 (existing) + 26 (missing features) + 17 (core features) + 3 (form validation negative) |
+| Total Tests | 67 (existing) + 26 (missing features) + 17 (core features) + 3 (form validation negative) + 12 (System Enhancement SDLC) |
 | Existing Tests Passed | ~39 ✅ |
 | Existing Tests Failed | ~16 ❌ |
 | Missing Features Tests | 26 (document unimplemented features) |
 | Core Feature Tests | 17 (implemented features) |
-| Form Validation Negative Tests | 3 (NEW - negative cases) |
+| Form Validation Negative Tests | 3 (negative cases) |
+| System Enhancement SDLC Tests | 12 (NEW - complex scenarios) |
 | Pass Rate (existing) | ~71% |
 
 **Status: MVP IN PROGRESS** - Core features implemented (Condition, Parallel, Date Range, Time, File Upload)
@@ -224,6 +225,54 @@ Based on SPEC-MVP.md and test results:
 
 ---
 
+## 📝 System Enhancement Request - SDLC Sub-Workflow Tests (NEW)
+
+Created: `tests/e2e/complex-scenarios.spec.ts`
+
+This new test file includes complex workflow scenarios with SDLC sub-workflow support.
+
+### Workflows Added (via seed + localStorage):
+
+| Workflow ID | Name | Description |
+|-------------|------|-------------|
+| wf-sdlc | SDLC Process | Full Software Development Life Cycle (Requirements → Deployment) |
+| wf-enhancement | System Enhancement Request | Main workflow with sub-workflow reference to SDLC |
+| wf-sdlc-reject | SDLC with Rejection | SDLC that can be rejected at requirements stage |
+| wf-budget-check | Budget Check Workflow | Blocks approval when budget exceeds $10,000 |
+| wf-test-fail-block | Test Failure Blocking Workflow | Blocks deployment when QA finds bugs |
+
+### Form Added:
+
+| Form ID | Name | Fields |
+|---------|------|--------|
+| form-enhancement | System Enhancement Request | Title, Description, Type, Priority, Budget, Justification |
+
+### Tests Added:
+
+**Positive Cases (4 tests):**
+- SCN-SYS-001-P: System enhancement request completes full SDLC
+- SCN-SYS-002-P: Enhancement rejected at requirements stage
+- SCN-SYS-003-P: Employee can track enhancement progress through SDLC
+- SCN-SYS-004-P: SDLC sub-workflow can be triggered from main workflow
+
+**Negative Cases (4 tests):**
+- SCN-SYS-001-N: Enhancement blocked when budget exceeded
+- SCN-SYS-002-N: Development blocked when tests fail
+- SCN-SYS-003-N: Enhancement cannot bypass SDLC stages
+- SCN-SYS-004-N: Rejected enhancement cannot auto-approve
+
+**SDLC Verification Tests (4 tests):**
+- SDLC-VERIFY-001: SDLC workflow has all required stages
+- SDLC-VERIFY-002: Enhancement form has all required fields
+- SDLC-VERIFY-003: Main enhancement workflow links to SDLC sub-workflow
+- SDLC-VERIFY-004: Condition nodes in blocking workflows are properly configured
+
+### Test Results (Initial Run):
+- Passed: 2/12 (SCN-SYS-003-P, SCN-SYS-004-P)
+- Failed: 10/12 (expected - database seed not yet applied for new workflows)
+
+---
+
 ## 📁 Test Files
 
 | File | Tests | Description |
@@ -236,7 +285,8 @@ Based on SPEC-MVP.md and test results:
 | subworkflow.spec.ts | 6 | Sub-workflow integration tests |
 | missing-features.spec.ts | 26 | Unimplemented features (documented) |
 | **core-features.spec.ts** | **17** | **Core features tests (implemented)** |
-| **form-validation-neg.spec.ts** | **3** | **Form validation negative cases (NEW)** |
+| **form-validation-neg.spec.ts** | **3** | **Form validation negative cases** |
+| **complex-scenarios.spec.ts** | **12** | **System Enhancement SDLC scenarios (NEW)** |
 
 ---
 
