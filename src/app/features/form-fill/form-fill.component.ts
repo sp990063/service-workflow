@@ -2,7 +2,8 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { StorageService } from '../../core/services/storage.service';
+import { FormService } from '../../core/services/form.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Form, FormElement } from '../../core/models';
 
 @Component({
@@ -341,7 +342,8 @@ export class FormFillComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private storage: StorageService
+    private formService: FormService,
+    private auth: AuthService
   ) {}
   
   ngOnInit() {
@@ -354,21 +356,24 @@ export class FormFillComponent implements OnInit {
   }
   
   loadForm(formId: string) {
-    const forms = this.storage.get<Form[]>('forms') || [];
-    const form = forms.find(f => f.id === formId);
-    this.form.set(form || null);
-    this.loading.set(false);
-    
-    // Initialize form data
-    if (form) {
-      form.elements.forEach(el => {
-        if (el.type === 'checkbox') {
-          this.formData[el.id] = [];
-        } else {
-          this.formData[el.id] = '';
-        }
-      });
-    }
+    this.formService.getById(formId).subscribe({
+      next: (form) => {
+        this.form.set(form);
+        // Initialize form data
+        form.elements.forEach((el: any) => {
+          if (el.type === 'checkbox') {
+            this.formData[el.id] = [];
+          } else {
+            this.formData[el.id] = '';
+          }
+        });
+        this.loading.set(false);
+      },
+      error: () => {
+        this.form.set(null);
+        this.loading.set(false);
+      }
+    });
   }
   
   toggleCheckbox(elementId: string, option: string, event: Event) {
@@ -406,23 +411,18 @@ export class FormFillComponent implements OnInit {
     }
     
     this.submitting.set(true);
+    const user = this.auth.user();
+    const userId = user?.id || 'anonymous';
     
-    // Simulate submission delay
-    setTimeout(() => {
-      // Save submission to localStorage
-      const submissions = this.storage.get<any[]>('formSubmissions') || [];
-      submissions.push({
-        id: crypto.randomUUID(),
-        formId: this.form()!.id,
-        formName: this.form()!.name,
-        data: { ...this.formData },
-        submittedAt: new Date()
-      });
-      this.storage.set('formSubmissions', submissions);
-      
-      this.submitting.set(false);
-      this.submitted.set(true);
-    }, 1000);
+    this.formService.submit(this.form()!.id, userId, { ...this.formData }).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.submitted.set(true);
+      },
+      error: () => {
+        this.submitting.set(false);
+      }
+    });
   }
   
   cancel() {

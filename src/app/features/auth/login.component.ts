@@ -44,12 +44,16 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="error">{{ error() }}</div>
           }
           
-          <button type="submit" class="btn btn-primary btn-full">
-            Sign In
+          <button type="submit" class="btn btn-primary btn-full" [disabled]="loading()">
+            @if (loading()) {
+              Signing in...
+            } @else {
+              Sign In
+            }
           </button>
         </form>
         
-        <p class="hint">Hint: Use any email and password (4+ chars)</p>
+        <p class="hint">Test: admin&#64;example.com / password123</p>
       </div>
     </div>
   `,
@@ -115,18 +119,27 @@ export class LoginComponent {
   email = '';
   password = '';
   error = signal('');
+  loading = signal(false);
   
   constructor(
     private auth: AuthService,
     private router: Router
   ) {}
   
-  onSubmit() {
+  async onSubmit() {
     this.error.set('');
-    if (this.auth.login(this.email, this.password)) {
-      this.router.navigate(['/dashboard']);
-    } else {
-      this.error.set('Invalid credentials');
+    this.loading.set(true);
+    try {
+      const success = await this.auth.login(this.email, this.password);
+      if (success) {
+        this.router.navigate(['/dashboard']);
+      } else {
+        this.error.set('Invalid credentials');
+      }
+    } catch {
+      this.error.set('Login failed. Please try again.');
+    } finally {
+      this.loading.set(false);
     }
   }
 }

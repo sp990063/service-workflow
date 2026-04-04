@@ -106,10 +106,37 @@ The Angular frontend uses **localStorage** for storing workflows and forms data,
 | Framework | Angular 19 (Standalone Components) |
 | Testing | Playwright |
 | Change Detection | Zone.js |
-| State Management | Angular Signals + localStorage |
+| State Management | Angular Signals + API Services |
+| HTTP Client | Angular HttpClient with JWT Bearer tokens |
 | Backend | NestJS + SQLite |
 | ORM | Prisma |
 | Test Accounts | admin@example.com, manager@example.com, employee@example.com |
+
+### API Services (New Architecture)
+
+| Service | Purpose |
+|---------|----------|
+| `ApiService` | Base HTTP service with JWT token management |
+| `AuthService` | Login/logout with JWT token storage |
+| `WorkflowService` | CRUD operations for workflows via API |
+| `FormService` | CRUD operations for forms via API |
+| `NotificationService` | Notification management via API |
+
+### Backend API Endpoints Used
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/auth/login` | POST | Authenticate user, returns JWT |
+| `/workflows` | GET | List all workflows |
+| `/workflows/:id` | GET | Get workflow details |
+| `/workflows/:id/start` | POST | Start workflow instance |
+| `/workflow-instances` | GET | List all instances |
+| `/workflow-instances/:id/advance` | POST | Advance workflow instance |
+| `/workflow-instances/:id/complete` | POST | Complete workflow instance |
+| `/forms` | GET | List all forms |
+| `/forms/:id` | GET | Get form details |
+| `/forms/:id/submit` | POST | Submit form data |
+| `/notifications` | GET | List user notifications |
 
 ---
 
@@ -122,19 +149,24 @@ service-workflow/
 │       ├── core/
 │       │   ├── models/
 │       │   └── services/
-│       │       ├── auth.service.ts     # Client-side auth
-│       │       └── storage.service.ts  # localStorage wrapper (serviceflow_ prefix)
+│       │       ├── api.service.ts         # Base HTTP + JWT handling
+│       │       ├── auth.service.ts        # Login/logout with JWT
+│       │       ├── workflow.service.ts    # Workflow API calls
+│       │       ├── form.service.ts        # Form API calls
+│       │       ├── notification.service.ts # Notification API calls
+│       │       └── storage.service.ts     # Generic localStorage (for token/user)
 │       └── features/
 │           ├── auth/
-│           │   └── login.component.ts   # Login UI
-│           ├── dashboard/
-│           ├── form-builder/
-│           ├── workflows/
-│           │   └── workflows-list.component.ts  # Workflows page
-│           └── ...
+│           │   └── login.component.ts    # Login UI (async login)
+│           ├── dashboard/                # Dashboard (uses FormService)
+│           ├── form-builder/             # Form builder (uses FormService)
+│           ├── form-fill/                # Form fill (uses FormService)
+│           ├── workflows/                # Workflows list (uses WorkflowService)
+│           ├── workflow-designer/         # Workflow designer (uses WorkflowService)
+│           └── workflow-player/           # Workflow player (uses WorkflowService)
 ├── backend/
 │   ├── src/
-│   │   ├── auth/
+│   │   ├── auth/              # JWT authentication
 │   │   ├── forms/
 │   │   ├── workflows/
 │   │   └── notifications/
@@ -143,8 +175,7 @@ service-workflow/
 │       └── seed.ts           # Seed data (SQLite)
 ├── tests/
 │   └── e2e/
-│       ├── scenarios.spec.ts  # Fixed: seeds localStorage before tests
-│       └── reports/           # Screenshots
+│       └── scenarios.spec.ts  # E2E tests with Playwright
 ├── playwright.config.ts
 └── TEST-REPORT.md
 ```

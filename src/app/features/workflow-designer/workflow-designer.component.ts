@@ -1,7 +1,7 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { StorageService } from '../../core/services/storage.service';
+import { WorkflowService } from '../../core/services/workflow.service';
 import { Workflow, WorkflowNode, WorkflowConnection } from '../../core/models';
 
 const NODE_TYPES = [
@@ -423,10 +423,12 @@ export class WorkflowDesignerComponent {
     return id ? this.nodes().find(n => n.id === id) || null : null;
   });
   
-  constructor(private storage: StorageService) {
+  constructor(private workflowService: WorkflowService) {
     // Load existing workflows for sub-workflow selection
-    const savedWorkflows = this.storage.get<Workflow[]>('workflows') || [];
-    this.workflows.set(savedWorkflows);
+    this.workflowService.getAll().subscribe({
+      next: (workflows) => this.workflows.set(workflows),
+      error: () => {}
+    });
   }
   
   getNodeColor(type: string): string {
@@ -580,17 +582,17 @@ export class WorkflowDesignerComponent {
   }
   
   saveWorkflow() {
-    const workflows = this.storage.get<Workflow[]>('workflows') || [];
-    const workflow: Workflow = {
-      id: crypto.randomUUID(),
+    this.workflowService.create({
       name: this.workflowName,
       nodes: this.nodes(),
-      connections: this.connections(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    workflows.push(workflow);
-    this.storage.set('workflows', workflows);
-    alert('Workflow saved!');
+      connections: this.connections()
+    }).subscribe({
+      next: () => {
+        alert('Workflow saved!');
+      },
+      error: () => {
+        alert('Failed to save workflow.');
+      }
+    });
   }
 }

@@ -1,7 +1,8 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { StorageService } from '../../core/services/storage.service';
+import { FormService } from '../../core/services/form.service';
+import { WorkflowService } from '../../core/services/workflow.service';
 import { Form, Workflow, DashboardStats } from '../../core/models';
 
 @Component({
@@ -65,7 +66,9 @@ import { Form, Workflow, DashboardStats } from '../../core/models';
       
       <div class="recent-section">
         <h2>Recent Forms</h2>
-        @if (recentForms().length === 0) {
+        @if (loading()) {
+          <p class="empty">Loading...</p>
+        } @else if (recentForms().length === 0) {
           <p class="empty">No forms yet. Create your first form!</p>
         } @else {
           <div class="list">
@@ -206,24 +209,35 @@ export class DashboardComponent implements OnInit {
   stats = signal<DashboardStats>({
     totalForms: 0,
     totalWorkflows: 0,
-    pendingApprovals: 3,
-    completedSubmissions: 12
+    pendingApprovals: 0,
+    completedSubmissions: 0
   });
   
   recentForms = signal<Form[]>([]);
+  loading = signal(true);
   
-  constructor(private storage: StorageService) {}
+  constructor(
+    private formService: FormService,
+    private workflowService: WorkflowService
+  ) {}
   
   ngOnInit() {
-    const forms = this.storage.get<Form[]>('forms') || [];
-    const workflows = this.storage.get<Workflow[]>('workflows') || [];
+    this.formService.getAll().subscribe({
+      next: (forms) => {
+        this.recentForms.set(forms.slice(0, 5));
+        this.stats.update(s => ({ ...s, totalForms: forms.length }));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      }
+    });
     
-    this.recentForms.set(forms.slice(0, 5));
-    this.stats.set({
-      totalForms: forms.length,
-      totalWorkflows: workflows.length,
-      pendingApprovals: 3,
-      completedSubmissions: 12
+    this.workflowService.getAll().subscribe({
+      next: (workflows) => {
+        this.stats.update(s => ({ ...s, totalWorkflows: workflows.length }));
+      },
+      error: () => {}
     });
   }
 }

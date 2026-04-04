@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { StorageService } from '../../core/services/storage.service';
+import { FormService } from '../../core/services/form.service';
 import { Form } from '../../core/models';
 
 @Component({
@@ -18,7 +18,11 @@ import { Form } from '../../core/models';
         <a routerLink="/form-builder" class="btn btn-primary">+ New Form</a>
       </header>
       
-      @if (forms().length === 0) {
+      @if (loading()) {
+        <div class="empty-state">
+          <p>Loading forms...</p>
+        </div>
+      } @else if (forms().length === 0) {
         <div class="empty-state">
           <p>No forms yet.</p>
           <a routerLink="/form-builder" class="btn btn-secondary">Create your first form</a>
@@ -29,7 +33,7 @@ import { Form } from '../../core/models';
             <div class="form-card">
               <div class="form-card-header">
                 <h3>{{ form.name }}</h3>
-                <span class="element-count">{{ form.elements.length }} elements</span>
+                <span class="element-count">{{ form.elements?.length || 0 }} elements</span>
               </div>
               <div class="form-card-meta">
                 <span>Created: {{ form.createdAt | date:'mediumDate' }}</span>
@@ -120,15 +124,24 @@ import { Form } from '../../core/models';
 })
 export class FormsListComponent implements OnInit {
   forms = signal<Form[]>([]);
+  loading = signal(true);
   
-  constructor(private storage: StorageService) {}
+  constructor(private formService: FormService) {}
   
   ngOnInit() {
     this.loadForms();
   }
   
   loadForms() {
-    const forms = this.storage.get<Form[]>('forms') || [];
-    this.forms.set(forms);
+    this.loading.set(true);
+    this.formService.getAll().subscribe({
+      next: (forms) => {
+        this.forms.set(forms);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      }
+    });
   }
 }

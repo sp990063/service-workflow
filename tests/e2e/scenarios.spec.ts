@@ -105,7 +105,7 @@ const SEEDED_NOTIFICATIONS = [
 async function seedStorage(page: any) {
   // Seed workflows into localStorage
   await page.goto(BASE_URL);
-  await page.evaluate((data) => {
+  await page.evaluate((data: any) => {
     const { workflows, forms, notifications } = data;
     localStorage.setItem('serviceflow_workflows', JSON.stringify(workflows));
     localStorage.setItem('serviceflow_forms', JSON.stringify(forms));

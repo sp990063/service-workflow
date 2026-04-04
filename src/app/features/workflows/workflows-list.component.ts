@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { StorageService } from '../../core/services/storage.service';
+import { WorkflowService } from '../../core/services/workflow.service';
 import { Workflow } from '../../core/models';
 
 @Component({
@@ -18,7 +18,11 @@ import { Workflow } from '../../core/models';
         <a routerLink="/workflow-designer" class="btn btn-primary">+ New Workflow</a>
       </header>
       
-      @if (workflows().length === 0) {
+      @if (loading()) {
+        <div class="empty-state">
+          <p>Loading workflows...</p>
+        </div>
+      } @else if (workflows().length === 0) {
         <div class="empty-state">
           <p>No workflows yet.</p>
           <a routerLink="/workflow-designer" class="btn btn-secondary">Create your first workflow</a>
@@ -29,7 +33,7 @@ import { Workflow } from '../../core/models';
             <div class="workflow-card">
               <div class="workflow-card-header">
                 <h3>{{ workflow.name }}</h3>
-                <span class="node-count">{{ workflow.nodes.length }} nodes</span>
+                <span class="node-count">{{ workflow.nodes?.length || 0 }} nodes</span>
               </div>
               <div class="workflow-card-meta">
                 <span>Created: {{ workflow.createdAt | date:'mediumDate' }}</span>
@@ -51,9 +55,9 @@ import { Workflow } from '../../core/models';
             @for (instance of instances(); track instance.id) {
               <div class="instance-card">
                 <div class="instance-info">
-                  <h4>{{ instance.workflowName }}</h4>
-                  <p>Current Step: {{ instance.currentNodeId ? getNodeLabel(instance.currentNodeId) : 'Not started' }}</p>
-                  <p>Status: <span class="status-badge" [class]="instance.status">{{ instance.status }}</span></p>
+                  <h4>{{ instance.workflowName || 'Workflow' }}</h4>
+                  <p>Current Step: {{ instance.currentNodeId || 'Not started' }}</p>
+                  <p>Status: <span class="status-badge" [class]="instance.status?.toLowerCase()">{{ instance.status }}</span></p>
                 </div>
                 <div class="instance-actions">
                   <a [routerLink]="['/workflow-player', instance.workflowId]" class="btn btn-sm btn-secondary">Continue</a>
@@ -184,31 +188,31 @@ import { Workflow } from '../../core/models';
 export class WorkflowsListComponent implements OnInit {
   workflows = signal<Workflow[]>([]);
   instances = signal<any[]>([]);
+  loading = signal(true);
   
-  constructor(private storage: StorageService) {}
+  constructor(private workflowService: WorkflowService) {}
   
   ngOnInit() {
     this.loadData();
   }
   
   loadData() {
-    const workflows = this.storage.get<Workflow[]>('workflows') || [];
-    this.workflows.set(workflows);
-    
-    const instances = this.storage.get<any[]>('workflowInstances') || [];
-    this.instances.set(instances);
-  }
-  
-  getNodeLabel(nodeId: string): string {
-    const instances = this.instances();
-    const workflows = this.workflows();
-    for (const inst of instances) {
-      const workflow = workflows.find(w => w.id === inst.workflowId);
-      if (workflow) {
-        const node = workflow.nodes.find((n: any) => n.id === nodeId);
-        if (node) return (node.data as any)['label'] || node.type;
+    this.loading.set(true);
+    this.workflowService.getAll().subscribe({
+      next: (workflows) => {
+        this.workflows.set(workflows);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
       }
-    }
-    return 'Unknown';
+    });
+    
+    this.workflowService.getAllInstances().subscribe({
+      next: (instances) => {
+        this.instances.set(instances);
+      },
+      error: () => {}
+    });
   }
 }

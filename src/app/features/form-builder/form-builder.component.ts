@@ -1,7 +1,7 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { StorageService } from '../../core/services/storage.service';
+import { FormService } from '../../core/services/form.service';
 import { Form, FormElement } from '../../core/models';
 
 const ELEMENT_TYPES = [
@@ -402,7 +402,7 @@ export class FormBuilderComponent {
     return el && ['dropdown', 'radio', 'checkbox', 'multiselect'].includes(el.type);
   });
   
-  constructor(private storage: StorageService) {}
+  constructor(private formService: FormService) {}
   
   onDragStart(event: DragEvent, type: string) {
     event.dataTransfer?.setData('elementType', type);
@@ -465,16 +465,16 @@ export class FormBuilderComponent {
   }
   
   saveForm() {
-    const forms = this.storage.get<Form[]>('forms') || [];
-    const form: Form = {
-      id: crypto.randomUUID(),
+    this.formService.create({
       name: this.formName,
-      elements: this.elements(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    forms.push(form);
-    this.storage.set('forms', forms);
-    alert('Form saved!');
+      elements: this.elements()
+    }).subscribe({
+      next: () => {
+        alert('Form saved!');
+      },
+      error: () => {
+        alert('Failed to save form.');
+      }
+    });
   }
 }

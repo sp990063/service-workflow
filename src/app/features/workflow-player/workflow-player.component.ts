@@ -2,7 +2,8 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { StorageService } from '../../core/services/storage.service';
+import { WorkflowService } from '../../core/services/workflow.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Workflow, WorkflowNode } from '../../core/models';
 
 interface WorkflowInstance {
@@ -464,7 +465,8 @@ export class WorkflowPlayerComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private storage: StorageService
+    private workflowService: WorkflowService,
+    private auth: AuthService
   ) {}
   
   ngOnInit() {
@@ -478,36 +480,43 @@ export class WorkflowPlayerComponent implements OnInit {
   }
   
   loadWorkflow(workflowId: string) {
-    const workflows = this.storage.get<Workflow[]>('workflows') || [];
-    const workflow = workflows.find(w => w.id === workflowId);
-    this.workflow.set(workflow || null);
-    this.loading.set(false);
+    this.workflowService.getById(workflowId).subscribe({
+      next: (workflow) => {
+        this.workflow.set(workflow);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.workflow.set(null);
+        this.loading.set(false);
+      }
+    });
   }
   
   loadOrCreateInstance(workflowId: string) {
-    const instances = this.storage.get<WorkflowInstance[]>('workflowInstances') || [];
-    let instance = instances.find(i => i.workflowId === workflowId && i.status !== 'completed');
-    
-    if (!instance) {
-      const workflow = this.workflow();
-      if (workflow) {
-        // Find start node - keep currentNodeId null initially to show Start Workflow button
-        const startNode = workflow.nodes.find(n => n.type === 'start');
-        instance = {
-          id: crypto.randomUUID(),
-          workflowId,
-          workflowName: workflow.name,
-          currentNodeId: null, // Start as null to show Start Workflow button
-          status: 'pending',
-          formData: {},
-          history: []
-        };
-        instances.push(instance);
-        this.storage.set('workflowInstances', instances);
+    this.workflowService.getAllInstances().subscribe({
+      next: (instances) => {
+        let instance = instances.find((i: any) => i.workflowId === workflowId && i.status !== 'completed');
+        if (!instance) {
+          const workflow = this.workflow();
+          if (workflow) {
+            const startNode = workflow.nodes?.find((n: any) => n.type === 'start');
+            instance = {
+              id: '',
+              workflowId,
+              workflowName: workflow.name,
+              currentNodeId: null,
+              status: 'pending' as const,
+              formData: {},
+              history: []
+            };
+          }
+        }
+        this.instance.set(instance || null);
+      },
+      error: () => {
+        this.instance.set(null);
       }
-    }
-    
-    this.instance.set(instance || null);
+    });
   }
   
   currentNode(): WorkflowNode | null {
@@ -674,7 +683,15 @@ export class WorkflowPlayerComponent implements OnInit {
     
     // Rejection ends workflow
     inst.status = 'completed';
-    this.updateInstance(inst);
+    
+    this.workflowService.completeInstance(inst.id).subscribe({
+      next: (updated) => {
+        this.instance.set({ ...updated });
+      },
+      error: () => {
+        this.instance.set({ ...inst });
+      }
+    });
   }
   
   proceedFromCondition() {
@@ -689,7 +706,8 @@ export class WorkflowPlayerComponent implements OnInit {
   startSubWorkflow() {
     const inst = this.instance();
     const currentNode = this.currentNode();
-    if (!inst || !currentNode || currentNode.type !== 'sub-workflow') return;
+    const user = this.auth.user();
+    if (!inst || !currentNode || currentNode.type !== 'sub-workflow' || !user) return;
     
     const childWorkflowId = currentNode.data['childWorkflowId'] as string;
     if (!childWorkflowId) {
@@ -697,59 +715,35 @@ export class WorkflowPlayerComponent implements OnInit {
       return;
     }
     
-    // Get the child workflow definition
-    const workflows = this.storage.get<any[]>('workflows') || [];
-    const childWorkflow = workflows.find((w: any) => w.id === childWorkflowId);
-    if (!childWorkflow) {
-      alert('Child workflow not found');
-      return;
-    }
-    
-    // Create child instance
-    const childInstances = this.storage.get<WorkflowInstance[]>('workflowInstances') || [];
-    const startNode = childWorkflow.nodes.find((n: any) => n.type === 'start');
-    
-    const childInstance: WorkflowInstance = {
-      id: crypto.randomUUID(),
-      workflowId: childWorkflowId,
-      workflowName: childWorkflow.name,
-      currentNodeId: startNode?.id || null,
-      status: 'in-progress',
-      formData: { ...inst.formData },  // Copy form data
-      history: startNode ? [{
-        nodeId: startNode.id,
-        action: `Started: ${startNode.data['label'] || startNode.type}`,
-        timestamp: new Date()
-      }] : [],
-      parentInstanceId: inst.id  // Link to parent
-    };
-    
-    childInstances.push(childInstance);
-    this.storage.set('workflowInstances', childInstances);
-    
-    // Update parent instance - now waiting for child
-    inst.childInstanceId = childInstance.id;
-    inst.status = 'waiting-for-child';
-    inst.history.push({
-      nodeId: currentNode.id,
-      action: `Started sub-workflow: ${childWorkflow.name}`,
-      timestamp: new Date()
+    this.workflowService.createChildInstance(inst.id, childWorkflowId, user.id, inst.formData).subscribe({
+      next: (childInstance) => {
+        inst.childInstanceId = childInstance.id;
+        inst.status = 'waiting-for-child';
+        inst.history.push({
+          nodeId: currentNode.id,
+          action: `Started sub-workflow: ${currentNode.data['label'] || 'Sub-workflow'}`,
+          timestamp: new Date()
+        });
+        this.instance.set({ ...inst });
+      },
+      error: () => {
+        alert('Failed to start sub-workflow');
+      }
     });
-    
-    this.updateInstance(inst);
   }
   
   checkSubWorkflowStatus() {
     const inst = this.instance();
     if (!inst?.childInstanceId) return;
     
-    const childInstances = this.storage.get<WorkflowInstance[]>('workflowInstances') || [];
-    const childInstance = childInstances.find(i => i.id === inst.childInstanceId);
-    
-    if (childInstance?.status === 'completed') {
-      // Child done - resume parent workflow
-      this.resumeFromSubWorkflow();
-    }
+    this.workflowService.getInstance(inst.childInstanceId).subscribe({
+      next: (childInstance: any) => {
+        if (childInstance?.status === 'completed') {
+          this.resumeFromSubWorkflow();
+        }
+      },
+      error: () => {}
+    });
   }
   
   getChildWorkflowName(): string {
@@ -759,9 +753,7 @@ export class WorkflowPlayerComponent implements OnInit {
     const childWorkflowId = currentNode.data['childWorkflowId'] as string;
     if (!childWorkflowId) return 'Not selected';
     
-    const workflows = this.storage.get<any[]>('workflows') || [];
-    const childWorkflow = workflows.find((w: any) => w.id === childWorkflowId);
-    return childWorkflow?.name || 'Unknown';
+    return 'Sub-workflow';
   }
   
   resumeFromSubWorkflow() {
@@ -812,12 +804,13 @@ export class WorkflowPlayerComponent implements OnInit {
   }
   
   updateInstance(updated: WorkflowInstance) {
-    const instances = this.storage.get<WorkflowInstance[]>('workflowInstances') || [];
-    const idx = instances.findIndex(i => i.id === updated.id);
-    if (idx >= 0) {
-      instances[idx] = updated;
-    }
-    this.storage.set('workflowInstances', instances);
-    this.instance.set({ ...updated });
+    this.workflowService.getInstance(updated.id).subscribe({
+      next: (inst: any) => {
+        this.instance.set({ ...inst, ...updated });
+      },
+      error: () => {
+        this.instance.set({ ...updated });
+      }
+    });
   }
 }
