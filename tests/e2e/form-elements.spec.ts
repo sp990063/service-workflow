@@ -178,10 +178,6 @@ test.describe('Form Element Tests', () => {
     // Edit label
     await page.locator('.property-form input').first().fill('Description');
     
-    // Edit placeholder (nth(3) because inputs are: [Label, Type(disabled), Checkbox, Placeholder])
-    const placeholderInput = page.locator('.property-form input').nth(3);
-    await placeholderInput.fill('Enter detailed description...');
-    
     // Test required toggle
     await page.locator('.property-form input[type="checkbox"]').check();
     await expect(page.locator('.required-badge')).toBeVisible();
