@@ -11,11 +11,12 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 67 (existing) + 26 (missing features) + 17 (core features) |
+| Total Tests | 67 (existing) + 26 (missing features) + 17 (core features) + 3 (form validation negative) |
 | Existing Tests Passed | ~39 ✅ |
 | Existing Tests Failed | ~16 ❌ |
 | Missing Features Tests | 26 (document unimplemented features) |
-| Core Feature Tests | 17 (NEW - implemented features) |
+| Core Feature Tests | 17 (implemented features) |
+| Form Validation Negative Tests | 3 (NEW - negative cases) |
 | Pass Rate (existing) | ~71% |
 
 **Status: MVP IN PROGRESS** - Core features implemented (Condition, Parallel, Date Range, Time, File Upload)
@@ -234,7 +235,8 @@ Based on SPEC-MVP.md and test results:
 | scenarios.spec.ts | 20 | End-to-end scenario tests |
 | subworkflow.spec.ts | 6 | Sub-workflow integration tests |
 | missing-features.spec.ts | 26 | Unimplemented features (documented) |
-| **core-features.spec.ts** | **17** | **Core features tests (NEW - implemented)** |
+| **core-features.spec.ts** | **17** | **Core features tests (implemented)** |
+| **form-validation-neg.spec.ts** | **3** | **Form validation negative cases (NEW)** |
 
 ---
 
