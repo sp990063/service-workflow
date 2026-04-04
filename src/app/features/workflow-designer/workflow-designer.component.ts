@@ -12,7 +12,10 @@ const NODE_TYPES = [
   { type: 'approval', label: 'Approval', icon: '✓', color: '#8b5cf6' },
   { type: 'parallel', label: 'Parallel', icon: '∥', color: '#06b6d4' },
   { type: 'join', label: 'Join', icon: '⊥', color: '#06b6d4' },
-  { type: 'sub-workflow', label: 'Sub-Workflow', icon: '⊂', color: '#ec4899' }
+  { type: 'sub-workflow', label: 'Sub-Workflow', icon: '⊂', color: '#ec4899' },
+  { type: 'script', label: 'Script', icon: '⚙', color: '#f97316' },
+  { type: 'setvalue', label: 'Set Value', icon: '✎', color: '#22c55e' },
+  { type: 'transform', label: 'Transform', icon: '⇄', color: '#a855f7' }
 ];
 
 @Component({
@@ -181,6 +184,66 @@ const NODE_TYPES = [
                     >
                     <span>Wait for completion</span>
                   </label>
+                </div>
+              }
+              @if (selectedNode()!.type === 'script') {
+                <div class="form-group">
+                  <label>Expression</label>
+                  <textarea 
+                    [ngModel]="selectedNode()!.data['expression']"
+                    (ngModelChange)="updateNodeData('expression', $event)"
+                    rows="4"
+                    placeholder="e.g., formData.amount > 1000 ? 'high' : 'low'"
+                  ></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Output Field</label>
+                  <input 
+                    type="text" 
+                    [ngModel]="selectedNode()!.data['outputField']"
+                    (ngModelChange)="updateNodeData('outputField', $event)"
+                    placeholder="e.g., _scriptResult"
+                  >
+                </div>
+              }
+              @if (selectedNode()!.type === 'setvalue') {
+                <div class="form-group">
+                  <label>Field Name</label>
+                  <input 
+                    type="text" 
+                    [ngModel]="selectedNode()!.data['field']"
+                    (ngModelChange)="updateNodeData('field', $event)"
+                    placeholder="e.g., status"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Value</label>
+                  <input 
+                    type="text" 
+                    [ngModel]="selectedNode()!.data['value']"
+                    (ngModelChange)="updateNodeData('value', $event)"
+                    placeholder="e.g., approved or currentUser.name"
+                  >
+                </div>
+              }
+              @if (selectedNode()!.type === 'transform') {
+                <div class="form-group">
+                  <label>Output Field</label>
+                  <input 
+                    type="text" 
+                    [ngModel]="selectedNode()!.data['outputField']"
+                    (ngModelChange)="updateNodeData('outputField', $event)"
+                    placeholder="e.g., fullName"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Expression</label>
+                  <textarea 
+                    [ngModel]="selectedNode()!.data['expression']"
+                    (ngModelChange)="updateNodeData('expression', $event)"
+                    rows="3"
+                    placeholder="e.g., firstName + ' ' + lastName"
+                  ></textarea>
                 </div>
               }
               <button class="btn btn-danger" (click)="deleteNode()">Delete Node</button>

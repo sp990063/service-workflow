@@ -217,6 +217,77 @@ interface ParallelApprovalState {
                     </div>
                   }
                   
+                  <!-- Script: Execute JavaScript expression -->
+                  @if (currentNode()!.type === 'script') {
+                    <div class="script-section">
+                      <h4>Script Execution</h4>
+                      <p>Execute a JavaScript expression to compute a value.</p>
+                      <div class="script-preview">
+                        <label>Expression:</label>
+                        <code>{{ currentNode()!.data['expression'] || 'No expression set' }}</code>
+                      </div>
+                      @if (currentNode()!.data['outputField']) {
+                        <div class="script-preview">
+                          <label>Output Field:</label>
+                          <code>{{ currentNode()!.data['outputField'] }}</code>
+                        </div>
+                      }
+                      @if (scriptResult()) {
+                        <div class="script-result">
+                          <label>Result:</label>
+                          <code>{{ scriptResult() }}</code>
+                        </div>
+                      }
+                      <button class="btn btn-primary" (click)="executeScript()">Execute Script</button>
+                    </div>
+                  }
+                  
+                  <!-- Set Value: Set form field values -->
+                  @if (currentNode()!.type === 'setvalue') {
+                    <div class="setvalue-section">
+                      <h4>Set Value</h4>
+                      <p>Set a form field to a specific value.</p>
+                      <div class="setvalue-preview">
+                        <label>Field:</label>
+                        <code>{{ currentNode()!.data['field'] || 'No field set' }}</code>
+                      </div>
+                      <div class="setvalue-preview">
+                        <label>Value:</label>
+                        <code>{{ currentNode()!.data['value'] || 'No value set' }}</code>
+                      </div>
+                      @if (lastSetValue()) {
+                        <div class="setvalue-result">
+                          <label>Set:</label>
+                          <code>{{ lastSetValue() }}</code>
+                        </div>
+                      }
+                      <button class="btn btn-primary" (click)="executeSetValue()">Set Value</button>
+                    </div>
+                  }
+                  
+                  <!-- Transform: Transform/concatenate values -->
+                  @if (currentNode()!.type === 'transform') {
+                    <div class="transform-section">
+                      <h4>Transform</h4>
+                      <p>Transform or concatenate values into a new field.</p>
+                      <div class="transform-preview">
+                        <label>Output Field:</label>
+                        <code>{{ currentNode()!.data['outputField'] || 'No output field set' }}</code>
+                      </div>
+                      <div class="transform-preview">
+                        <label>Expression:</label>
+                        <code>{{ currentNode()!.data['expression'] || 'No expression set' }}</code>
+                      </div>
+                      @if (transformResult()) {
+                        <div class="transform-result">
+                          <label>Result:</label>
+                          <code>{{ transformResult() }}</code>
+                        </div>
+                      }
+                      <button class="btn btn-primary" (click)="executeTransform()">Transform</button>
+                    </div>
+                  }
+                  
                   <!-- End node -->
                   @if (currentNode()!.type === 'end') {
                     <div class="end-section">
@@ -228,6 +299,9 @@ interface ParallelApprovalState {
                   <!-- Generic next button for simple nodes -->
                   @if (currentNode()!.type === 'start' || currentNode()!.type === 'join' || currentNode()!.type === 'task') {
                     <button class="btn btn-primary" (click)="advanceWorkflow()">Next Step</button>
+                  }
+                  @if (currentNode()!.type === 'script' || currentNode()!.type === 'setvalue' || currentNode()!.type === 'transform') {
+                    <button class="btn btn-secondary" (click)="advanceWorkflow()">Skip (auto-executes)</button>
                   }
                 </div>
               }
@@ -461,6 +535,51 @@ interface ParallelApprovalState {
       font-weight: 500;
       margin-bottom: 1rem;
     }
+    .script-section {
+      background: #fff7ed;
+      border: 1px solid #f97316;
+    }
+    .script-section h4 {
+      color: #c2410c;
+    }
+    .setvalue-section {
+      background: #f0fdf4;
+      border: 1px solid #22c55e;
+    }
+    .setvalue-section h4 {
+      color: #15803d;
+    }
+    .transform-section {
+      background: #faf5ff;
+      border: 1px solid #a855f7;
+    }
+    .transform-section h4 {
+      color: #7e22ce;
+    }
+    .script-preview, .setvalue-preview, .transform-preview {
+      margin-bottom: 0.75rem;
+    }
+    .script-preview label, .setvalue-preview label, .transform-preview label,
+    .script-result label, .setvalue-result label, .transform-result label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-bottom: 0.25rem;
+    }
+    .script-preview code, .setvalue-preview code, .transform-preview code,
+    .script-result code, .setvalue-result code, .transform-result code {
+      display: block;
+      background: var(--color-surface);
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+    }
+    .script-result, .setvalue-result, .transform-result {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: rgba(0,0,0,0.05);
+      border-radius: var(--radius-md);
+    }
     .waiting-message {
       padding: 1rem;
       background: #fef3c7;
@@ -515,6 +634,9 @@ export class WorkflowPlayerComponent implements OnInit {
   workflow = signal<Workflow | null>(null);
   instance = signal<WorkflowInstance | null>(null);
   loading = signal(true);
+  scriptResult = signal<string | null>(null);
+  lastSetValue = signal<string | null>(null);
+  transformResult = signal<string | null>(null);
   
   constructor(
     private route: ActivatedRoute,
@@ -589,7 +711,10 @@ export class WorkflowPlayerComponent implements OnInit {
       'approval': 'Approval',
       'parallel': 'Parallel Split',
       'join': 'Join',
-      'sub-workflow': 'Sub-Workflow'
+      'sub-workflow': 'Sub-Workflow',
+      'script': 'Script',
+      'setvalue': 'Set Value',
+      'transform': 'Transform'
     };
     return labels[type] || type;
   }
@@ -603,7 +728,10 @@ export class WorkflowPlayerComponent implements OnInit {
       'approval': '#8b5cf6',
       'parallel': '#06b6d4',
       'join': '#3b82f6',
-      'sub-workflow': '#ec4899'
+      'sub-workflow': '#ec4899',
+      'script': '#f97316',
+      'setvalue': '#22c55e',
+      'transform': '#a855f7'
     };
     return colors[type] || '#64748b';
   }
@@ -683,13 +811,28 @@ export class WorkflowPlayerComponent implements OnInit {
     const currentIdx = wf.nodes.findIndex(n => n.id === inst.currentNodeId);
     if (currentIdx < 0) return;
     
+    const currentNode = wf.nodes[currentIdx];
+    
+    // For script/setvalue/transform nodes, execute them before advancing
+    if (currentNode.type === 'script') {
+      this.executeScriptNoAdvance();
+      // executeScriptNoAdvance already calls advanceWorkflow again after updating instance
+      return;
+    }
+    if (currentNode.type === 'setvalue') {
+      this.executeSetValueNoAdvance();
+      return;
+    }
+    if (currentNode.type === 'transform') {
+      this.executeTransformNoAdvance();
+      return;
+    }
+    
     // If at last node, finish workflow
     if (currentIdx >= wf.nodes.length - 1) {
       this.finishWorkflow();
       return;
     }
-    
-    const currentNode = wf.nodes[currentIdx];
     
     // Add to history (skip if already there - happens when we already added via startWorkflow)
     const alreadyInHistory = inst.history.some(h => h.nodeId === currentNode.id);
@@ -1005,6 +1148,249 @@ export class WorkflowPlayerComponent implements OnInit {
     inst.status = 'completed';
     inst.currentNodeId = null;
     this.updateInstance(inst);
+  }
+  
+  executeScript() {
+    const inst = this.instance();
+    const currentNode = this.currentNode();
+    if (!inst || !currentNode || currentNode.type !== 'script') return;
+    
+    const expression = currentNode.data['expression'] as string;
+    const outputField = (currentNode.data['outputField'] as string) || '_scriptResult';
+    
+    if (!expression) {
+      this.scriptResult.set('Error: No expression defined');
+      return;
+    }
+    
+    try {
+      // Create a safe context with formData
+      const formData = inst.formData || {};
+      // Evaluate the expression
+      const result = new Function('formData', `with(formData) { return ${expression}; }`)(formData);
+      
+      // Store result in formData
+      inst.formData[outputField] = result;
+      this.scriptResult.set(String(result));
+      
+      inst.history.push({
+        nodeId: currentNode.id,
+        action: `Script executed: ${expression} → ${result}`,
+        timestamp: new Date()
+      });
+      
+      this.instance.set({ ...inst });
+      
+      // Auto-advance after execution
+      setTimeout(() => this.advanceWorkflow(), 500);
+    } catch (err: any) {
+      this.scriptResult.set(`Error: ${err.message}`);
+    }
+  }
+  
+  executeScriptNoAdvance() {
+    const inst = this.instance();
+    const currentNode = this.currentNode();
+    if (!inst || !currentNode || currentNode.type !== 'script') {
+      this.advanceWorkflow();
+      return;
+    }
+    
+    const expression = currentNode.data['expression'] as string;
+    const outputField = (currentNode.data['outputField'] as string) || '_scriptResult';
+    
+    if (!expression) {
+      this.scriptResult.set('Error: No expression defined');
+      this.advanceWorkflow();
+      return;
+    }
+    
+    try {
+      const formData = inst.formData || {};
+      const result = new Function('formData', `with(formData) { return ${expression}; }`)(formData);
+      inst.formData[outputField] = result;
+      this.scriptResult.set(String(result));
+      
+      inst.history.push({
+        nodeId: currentNode.id,
+        action: `Script executed: ${expression} → ${result}`,
+        timestamp: new Date()
+      });
+      
+      this.instance.set({ ...inst });
+      
+      // Auto-advance after execution
+      setTimeout(() => this.advanceWorkflow(), 500);
+    } catch (err: any) {
+      this.scriptResult.set(`Error: ${err.message}`);
+      setTimeout(() => this.advanceWorkflow(), 500);
+    }
+  }
+  
+  executeSetValue() {
+    const inst = this.instance();
+    const currentNode = this.currentNode();
+    if (!inst || !currentNode || currentNode.type !== 'setvalue') return;
+    
+    const field = currentNode.data['field'] as string;
+    let value = currentNode.data['value'] as string;
+    
+    if (!field) {
+      this.lastSetValue.set('Error: No field defined');
+      return;
+    }
+    
+    try {
+      // Check if value references formData (e.g., currentUser.name)
+      if (value && value.includes('.')) {
+        const parts = value.split('.');
+        let resolved = inst.formData;
+        for (const part of parts) {
+          resolved = resolved?.[part];
+        }
+        inst.formData[field] = resolved;
+        this.lastSetValue.set(`${field} = ${resolved}`);
+      } else {
+        // Direct value assignment
+        inst.formData[field] = value;
+        this.lastSetValue.set(`${field} = ${value}`);
+      }
+      
+      inst.history.push({
+        nodeId: currentNode.id,
+        action: `Set value: ${field} = ${value}`,
+        timestamp: new Date()
+      });
+      
+      this.instance.set({ ...inst });
+      
+      // Auto-advance after execution
+      setTimeout(() => this.advanceWorkflow(), 500);
+    } catch (err: any) {
+      this.lastSetValue.set(`Error: ${err.message}`);
+    }
+  }
+  
+  executeSetValueNoAdvance() {
+    const inst = this.instance();
+    const currentNode = this.currentNode();
+    if (!inst || !currentNode || currentNode.type !== 'setvalue') {
+      this.advanceWorkflow();
+      return;
+    }
+    
+    const field = currentNode.data['field'] as string;
+    let value = currentNode.data['value'] as string;
+    
+    if (!field) {
+      this.lastSetValue.set('Error: No field defined');
+      setTimeout(() => this.advanceWorkflow(), 500);
+      return;
+    }
+    
+    try {
+      if (value && value.includes('.')) {
+        const parts = value.split('.');
+        let resolved = inst.formData;
+        for (const part of parts) {
+          resolved = resolved?.[part];
+        }
+        inst.formData[field] = resolved;
+        this.lastSetValue.set(`${field} = ${resolved}`);
+      } else {
+        inst.formData[field] = value;
+        this.lastSetValue.set(`${field} = ${value}`);
+      }
+      
+      inst.history.push({
+        nodeId: currentNode.id,
+        action: `Set value: ${field} = ${value}`,
+        timestamp: new Date()
+      });
+      
+      this.instance.set({ ...inst });
+      
+      setTimeout(() => this.advanceWorkflow(), 500);
+    } catch (err: any) {
+      this.lastSetValue.set(`Error: ${err.message}`);
+      setTimeout(() => this.advanceWorkflow(), 500);
+    }
+  }
+  
+  executeTransform() {
+    const inst = this.instance();
+    const currentNode = this.currentNode();
+    if (!inst || !currentNode || currentNode.type !== 'transform') return;
+    
+    const expression = currentNode.data['expression'] as string;
+    const outputField = currentNode.data['outputField'] as string;
+    
+    if (!expression || !outputField) {
+      this.transformResult.set('Error: Missing expression or output field');
+      return;
+    }
+    
+    try {
+      // Create a safe context with formData
+      const formData = inst.formData || {};
+      // Evaluate the expression
+      const result = new Function('formData', `with(formData) { return ${expression}; }`)(formData);
+      
+      // Store result in formData
+      inst.formData[outputField] = result;
+      this.transformResult.set(String(result));
+      
+      inst.history.push({
+        nodeId: currentNode.id,
+        action: `Transformed: ${outputField} = ${result}`,
+        timestamp: new Date()
+      });
+      
+      this.instance.set({ ...inst });
+      
+      // Auto-advance after execution
+      setTimeout(() => this.advanceWorkflow(), 500);
+    } catch (err: any) {
+      this.transformResult.set(`Error: ${err.message}`);
+    }
+  }
+  
+  executeTransformNoAdvance() {
+    const inst = this.instance();
+    const currentNode = this.currentNode();
+    if (!inst || !currentNode || currentNode.type !== 'transform') {
+      this.advanceWorkflow();
+      return;
+    }
+    
+    const expression = currentNode.data['expression'] as string;
+    const outputField = currentNode.data['outputField'] as string;
+    
+    if (!expression || !outputField) {
+      this.transformResult.set('Error: Missing expression or output field');
+      setTimeout(() => this.advanceWorkflow(), 500);
+      return;
+    }
+    
+    try {
+      const formData = inst.formData || {};
+      const result = new Function('formData', `with(formData) { return ${expression}; }`)(formData);
+      inst.formData[outputField] = result;
+      this.transformResult.set(String(result));
+      
+      inst.history.push({
+        nodeId: currentNode.id,
+        action: `Transformed: ${outputField} = ${result}`,
+        timestamp: new Date()
+      });
+      
+      this.instance.set({ ...inst });
+      
+      setTimeout(() => this.advanceWorkflow(), 500);
+    } catch (err: any) {
+      this.transformResult.set(`Error: ${err.message}`);
+      setTimeout(() => this.advanceWorkflow(), 500);
+    }
   }
   
   updateInstance(updated: WorkflowInstance) {

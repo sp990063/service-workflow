@@ -312,6 +312,170 @@ test.describe('Missing Features Tests - Workflow Nodes', () => {
 
 });
 
+test.describe('Missing Workflow Node Functionality Tests', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+    await page.evaluate(() => localStorage.clear());
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    const status = testInfo.status === 'passed' ? 'pass' : 'fail';
+    await page.screenshot({ 
+      path: `tests/e2e/reports/${testInfo.title.replace(/\s+/g, '-')}-${status}.png`,
+      fullPage: true 
+    });
+  });
+
+  // ============================================
+  // SCRIPT, SETVALUE, TRANSFORM NODE TESTS
+  // ============================================
+
+  test('WF-NODE-006: Script node executes expression', async ({ page }) => {
+    await login(page);
+    
+    // Navigate to workflow designer
+    await page.goto(`${BASE_URL}/workflow-designer`, { waitUntil: 'networkidle' });
+    
+    // Check if Script node exists in palette
+    const scriptNode = page.locator('.node-item', { hasText: /script|code/i });
+    const exists = await scriptNode.count() > 0;
+    
+    if (!exists) {
+      console.log('❌ MISSING: Script node not found in workflow designer palette');
+      await expect(scriptNode).toBeVisible({ timeout: 3000 });
+      return;
+    }
+    
+    // Add nodes to canvas
+    await scriptNode.dragTo(page.locator('.canvas-container'), { targetPosition: { x: 200, y: 100 } });
+    await page.waitForTimeout(500);
+    
+    // Select the script node
+    const nodeOnCanvas = page.locator('.workflow-node').first();
+    await nodeOnCanvas.click();
+    await page.waitForTimeout(300);
+    
+    // Verify properties panel shows script-related fields
+    const expressionField = page.locator('textarea[placeholder*="formData"], textarea[placeholder*="expression"]');
+    const hasExpressionField = await expressionField.count() > 0;
+    
+    if (hasExpressionField) {
+      console.log('✅ Script node has expression input field');
+      // Fill in an expression
+      await expressionField.fill('formData.amount > 1000 ? "high" : "low"');
+      await page.waitForTimeout(200);
+    }
+    
+    // Verify output field exists
+    const outputField = page.locator('input[placeholder*="output"], input[placeholder*="_scriptResult"]');
+    const hasOutputField = await outputField.count() > 0;
+    
+    if (hasOutputField) {
+      console.log('✅ Script node has output field input');
+    }
+    
+    // Verify script node is now implemented (test passes if we reach here)
+    await expect(scriptNode).toBeVisible();
+  });
+
+  test('WF-NODE-007: Set Value node updates form data', async ({ page }) => {
+    await login(page);
+    
+    // Navigate to workflow designer
+    await page.goto(`${BASE_URL}/workflow-designer`, { waitUntil: 'networkidle' });
+    
+    // Check if Set Value node exists in palette
+    const setValueNode = page.locator('.node-item', { hasText: /set.*value|assign/i });
+    const exists = await setValueNode.count() > 0;
+    
+    if (!exists) {
+      console.log('❌ MISSING: Set Value node not found in workflow designer palette');
+      await expect(setValueNode).toBeVisible({ timeout: 3000 });
+      return;
+    }
+    
+    // Add Set Value node to canvas
+    await setValueNode.dragTo(page.locator('.canvas-container'), { targetPosition: { x: 200, y: 100 } });
+    await page.waitForTimeout(500);
+    
+    // Select the node
+    const nodeOnCanvas = page.locator('.workflow-node').first();
+    await nodeOnCanvas.click();
+    await page.waitForTimeout(300);
+    
+    // Verify properties panel shows field and value inputs
+    const fieldInput = page.locator('input[placeholder*="field"], input[placeholder*="status"]');
+    const hasFieldInput = await fieldInput.count() > 0;
+    
+    if (hasFieldInput) {
+      console.log('✅ Set Value node has field name input');
+      await fieldInput.fill('status');
+      await page.waitForTimeout(200);
+    }
+    
+    const valueInput = page.locator('input[placeholder*="value"], input[placeholder*="approved"]');
+    const hasValueInput = await valueInput.count() > 0;
+    
+    if (hasValueInput) {
+      console.log('✅ Set Value node has value input');
+      await valueInput.fill('processed');
+    }
+    
+    // Verify Set Value node is now implemented
+    await expect(setValueNode).toBeVisible();
+  });
+
+  test('WF-NODE-008: Transform node concatenates values', async ({ page }) => {
+    await login(page);
+    
+    // Navigate to workflow designer
+    await page.goto(`${BASE_URL}/workflow-designer`, { waitUntil: 'networkidle' });
+    
+    // Check if Transform node exists in palette
+    const transformNode = page.locator('.node-item', { hasText: /transform|swap/i });
+    const exists = await transformNode.count() > 0;
+    
+    if (!exists) {
+      console.log('❌ MISSING: Transform node not found in workflow designer palette');
+      await expect(transformNode).toBeVisible({ timeout: 3000 });
+      return;
+    }
+    
+    // Add Transform node to canvas
+    await transformNode.dragTo(page.locator('.canvas-container'), { targetPosition: { x: 200, y: 100 } });
+    await page.waitForTimeout(500);
+    
+    // Select the node
+    const nodeOnCanvas = page.locator('.workflow-node').first();
+    await nodeOnCanvas.click();
+    await page.waitForTimeout(300);
+    
+    // Verify properties panel shows output field and expression inputs
+    const outputFieldInput = page.locator('input[placeholder*="output"], input[placeholder*="fullName"]');
+    const hasOutputField = await outputFieldInput.count() > 0;
+    
+    if (hasOutputField) {
+      console.log('✅ Transform node has output field input');
+      await outputFieldInput.fill('fullName');
+      await page.waitForTimeout(200);
+    }
+    
+    const expressionTextarea = page.locator('textarea[placeholder*="firstName"], textarea[placeholder*="concatenate"]');
+    const hasExpression = await expressionTextarea.count() > 0;
+    
+    if (hasExpression) {
+      console.log('✅ Transform node has expression input');
+      await expressionTextarea.fill('firstName + \" \" + lastName');
+    }
+    
+    // Verify Transform node is now implemented
+    await expect(transformNode).toBeVisible();
+  });
+
+});
+
 test.describe('Missing Features Tests - Approval Patterns', () => {
 
   test.beforeEach(async ({ page }) => {

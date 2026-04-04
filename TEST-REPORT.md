@@ -114,12 +114,12 @@
 | 1-10 | Text, Email, Number, Date, Dropdown, Radio, Checkbox, Textarea, User Picker, Department Picker | ✅ Implemented |
 | 11-23 | Date Range, Time, File Upload, Image Upload, Signature, Multi-Select, Yes/No, Rich Text, Table/Grid, Calculated Field, Address, URL, Phone | ✅ Implemented |
 
-### Workflow Nodes (9/12 - 75% Coverage)
+### Workflow Nodes (12/12 - 100% Coverage) ✅
 
 | # | Node | Status |
 |---|------|--------|
 | 1-9 | Start, End, Task, Approval, Form, Sub-workflow, Condition, Parallel Split, Join | ✅ Implemented |
-| 10-12 | Script, Set Value, Transform | ❌ Not in palette |
+| 10-12 | Script, Set Value, Transform | ✅ Implemented (2026-04-04) |
 
 ### Approval Patterns (4/4 - 100%)
 
@@ -185,6 +185,7 @@
 - User Picker, Department Picker elements
 - Database validation (DbHelper)
 - Negative test cases for validation
+- **Script, Set Value, and Transform workflow nodes (2026-04-04)**
 
 ---
 
@@ -197,7 +198,7 @@
 | complex-scenarios.spec.ts | 31 | Complex business scenarios (includes 6 SDLC tests) |
 | form-elements.spec.ts | 15 | Form element tests |
 | core-features.spec.ts | 20 | Feature-specific tests |
-| missing-features.spec.ts | 30 | Unimplemented features |
+| missing-features.spec.ts | 33 | Unimplemented features (3 new workflow node tests added) |
 | form-validation-neg.spec.ts | 3 | Negative validation tests |
 | **workflow-instance-detail.spec.ts** | **10** | **Workflow Instance Status View tests (NEW - 2026-04-04)** |
 
