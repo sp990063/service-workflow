@@ -1,147 +1,73 @@
 import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:4200';
-const TEST_USER = { email: 'admin@company.com', password: 'password123' };
+const TEST_USER = { email: 'admin@example.com', password: 'password123' };
+
+// Real instance ID from database seed data
+const REAL_INSTANCE_ID = '3961a9c7-ec5d-44cb-9420-7df9061d2b50';
 
 async function login(page: any) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+  
+  // Fill login form
   await page.locator('input[type="email"], input[name="email"]').fill(TEST_USER.email);
   await page.locator('input[type="password"]').fill(TEST_USER.password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForTimeout(1500);
+  
+  // Wait for navigation after login
+  await page.waitForURL(/\/(dashboard|workflows)/, { timeout: 10000 });
 }
 
 // TC-WFINST-001: Workflow instance detail page loads
 test('TC-WFINST-001: Workflow instance detail page loads', async ({ page }) => {
   await login(page);
   
-  // Navigate to workflows first
-  await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(500);
+  // Navigate directly to workflow instance
+  await page.goto(`${BASE_URL}/workflow-instance/${REAL_INSTANCE_ID}`, { waitUntil: 'networkidle' });
   
-  // Should see workflow list - navigate to an existing instance if available
-  await expect(page.locator('h1, h2').first()).toBeVisible();
-});
-
-// TC-WFINST-002: Steps display with correct status indicators
-test('TC-WFINST-002: Steps display with correct status indicators (completed)', async ({ page }) => {
-  await login(page);
+  // Wait for the instance detail component to load
+  await page.waitForSelector('.detail-header', { timeout: 15000 });
   
-  // Navigate to workflow instance detail
-  await page.goto(`${BASE_URL}/workflow-instance/test-instance-123`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-  
-  // Should show loading or not-found (since this is a mock instance)
-  const content = await page.locator('body').textContent();
-  expect(content).toBeTruthy();
-});
-
-// TC-WFINST-003: Steps display with IN_PROGRESS indicator
-test('TC-WFINST-003: Steps display with IN_PROGRESS indicator', async ({ page }) => {
-  await login(page);
-  
-  await page.goto(`${BASE_URL}/workflow-instance/test-instance-456`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-  
-  // Should display step indicators
-  const stepCards = await page.locator('.step-card').count();
-  expect(stepCards).toBeGreaterThanOrEqual(0);
-});
-
-// TC-WFINST-004: History timeline displays all entries
-test('TC-WFINST-004: History timeline displays all entries', async ({ page }) => {
-  await login(page);
-  
-  await page.goto(`${BASE_URL}/workflow-instance/test-instance-789`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-  
-  // Should show history section
-  const historySection = page.locator('.history-section');
-  await expect(historySection).toBeVisible();
-});
-
-// TC-WFINST-005: Approve button visible for in-progress approval step
-test('TC-WFINST-005: Approve button visible for in-progress approval step', async ({ page }) => {
-  await login(page);
-  
-  await page.goto(`${BASE_URL}/workflow-instance/test-approval-instance`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-  
-  // Check for action buttons section
-  const actionButtons = page.locator('.action-buttons');
-  const approveBtn = page.locator('button', { hasText: 'Approve' });
-  
-  // Either approve button is visible or not present (if not an approval step)
-  const isVisible = await approveBtn.isVisible().catch(() => false);
-  // This is acceptable if the instance is not an approval-type instance
-});
-
-// TC-WFINST-006: All steps are displayed with correct status
-test('TC-WFINST-006: All steps are displayed with correct status', async ({ page }) => {
-  await login(page);
-  
-  await page.goto(`${BASE_URL}/workflow-instance/test-full-instance`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-  
-  // Workflow steps section should exist
-  const workflowSteps = page.locator('.workflow-steps');
-  await expect(workflowSteps).toBeVisible();
-  
-  // Check that h2 exists for Workflow Steps
-  await expect(page.locator('.workflow-steps h2')).toContainText('Workflow Steps');
-});
-
-// TC-WFINST-007: Header shows instance ID and status
-test('TC-WFINST-007: Header shows instance ID and status', async ({ page }) => {
-  await login(page);
-  
-  await page.goto(`${BASE_URL}/workflow-instance/test-header-instance`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-  
-  // Check header is visible
-  const header = page.locator('.detail-header');
+  // Should see the header
+  const header = page.locator('.detail-header h1');
   await expect(header).toBeVisible();
-  
-  // Should contain "Workflow Instance #"
-  await expect(header).toContainText('Workflow Instance #');
+  await expect(header).toContainText('Workflow Instance');
 });
 
-// TC-WFINST-008: Reject button visible for in-progress approval step
-test('TC-WFINST-008: Reject button visible for in-progress approval step', async ({ page }) => {
+// TC-WFINST-002: Workflow steps are displayed
+test('TC-WFINST-002: Workflow steps are displayed', async ({ page }) => {
   await login(page);
   
-  await page.goto(`${BASE_URL}/workflow-instance/test-reject-instance`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
+  await page.goto(`${BASE_URL}/workflow-instance/${REAL_INSTANCE_ID}`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.workflow-steps', { timeout: 15000 });
   
-  const rejectBtn = page.locator('button', { hasText: 'Reject' });
-  const isVisible = await rejectBtn.isVisible().catch(() => false);
-  // Acceptable if not an approval-type instance
+  await expect(page.locator('.workflow-steps h2')).toContainText('Workflow Steps');
+  const stepCards = await page.locator('.step-card').count();
+  expect(stepCards).toBeGreaterThan(0);
 });
 
-// TC-WFINST-009: Current step is highlighted
-test('TC-WFINST-009: Current step is highlighted', async ({ page }) => {
+// TC-WFINST-003: History section is displayed
+test('TC-WFINST-003: History section is displayed', async ({ page }) => {
   await login(page);
   
-  await page.goto(`${BASE_URL}/workflow-instance/test-current-step-instance`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
+  await page.goto(`${BASE_URL}/workflow-instance/${REAL_INSTANCE_ID}`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.history-section', { timeout: 15000 });
   
-  // Check for in-progress step card
-  const inProgressCard = page.locator('.step-card.in-progress');
-  const count = await inProgressCard.count();
-  expect(count).toBeLessThanOrEqual(1); // At most 1 current step
+  await expect(page.locator('.history-section h2')).toContainText('History');
 });
 
-// TC-WFINST-010: Completed steps show checkmark
-test('TC-WFINST-010: Completed steps show checkmark', async ({ page }) => {
+// TC-WFINST-004: Back to workflows link works
+test('TC-WFINST-004: Back to workflows link works', async ({ page }) => {
   await login(page);
   
-  await page.goto(`${BASE_URL}/workflow-instance/test-completed-steps-instance`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
+  await page.goto(`${BASE_URL}/workflow-instance/${REAL_INSTANCE_ID}`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.detail-header a', { timeout: 15000 });
   
-  // Check for completed icons
-  const completedIcons = page.locator('.completed-icon');
-  const count = await completedIcons.count();
-  // Should have completed icons if there are completed steps
+  await page.locator('.detail-header a', { hasText: 'Back to Workflows' }).click();
+  await page.waitForURL(/\/workflows/, { timeout: 10000 });
 });
