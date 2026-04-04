@@ -41,14 +41,14 @@ const testRows = tests.map((t, i) => {
   const status = t.ok ? '✅ PASS' : '❌ FAIL';
   const duration = ((t.duration || 0) / 1000).toFixed(1);
   const screenshotName = `${t.title.replace(/\s+/g, '-')}-pass.png`;
-  const screenshotPath = join(__dirname, 'screenshots', screenshotName);
+  const screenshotPath = join(__dirname, 'tests/e2e/reports', screenshotName);
   
   // Check if screenshot exists
   let screenshotLink = '-';
   try {
-    readdirSync('screenshots').forEach(f => {
-      if (f.includes(t.title.replace(/\s+/g, '-').substring(0, 20))) {
-        screenshotLink = `screenshots/${f}`;
+    readdirSync('tests/e2e/reports').forEach(f => {
+      if (f.includes(t.title.replace(/\s+/g, '-').substring(0, 30))) {
+        screenshotLink = `tests/e2e/reports/${f}`;
       }
     });
   } catch (e) {}
@@ -65,10 +65,10 @@ const testDetails = tests.map((t, i) => {
   // Find screenshot
   let screenshot = '';
   try {
-    const files = readdirSync('screenshots');
+    const files = readdirSync('tests/e2e/reports');
     for (const f of files) {
-      if (f.includes(t.title.replace(/\s+/g, '-').substring(0, 20).toLowerCase())) {
-        screenshot = `screenshots/${f}`;
+      if (f.includes(t.title.replace(/\s+/g, '-').substring(0, 30).toLowerCase())) {
+        screenshot = `tests/e2e/reports/${f}`;
         break;
       }
     }

@@ -5,8 +5,16 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Enable seed script
+toolchain {
+  previewFeatures = ["prismaSchemaFolder]
+}
+
+// Run seed: npx prisma db seed
+// Or: npm run db:seed
+
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -15,7 +23,7 @@ model User {
   email         String    @unique
   password      String
   name          String
-  role          Role      @default(USER)
+  role          String    @default("USER")
   department    String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -26,17 +34,13 @@ model User {
   notifications    Notification[]
 }
 
-enum Role {
-  ADMIN
-  MANAGER
-  USER
-}
+// SQLite doesn't support enum, use String instead
 
 model Form {
   id          String   @id @default(uuid())
   name        String
   description String?
-  elements    Json     // FormElement[]
+  elements    String   // JSON string for FormElement[]
   version     Int      @default(1)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -46,29 +50,23 @@ model Form {
 }
 
 model FormSubmission {
-  id        String           @id @default(uuid())
+  id        String   @id @default(uuid())
   formId    String
-  form      Form             @relation(fields: [formId], references: [id])
+  form      Form     @relation(fields: [formId], references: [id])
   userId    String
-  user      User             @relation(fields: [userId], references: [id])
-  data      Json             // Submitted form data
-  status    SubmissionStatus @default(PENDING)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-}
-
-enum SubmissionStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  user      User     @relation(fields: [userId], references: [id])
+  data      String   // JSON string for submitted form data
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Workflow {
   id          String   @id @default(uuid())
   name        String
   description String?
-  nodes       Json     // WorkflowNode[]
-  connections Json     // WorkflowConnection[]
+  nodes       String   // JSON string for WorkflowNode[]
+  connections String   // JSON string for WorkflowConnection[]
   version     Int      @default(1)
   isActive    Boolean  @default(true)
   category    String?
@@ -79,66 +77,44 @@ model Workflow {
 }
 
 model WorkflowInstance {
-  id               String         @id @default(uuid())
+  id               String   @id @default(uuid())
   workflowId       String
-  workflow         Workflow       @relation(fields: [workflowId], references: [id])
+  workflow         Workflow @relation(fields: [workflowId], references: [id])
   userId           String
-  user             User           @relation(fields: [userId], references: [id])
+  user             User     @relation(fields: [userId], references: [id])
   currentNodeId    String?
-  status           InstanceStatus @default(PENDING)
-  formData         Json           @default("{}")
-  history          Json           @default("[]")
-  childInstanceId  String?        // For sub-workflow
-  parentInstanceId String?        // For sub-workflow
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  status           String   @default("PENDING")
+  formData         String   @default("{}")
+  history          String   @default("[]")
+  childInstanceId  String?
+  parentInstanceId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   approvalRequests ApprovalRequest[]
 }
 
-enum InstanceStatus {
-  PENDING
-  IN_PROGRESS
-  WAITING_FOR_CHILD
-  COMPLETED
-  CANCELLED
-}
-
 model ApprovalRequest {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   instanceId  String
   instance    WorkflowInstance @relation(fields: [instanceId], references: [id])
   nodeId      String
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  decision    Decision?
+  user        User     @relation(fields: [userId], references: [id])
+  decision    String?
   comment     String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-enum Decision {
-  APPROVED
-  REJECTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Notification {
-  id        String           @id @default(uuid())
+  id        String   @id @default(uuid())
   userId    String
-  user      User             @relation(fields: [userId], references: [id])
-  type      NotificationType
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
   title     String
   message   String
-  data      Json?
-  isRead    Boolean          @default(false)
-  createdAt DateTime         @default(now())
-}
-
-enum NotificationType {
-  WORKFLOW_STARTED
-  WORKFLOW_COMPLETED
-  APPROVAL_REQUIRED
-  APPROVAL_GRANTED
-  APPROVAL_REJECTED
-  FORM_SUBMITTED
+  data      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

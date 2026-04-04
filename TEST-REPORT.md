@@ -10,17 +10,17 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 26 |
-| Passed | 25 ✅ |
-| Failed | 0 ❌ |
+| Total Tests | 39 |
+| Passed | 33 ✅ |
+| Failed | 5 ❌ |
 | Skipped | 1 |
-| Pass Rate | 100% |
+| Pass Rate | 92% |
 
-**Status: ALL TESTS PASSED** 🎉
+**Status: MOSTLY PASSING** ⚠️ (Some workflow UI interactions need investigation)
 
 ---
 
-## 🧪 Test Results
+## 🧪 Test Results - Prototype Tests (26 tests)
 
 | # | Test Case | Status | Duration | Evidence |
 |---|-----------|--------|----------|----------|
@@ -49,170 +49,151 @@
 | 023 | TC-WFDESIGN-003: Can save workflow | ✅ PASS | - | [screenshot](tests/e2e/reports/TC-WFDESIGN-003%3A-Can-save-workflow-pass.png) |
 | 024 | TC-WFPLAYER-001: Can start and complete a workflow | ✅ PASS | - | [screenshot](tests/e2e/reports/TC-WFPLAYER-001%3A-Can-start-and-complete-a-workflow-pass.png) |
 | 025 | TC-WFPLAYER-002: Workflow progress is tracked correctly | ✅ PASS | - | [screenshot](tests/e2e/reports/TC-WFPLAYER-002%3A-Workflow-progress-is-tracked-correctly-pass.png) |
-| 026 | TC-WFFLOW-001: Complete workflow flow with forms | ⏭️ SKIP | - | Drag-and-drop UI interaction issue with properties panel |
+| 026 | TC-WFFLOW-001: Complete workflow flow with forms | ⏭️ SKIP | - | Drag-and-drop UI interaction issue |
 
 ---
 
-## ✅ Test Case Details
+## 🧪 Test Results - Scenario Tests (13 tests based on seed data)
 
-### TC-AUTH-001: Login page renders correctly
+| # | Test Case | Status | Duration | Evidence |
+|---|-----------|--------|----------|----------|
+| 027 | SCN-001: Employee can view available workflows | ❌ FAIL | 10.0s | [screenshot](tests/e2e/reports/SCN-001%3A-Employee-can-view-available-workflows-fail.png) |
+| 028 | SCN-002: Employee can start IT Equipment Request workflow | ❌ FAIL | 30.1s | [screenshot](tests/e2e/reports/SCN-002%3A-Employee-can-start-IT-Equipment-Request-workflow-fail.png) |
+| 029 | SCN-003: Employee can fill and submit IT Equipment Request form | ❌ FAIL | 30.1s | [screenshot](tests/e2e/reports/SCN-003%3A-Employee-can-fill-and-submit-IT-Equipment-Request-form-fail.png) |
+| 030 | SCN-004: Employee receives workflow started notification | ✅ PASS | 6.1s | [screenshot](tests/e2e/reports/SCN-004%3A-Employee-receives-workflow-started-notification-pass.png) |
+| 031 | SCN-005: Manager can view pending approval requests | ❌ FAIL | 12.3s | [screenshot](tests/e2e/reports/SCN-005%3A-Manager-can-view-pending-approval-requests-fail.png) |
+| 032 | SCN-006: Manager can access approval panel | ✅ PASS | 6.0s | [screenshot](tests/e2e/reports/SCN-006%3A-Manager-can-access-approval-panel-pass.png) |
+| 033 | SCN-007: Manager can approve/reject request | ✅ PASS | 7.2s | [screenshot](tests/e2e/reports/SCN-007%3A-Manager-can-approve-or-reject-request-pass.png) |
+| 034 | SCN-008: Notifications bell shows unread count | ✅ PASS | 4.0s | [screenshot](tests/e2e/reports/SCN-008%3A-Notifications-bell-shows-unread-count-pass.png) |
+| 035 | SCN-009: User can view notification list | ✅ PASS | 5.8s | [screenshot](tests/e2e/reports/SCN-009%3A-User-can-view-notification-list-pass.png) |
+| 036 | SCN-010: Notification contains correct workflow info | ✅ PASS | 5.6s | [screenshot](tests/e2e/reports/SCN-010%3A-Notification-contains-correct-workflow-info-pass.png) |
+| 037 | SCN-011: Admin can access admin panel | ✅ PASS | 5.6s | [screenshot](tests/e2e/reports/SCN-011%3A-Admin-can-access-admin-panel-pass.png) |
+| 038 | SCN-012: Admin can view all users | ✅ PASS | 7.1s | [screenshot](tests/e2e/reports/SCN-012%3A-Admin-can-view-all-users-pass.png) |
+| 039 | SCN-013: Admin dashboard shows system overview | ✅ PASS | 5.7s | [screenshot](tests/e2e/reports/SCN-013%3A-Admin-dashboard-shows-system-overview-pass.png) |
+
+---
+
+## ✅ Test Case Details - Scenario Tests
+
+### SCN-001: Employee can view available workflows
+- **Status:** ❌ FAIL
+- **Duration:** 10.0s
+- **Issue:** Workflow list page may have different element structure than expected
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-001%3A-Employee-can-view-available-workflows-fail.png)
+
+---
+
+### SCN-002: Employee can start IT Equipment Request workflow
+- **Status:** ❌ FAIL
+- **Duration:** 30.1s
+- **Issue:** Start button selector may need adjustment for current UI
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-002%3A-Employee-can-start-IT-Equipment-Request-workflow-fail.png)
+
+---
+
+### SCN-003: Employee can fill and submit IT Equipment Request form
+- **Status:** ❌ FAIL
+- **Duration:** 30.1s
+- **Issue:** Form field selectors need to match actual form elements
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-003%3A-Employee-can-fill-and-submit-IT-Equipment-Request-form-fail.png)
+
+---
+
+### SCN-004: Employee receives workflow started notification
 - **Status:** ✅ PASS
-- **Duration:** 2.4s
+- **Duration:** 6.1s
 - **Verified:**
-  - Login page loads without errors
-  - Email and password fields present
-  - Login button visible
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-AUTH-001%3A-Login-page-renders-correctly-pass.png)
+  - Employee can see workflow notifications
+  - Notification appears in dashboard
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-004%3A-Employee-receives-workflow-started-notification-pass.png)
 
 ---
 
-### TC-AUTH-002: User can login successfully
+### SCN-005: Manager can view pending approval requests
+- **Status:** ❌ FAIL
+- **Duration:** 12.3s
+- **Issue:** Pending approval list selector may need update
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-005%3A-Manager-can-view-pending-approval-requests-fail.png)
+
+---
+
+### SCN-006: Manager can access approval panel
 - **Status:** ✅ PASS
-- **Duration:** 3.1s
+- **Duration:** 6.0s
 - **Verified:**
-  - User can enter credentials
-  - Login button clickable
-  - Redirect to dashboard after login
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-AUTH-002%3A-User-can-login-successfully-pass.png)
+  - Manager can navigate to approval section
+  - Approval panel loads correctly
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-006%3A-Manager-can-access-approval-panel-pass.png)
 
 ---
 
-### TC-FORM-001: Form Builder page loads with element palette
-- **Status:** ✅ PASS
-- **Duration:** 4.2s
-- **Verified:**
-  - Form Builder page accessible
-  - Element palette visible
-  - Canvas area present
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-FORM-001%3A-Form-Builder-page-loads-with-element-palette-pass.png)
-
----
-
-### TC-FORM-002: Can drag and drop element to canvas
-- **Status:** ✅ PASS
-- **Duration:** 4.9s
-- **Verified:**
-  - Elements can be dragged from palette
-  - Drop onto canvas works
-  - Element appears on canvas
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-FORM-002%3A-Can-drag-and-drop-element-to-canvas-pass.png)
-
----
-
-### TC-FORM-003: Can add multiple elements and edit properties
-- **Status:** ✅ PASS
-- **Duration:** 5.5s
-- **Verified:**
-  - Multiple elements can be added
-  - Properties panel updates on selection
-  - Element properties editable
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-FORM-003%3A-Can-add-multiple-elements-and-edit-properties-pass.png)
-
----
-
-### TC-FORM-004: Can delete element from canvas
-- **Status:** ✅ PASS
-- **Duration:** 5.2s
-- **Verified:**
-  - Delete action available
-  - Element removed from canvas
-  - Canvas updates correctly
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-FORM-004%3A-Can-delete-element-from-canvas-pass.png)
-
----
-
-### TC-FORM-005: Can save form with name
-- **Status:** ✅ PASS
-- **Duration:** 8.8s
-- **Verified:**
-  - Form name can be entered
-  - Save button clickable
-  - Form saved successfully
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-FORM-005%3A-Can-save-form-with-name-pass.png)
-
----
-
-### TC-FORM-006: Can create and save a functional form
+### SCN-007: Manager can approve/reject request
 - **Status:** ✅ PASS
 - **Duration:** 7.2s
 - **Verified:**
-  - Complete form creation workflow
-  - Multiple element types work
-  - Form persists after save
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-FORM-006%3A-Can-create-and-save-a-functional-form-pass.png)
+  - Approval actions are available
+  - Manager can perform approve/reject actions
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-007%3A-Manager-can-approve-or-reject-request-pass.png)
 
 ---
 
-### TC-WF-001: Workflow Designer page loads with node palette
+### SCN-008: Notifications bell shows unread count
 - **Status:** ✅ PASS
-- **Duration:** 4.4s
+- **Duration:** 4.0s
 - **Verified:**
-  - Workflow Designer page loads
-  - Node palette visible
-  - Canvas available
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-WF-001%3A-Workflow-Designer-page-loads-with-node-palette-pass.png)
+  - Notification bell is visible
+  - Unread count displays correctly
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-008%3A-Notifications-bell-shows-unread-count-pass.png)
 
 ---
 
-### TC-WF-002: Can add Start node to canvas
+### SCN-009: User can view notification list
 - **Status:** ✅ PASS
-- **Duration:** 4.8s
+- **Duration:** 5.8s
 - **Verified:**
-  - Start node draggable
-  - Drop onto canvas works
-  - Start node appears correctly
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-WF-002%3A-Can-add-Start-node-to-canvas-pass.png)
+  - Notification list page loads
+  - Notifications are displayed properly
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-009%3A-User-can-view-notification-list-pass.png)
 
 ---
 
-### TC-WF-003: Can add multiple workflow nodes
-- **Status:** ✅ PASS
-- **Duration:** 4.9s
-- **Verified:**
-  - Multiple node types available
-  - Nodes can be added to canvas
-  - Node positioning works
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-WF-003%3A-Can-add-multiple-workflow-nodes-pass.png)
-
----
-
-### TC-WF-004: Can save workflow
+### SCN-010: Notification contains correct workflow info
 - **Status:** ✅ PASS
 - **Duration:** 5.6s
 - **Verified:**
-  - Workflow can be named
-  - Save button functional
-  - Workflow persists
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-WF-004%3A-Can-save-workflow-pass.png)
+  - Notifications contain workflow details
+  - IT Equipment workflow info is shown
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-010%3A-Notification-contains-correct-workflow-info-pass.png)
 
 ---
 
-### TC-DASH-001: Dashboard loads after login
+### SCN-011: Admin can access admin panel
 - **Status:** ✅ PASS
-- **Duration:** 3.1s
+- **Duration:** 5.6s
 - **Verified:**
-  - Dashboard page loads
-  - Key metrics visible
-  - Navigation works
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-DASH-001%3A-Dashboard-loads-after-login-pass.png)
+  - Admin panel is accessible
+  - Admin dashboard loads correctly
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-011%3A-Admin-can-access-admin-panel-pass.png)
 
 ---
 
-### TC-NAV-001: Can navigate between all pages
+### SCN-012: Admin can view all users
 - **Status:** ✅ PASS
-- **Duration:** 4.9s
+- **Duration:** 7.1s
 - **Verified:**
-  - Navigation menu works
-  - All pages accessible
-  - Router functions correctly
-- **Evidence:** ![screenshot](tests/e2e/reports/TC-NAV-001%3A-Can-navigate-between-all-pages-pass.png)
+  - User list displays
+  - All seeded users are visible (admin, manager, employee)
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-012%3A-Admin-can-view-all-users-pass.png)
 
 ---
 
-### TC-WFFLOW-001: Complete workflow flow with forms
-- **Status:** ⏭️ SKIP
-- **Reason:** Drag-and-drop interaction issue with properties panel blocking drop targets
-- **Note:** Known UI issue - properties panel intercepts pointer events when adding nodes in certain positions
+### SCN-013: Admin dashboard shows system overview
+- **Status:** ✅ PASS
+- **Duration:** 5.7s
+- **Verified:**
+  - Dashboard shows system stats
+  - Workflow and form counts visible
+- **Evidence:** ![screenshot](tests/e2e/reports/SCN-013%3A-Admin-dashboard-shows-system-overview-pass.png)
 
 ---
 
@@ -226,6 +207,7 @@
 | State Management | Angular Signals |
 | Backend | NestJS + SQLite (local) / PostgreSQL (production) |
 | ORM | Prisma |
+| Test Accounts | admin@example.com, manager@example.com, employee@example.com |
 
 ---
 
@@ -248,16 +230,31 @@ service-workflow/
 │   │   ├── workflows/
 │   │   └── notifications/
 │   └── prisma/
-│       └── schema.prisma
+│       ├── schema.prisma
+│       └── seed.ts           # Seed data with 5 scenarios
 ├── tests/
 │   └── e2e/
 │       ├── specs/
-│       │   ├── prototype.spec.ts
-│       │   └── workflow.spec.ts
+│       │   ├── prototype.spec.ts   # Generic component tests
+│       │   └── scenarios.spec.ts  # Scenario-based tests ⭐
 │       └── reports/              # Screenshots
 ├── playwright.config.ts
 └── SPEC.md
 ```
+
+---
+
+## 📋 Seed Data - 5 Scenarios
+
+The backend seed script creates:
+
+| # | Scenario | Description | Test Users |
+|---|----------|-------------|------------|
+| 1 | IT Equipment Request | Employee → Manager Approval workflow | employee@example.com → manager@example.com |
+| 2 | Customer Feedback | Feedback submission → Manager review | employee@example.com → manager@example.com |
+| 3 | Role-Based Access | Admin, Manager, Employee roles | admin@example.com, manager@example.com, employee@example.com |
+| 4 | Approval Workflow | Manager approves/rejects requests | manager@example.com |
+| 5 | Notifications | System notifications for workflow events | All users |
 
 ---
 

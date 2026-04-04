@@ -7,15 +7,19 @@ export class NotificationsService {
 
   async create(userId: string, type: string, title: string, message: string, data?: any) {
     return this.prisma.notification.create({
-      data: { userId, type: type as any, title, message, data },
+      data: { userId, type, title, message, data: data ? JSON.stringify(data) : null },
     });
   }
 
   async getForUser(userId: string) {
-    return this.prisma.notification.findMany({
+    const notifications = await this.prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
+    return notifications.map(n => ({
+      ...n,
+      data: n.data ? JSON.parse(n.data as string) : null,
+    }));
   }
 
   async markAsRead(id: string) {
