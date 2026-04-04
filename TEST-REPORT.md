@@ -199,6 +199,45 @@
 | core-features.spec.ts | 20 | Feature-specific tests |
 | missing-features.spec.ts | 30 | Unimplemented features |
 | form-validation-neg.spec.ts | 3 | Negative validation tests |
+| **workflow-instance-detail.spec.ts** | **10** | **Workflow Instance Status View tests (NEW - 2026-04-04)** |
+
+---
+
+## 🆕 Workflow Instance Status View (NEW - 2026-04-04)
+
+**Component:** `workflow-instance-detail.component.ts`  
+**Route:** `/workflow-instance/:id`  
+**Purpose:** Display detailed workflow instance status with step-by-step progress
+
+### Features Implemented:
+- ✅ Header showing instance ID and status
+- ✅ Workflow Steps timeline with status indicators (✓ COMPLETED, ⟳ IN_PROGRESS, ⏳ PENDING)
+- ✅ History timeline with timestamps and actions
+- ✅ Action buttons (Approve, Reject, Request Info) for approval steps
+- ✅ Computed properties for steps and current step
+
+### Component Details:
+```
+/src/app/features/workflow-instance-detail/
+└── workflow-instance-detail.component.ts (14KB)
+```
+
+### API Enhancements:
+- `WorkflowService.getStepStatus()` - Helper method to determine step status from history
+
+### Test Cases (10):
+| Test ID | Description |
+|---------|-------------|
+| TC-WFINST-001 | Workflow instance detail page loads |
+| TC-WFINST-002 | Steps display with correct status indicators (completed) |
+| TC-WFINST-003 | Steps display with IN_PROGRESS indicator |
+| TC-WFINST-004 | History timeline displays all entries |
+| TC-WFINST-005 | Approve button visible for in-progress approval step |
+| TC-WFINST-006 | All steps are displayed with correct status |
+| TC-WFINST-007 | Header shows instance ID and status |
+| TC-WFINST-008 | Reject button visible for in-progress approval step |
+| TC-WFINST-009 | Current step is highlighted |
+| TC-WFINST-010 | Completed steps show checkmark |
 
 ---
 

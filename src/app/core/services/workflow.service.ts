@@ -58,4 +58,30 @@ export class WorkflowService {
   getChildInstances(id: string): Observable<any[]> {
     return this.api.get<any[]>(`/workflow-instances/${id}/children`);
   }
+
+  /**
+   * Get step status from workflow instance history
+   * Returns: COMPLETED, IN_PROGRESS, or PENDING
+   */
+  getStepStatus(instance: any, workflow: any, nodeId: string): 'COMPLETED' | 'IN_PROGRESS' | 'PENDING' {
+    // If current node, it's IN_PROGRESS
+    if (instance.currentNodeId === nodeId) {
+      return 'IN_PROGRESS';
+    }
+
+    // If in history, it's COMPLETED
+    if (instance.history.some((h: any) => h.nodeId === nodeId)) {
+      return 'COMPLETED';
+    }
+
+    // For nodes before current (based on order)
+    const currentIdx = workflow.nodes.findIndex((n: any) => n.id === instance.currentNodeId);
+    const nodeIdx = workflow.nodes.findIndex((n: any) => n.id === nodeId);
+
+    if (nodeIdx < currentIdx && currentIdx >= 0) {
+      return 'COMPLETED';
+    }
+
+    return 'PENDING';
+  }
 }

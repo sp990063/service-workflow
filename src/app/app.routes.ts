@@ -41,5 +41,10 @@ export const routes: Routes = [
     path: 'workflow-player/:id',
     loadComponent: () => import('./features/workflow-player/workflow-player.component').then(m => m.WorkflowPlayerComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'workflow-instance/:id',
+    loadComponent: () => import('./features/workflow-instance-detail/workflow-instance-detail.component').then(m => m.WorkflowInstanceDetailComponent),
+    canActivate: [authGuard]
   }
 ];
