@@ -11,12 +11,68 @@
 | Metric | Value |
 |--------|-------|
 | Total Scenario Tests | 20 |
-| Passed | 20 ✅ |
+| Total Form Element Tests | 15 |
+| Passed (Scenarios) | 20 ✅ |
+| Passed (Form Elements) | 15 ✅ |
 | Failed | 0 ❌ |
-| Skipped | 0 |
 | Pass Rate | 100% |
 
 **Status: ALL PASSING** ✅
+
+---
+
+## 🧪 Test Results - Form Element Tests (15 tests)
+
+| # | Test Case | Status | Duration | Evidence |
+|---|-----------|--------|----------|----------|
+| 001 | TC-FORM-ELEM-001: Text element renders correctly | ✅ PASS | 5.6s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-001-Text-element-renders-correctly-pass.png) |
+| 002 | TC-FORM-ELEM-002: Email element renders correctly | ✅ PASS | 2.8s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-002-Email-element-renders-correctly-pass.png) |
+| 003 | TC-FORM-ELEM-003: Dropdown element renders correctly | ✅ PASS | 3.1s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-003-Dropdown-element-renders-correctly-pass.png) |
+| 004 | TC-FORM-ELEM-004: Textarea element renders correctly | ✅ PASS | 2.2s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-004-Textarea-element-renders-correctly-pass.png) |
+| 005 | TC-FORM-ELEM-005: Checkbox element renders correctly | ✅ PASS | 2.5s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-005-Checkbox-element-renders-correctly-pass.png) |
+| 006 | TC-FORM-ELEM-006: Radio element renders correctly | ✅ PASS | 2.4s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-006-Radio-element-renders-correctly-pass.png) |
+| 007 | TC-FORM-ELEM-007: Date element renders correctly | ✅ PASS | 2.6s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-007-Date-element-renders-correctly-pass.png) |
+| 008 | TC-FORM-ELEM-008: Number element renders correctly | ✅ PASS | 2.4s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-008-Number-element-renders-correctly-pass.png) |
+| 009 | **TC-FORM-ELEM-009: User Picker element renders correctly for assignee selection** | ✅ PASS | 3.4s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-009-User-Picker-element-renders-correctly-for-assignee-selection-pass.png) |
+| 010 | **TC-FORM-ELEM-010: Department Picker element renders correctly** | ✅ PASS | 1.8s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-010-Department-Picker-element-renders-correctly-pass.png) |
+| 011 | TC-FORM-ELEM-011: Multiple elements can coexist on canvas | ✅ PASS | 3.2s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-011-Multiple-elements-can-coexist-on-canvas-pass.png) |
+| 012 | TC-FORM-ELEM-012: Clear form removes all elements | ✅ PASS | 1.9s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-012-Clear-form-removes-all-elements-pass.png) |
+| 013 | TC-FORM-ELEM-013: Form name can be edited | ✅ PASS | 1.5s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-013-Form-name-can-be-edited-pass.png) |
+| 014 | **TC-FORM-ELEM-014: Role-based elements can coexist with standard form elements** | ✅ PASS | 4.1s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-014-Role-based-elements-can-coexist-with-standard-form-elements-pass.png) |
+| 015 | **TC-FORM-ELEM-015: Role-based element labels can be configured for workflow context** | ✅ PASS | 3.8s | [screenshot](tests/e2e/reports/TC-FORM-ELEM-015-Role-based-element-labels-can-be-configured-for-workflow-context-pass.png) |
+
+---
+
+## 🔰 Role-Based Form Element Tests (NEW)
+
+### User Picker (Assignee Selector) - TC-FORM-ELEM-009
+- Tests the **User Picker** element that maps to workflow assignee/approver selection
+- Verifies element appears in form builder palette (👤 icon)
+- Verifies element can be dragged to canvas
+- Verifies element shows `userpicker` type on canvas
+- Verifies properties panel allows editing label (e.g., "Assign To", "Assigned Approver")
+- Verifies required toggle works
+- Verifies element can be deleted
+
+### Department Picker - TC-FORM-ELEM-010
+- Tests the **Department Picker** element for department-based workflow routing
+- Verifies element appears in form builder palette (🏢 icon)
+- Verifies element can be dragged to canvas
+- Verifies element shows `deptpicker` type on canvas
+- Verifies properties panel allows editing label
+- Verifies required toggle works
+- Verifies element can be deleted
+
+### Role-Based Element Coexistence - TC-FORM-ELEM-014
+- Tests that role-based elements (User Picker, Department Picker) can coexist with standard form elements
+- Verifies all 5 element types render correctly on canvas
+- Verifies selection/deselection works properly
+
+### Role-Based Element Labels for Workflow Context - TC-FORM-ELEM-015
+- Tests that role-based element labels can be configured for workflow-specific purposes
+- Verifies User Picker can be labeled as "Assigned Approver" (maps to workflow approverRole)
+- Verifies Department Picker can be labeled as "Requester Department"
+- These labels help map form fields to workflow node assignments
 
 ---
 
