@@ -16,6 +16,14 @@ interface WorkflowInstance {
   history: Array<{ nodeId: string; action: string; timestamp: Date }>;
   childInstanceId?: string;  // Child workflow instance if waiting
   parentInstanceId?: string; // Parent instance if this is a child
+  parallelApprovals?: ParallelApprovalState; // Track parallel approvals
+}
+
+interface ParallelApprovalState {
+  parallelNodeId: string;
+  requiredApprovers: string[];
+  approvals: string[]; // List of approvers who have approved
+  status: 'pending' | 'all-approved' | 'rejected';
 }
 
 @Component({
@@ -150,18 +158,39 @@ interface WorkflowInstance {
                     <div class="condition-section">
                       <h4>Condition Check</h4>
                       <p>Field: <strong>{{ currentNode()!.data['field'] || 'N/A' }}</strong></p>
+                      <p>Operator: <strong>{{ currentNode()!.data['operator'] || 'equals' }}</strong></p>
                       <p>Value: <strong>{{ currentNode()!.data['value'] || 'N/A' }}</strong></p>
+                      @if (instance()?.formData[currentNode()!.data['field']]) {
+                        <p class="form-value">Current Value: <code>{{ instance()?.formData[currentNode()!.data['field']] }}</code></p>
+                      }
                       <p class="condition-note">Based on the form data, the workflow will proceed to the appropriate path.</p>
-                      <button class="btn btn-primary" (click)="proceedFromCondition()">Proceed</button>
+                      <button class="btn btn-primary" (click)="proceedFromCondition()">Evaluate Condition</button>
                     </div>
                   }
                   
                   <!-- Parallel: Multiple tasks -->
                   @if (currentNode()!.type === 'parallel') {
                     <div class="parallel-section">
-                      <h4>Parallel Tasks</h4>
-                      <p>Multiple tasks are running concurrently. Complete all to proceed.</p>
-                      <button class="btn btn-primary" (click)="completeParallel()">Complete All</button>
+                      <h4>Parallel Approval</h4>
+                      <p>All approvers must approve for the workflow to continue (AND logic).</p>
+                      @if (currentNode()!.data['approvers']) {
+                        <p>Required Approvers: {{ currentNode()!.data['approvers'] }}</p>
+                      }
+                      @if (instance()?.parallelApprovals?.approvals?.length) {
+                        <p class="approval-progress">Approvals: {{ instance()?.parallelApprovals?.approvals?.length }} / {{ instance()?.parallelApprovals?.requiredApprovers?.length || '?' }}</p>
+                      }
+                      <div class="parallel-actions">
+                        <button class="btn btn-success" (click)="completeParallel()">✓ Approve (You)</button>
+                      </div>
+                    </div>
+                  }
+                  
+                  <!-- Join: Synchronize parallel paths -->
+                  @if (currentNode()!.type === 'join') {
+                    <div class="join-section">
+                      <h4>Join - Synchronizing</h4>
+                      <p>All parallel paths have completed. Workflow is proceeding.</p>
+                      <button class="btn btn-primary" (click)="advanceWorkflow()">Continue</button>
                     </div>
                   }
                   
@@ -389,15 +418,40 @@ interface WorkflowInstance {
     }
     
     /* Task Form */
-    .task-form, .approval-section, .parallel-section, .condition-section, .end-section, .sub-workflow-section {
+    .task-form, .approval-section, .parallel-section, .condition-section, .end-section, .sub-workflow-section, .join-section {
       background: var(--color-background);
       border-radius: var(--radius-lg);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
     }
-    .task-form h4, .approval-section h4, .parallel-section h4, .condition-section h4, .end-section h4, .sub-workflow-section h4 {
+    .task-form h4, .approval-section h4, .parallel-section h4, .condition-section h4, .end-section h4, .sub-workflow-section h4, .join-section h4 {
       font-size: 1rem;
       margin-bottom: 0.75rem;
+    }
+    .parallel-section {
+      background: #ecfdf5;
+      border: 1px solid #10b981;
+    }
+    .condition-section {
+      background: #fffbeb;
+      border: 1px solid #f59e0b;
+    }
+    .join-section {
+      background: #eff6ff;
+      border: 1px solid #3b82f6;
+    }
+    .approval-progress, .form-value {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-top: 0.5rem;
+    }
+    .form-value code {
+      background: var(--color-surface);
+      padding: 0.125rem 0.5rem;
+      border-radius: var(--radius-sm);
+    }
+    .parallel-actions {
+      margin-top: 1rem;
     }
     .sub-workflow-section {
       background: #fdf4ff;
@@ -533,8 +587,9 @@ export class WorkflowPlayerComponent implements OnInit {
       'task': 'Task',
       'condition': 'Condition',
       'approval': 'Approval',
-      'parallel': 'Parallel',
-      'join': 'Join'
+      'parallel': 'Parallel Split',
+      'join': 'Join',
+      'sub-workflow': 'Sub-Workflow'
     };
     return labels[type] || type;
   }
@@ -547,7 +602,8 @@ export class WorkflowPlayerComponent implements OnInit {
       'condition': '#f59e0b',
       'approval': '#8b5cf6',
       'parallel': '#06b6d4',
-      'join': '#06b6d4'
+      'join': '#3b82f6',
+      'sub-workflow': '#ec4899'
     };
     return colors[type] || '#64748b';
   }
@@ -661,9 +717,17 @@ export class WorkflowPlayerComponent implements OnInit {
     if (!inst) return;
     
     const currentNode = this.currentNode();
+    const currentUser = this.auth.user();
+    
+    // If in parallel mode, use parallel completion logic
+    if (currentNode?.type === 'parallel') {
+      this.completeParallel();
+      return;
+    }
+    
     inst.history.push({
       nodeId: currentNode?.id || '',
-      action: 'Approved',
+      action: `Approved by ${currentUser?.name || 'User'}`,
       timestamp: new Date()
     });
     
@@ -695,12 +759,142 @@ export class WorkflowPlayerComponent implements OnInit {
   }
   
   proceedFromCondition() {
-    // For demo, just advance
-    this.advanceWorkflow();
+    const inst = this.instance();
+    const wf = this.workflow();
+    const currentNode = this.currentNode();
+    
+    if (!inst || !wf || !currentNode || currentNode.type !== 'condition') {
+      this.advanceWorkflow();
+      return;
+    }
+    
+    // Get condition criteria from node data
+    const field = currentNode.data['field'] as string;
+    const value = currentNode.data['value'] as string;
+    const operator = currentNode.data['operator'] as string || 'equals';
+    
+    // Get form field value
+    const formValue = inst.formData[field];
+    
+    // Evaluate condition
+    let conditionMet = false;
+    
+    if (formValue === undefined || formValue === null) {
+      conditionMet = false;
+    } else if (operator === 'equals') {
+      conditionMet = String(formValue).toLowerCase() === String(value).toLowerCase();
+    } else if (operator === 'not_equals') {
+      conditionMet = String(formValue).toLowerCase() !== String(value).toLowerCase();
+    } else if (operator === 'greater_than') {
+      conditionMet = Number(formValue) > Number(value);
+    } else if (operator === 'less_than') {
+      conditionMet = Number(formValue) < Number(value);
+    } else if (operator === 'contains') {
+      conditionMet = String(formValue).toLowerCase().includes(String(value).toLowerCase());
+    }
+    
+    // Add to history
+    inst.history.push({
+      nodeId: currentNode.id,
+      action: `Condition evaluated: ${field} ${operator} ${value} → ${conditionMet ? 'TRUE' : 'FALSE'}`,
+      timestamp: new Date()
+    });
+    
+    // Find the next node based on condition result
+    // Look for connections from this condition node
+    const trueBranchId = currentNode.data['trueBranch'] as string;
+    const falseBranchId = currentNode.data['falseBranch'] as string;
+    
+    if (conditionMet && trueBranchId) {
+      inst.currentNodeId = trueBranchId;
+    } else if (!conditionMet && falseBranchId) {
+      inst.currentNodeId = falseBranchId;
+    } else {
+      // Fallback: just advance to next node in sequence
+      this.advanceWorkflow();
+      return;
+    }
+    
+    if (inst.currentNodeId) {
+      const nextNode = wf.nodes.find(n => n.id === inst.currentNodeId);
+      if (nextNode?.type === 'end') {
+        inst.status = 'completed';
+      }
+    }
+    
+    this.updateInstance(inst);
   }
   
   completeParallel() {
-    this.advanceWorkflow();
+    const inst = this.instance();
+    const wf = this.workflow();
+    const currentNode = this.currentNode();
+    
+    if (!inst || !wf || !currentNode || currentNode.type !== 'parallel') {
+      this.advanceWorkflow();
+      return;
+    }
+    
+    // Get parallel approvers from node data
+    const approvers = (currentNode.data['approvers'] as string[]) || [];
+    const currentUser = this.auth.user();
+    
+    // Initialize or update parallel approval state
+    if (!inst.parallelApprovals || inst.parallelApprovals.parallelNodeId !== currentNode.id) {
+      inst.parallelApprovals = {
+        parallelNodeId: currentNode.id,
+        requiredApprovers: approvers,
+        approvals: [],
+        status: 'pending'
+      };
+    }
+    
+    // Add current user's approval
+    if (currentUser && !inst.parallelApprovals.approvals.includes(currentUser.id)) {
+      inst.parallelApprovals.approvals.push(currentUser.id);
+    }
+    
+    // Check if ALL required approvers have approved (AND logic)
+    const allApproved = inst.parallelApprovals.requiredApprovers.length === 0 ||
+      inst.parallelApprovals.requiredApprovers.every(approver => 
+        inst.parallelApprovals!.approvals.includes(approver)
+      );
+    
+    inst.history.push({
+      nodeId: currentNode.id,
+      action: `Parallel task approved: ${inst.parallelApprovals.approvals.length}/${inst.parallelApprovals.requiredApprovers.length || '?'} approvers`,
+      timestamp: new Date()
+    });
+    
+    if (allApproved) {
+      inst.parallelApprovals.status = 'all-approved';
+      
+      // Find the join node after this parallel section
+      // In a proper implementation, we'd look at connections
+      // For now, find the join node by looking for nodes after parallel
+      const currentIdx = wf.nodes.findIndex(n => n.id === currentNode.id);
+      const joinNode = wf.nodes.find((n, idx) => idx > currentIdx && n.type === 'join');
+      
+      if (joinNode) {
+        inst.currentNodeId = joinNode.id;
+        // Clear parallel state
+        inst.parallelApprovals = undefined;
+      } else {
+        // No join node, just advance
+        inst.parallelApprovals = undefined;
+        this.advanceWorkflow();
+        return;
+      }
+      
+      if (joinNode?.type === 'end') {
+        inst.status = 'completed';
+      }
+      
+      this.updateInstance(inst);
+    } else {
+      // Still waiting for more approvals
+      this.instance.set({ ...inst });
+    }
   }
   
   startSubWorkflow() {

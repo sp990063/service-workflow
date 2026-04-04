@@ -112,6 +112,50 @@ const ELEMENT_TYPES = [
                       @case ('date') {
                         <input type="date" disabled>
                       }
+                      @case ('daterange') {
+                        <div class="daterange-preview">
+                          <input type="date" disabled> - <input type="date" disabled>
+                        </div>
+                      }
+                      @case ('time') {
+                        <input type="time" disabled>
+                      }
+                      @case ('file') {
+                        <div class="file-preview">📎 Choose file...</div>
+                      }
+                      @case ('image') {
+                        <div class="file-preview">🖼 Choose image...</div>
+                      }
+                      @case ('signature') {
+                        <div class="signature-preview">✍ Sign here</div>
+                      }
+                      @case ('yesno') {
+                        <div class="toggle-preview">○ Yes  ○ No</div>
+                      }
+                      @case ('multiselect') {
+                        <div class="multiselect-preview">☐ Option 1 ☐ Option 2 ☐ Option 3</div>
+                      }
+                      @case ('richtext') {
+                        <div class="richtext-preview">Rich text editor...</div>
+                      }
+                      @case ('userpicker') {
+                        <div class="userpicker-preview">👤 Select user...</div>
+                      }
+                      @case ('deptpicker') {
+                        <div class="deptpicker-preview">🏢 Select department...</div>
+                      }
+                      @case ('table') {
+                        <div class="table-preview">⊞ Table/Grid</div>
+                      }
+                      @case ('calculated') {
+                        <div class="calculated-preview">∑ Calculated value</div>
+                      }
+                      @case ('address') {
+                        <div class="address-preview">📍 Address fields</div>
+                      }
+                      @case ('url') {
+                        <input type="url" disabled placeholder="https://example.com">
+                      }
                       @case ('dropdown') {
                         <select disabled><option>Select option...</option></select>
                       }
@@ -331,9 +375,15 @@ const ELEMENT_TYPES = [
       pointer-events: none;
       opacity: 0.7;
     }
-    .radio-preview, .checkbox-preview, .toggle-preview {
+    .radio-preview, .checkbox-preview, .toggle-preview, .daterange-preview, 
+    .file-preview, .signature-preview, .userpicker-preview, .deptpicker-preview, 
+    .table-preview, .calculated-preview, .address-preview, .multiselect-preview, .richtext-preview {
       color: var(--color-text-muted);
       font-size: 0.875rem;
+      padding: 0.5rem;
+      background: var(--color-background);
+      border-radius: var(--radius-sm);
+      display: inline-block;
     }
     .delete-btn {
       position: absolute;
