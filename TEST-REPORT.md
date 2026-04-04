@@ -47,6 +47,86 @@
 
 ---
 
+## 🗄️ Database Validation (E2E Backend Verification)
+
+### Overview
+E2E tests now include **backend database validation** using `DbHelper` - a helper class that connects directly to the SQLite database (`backend/prisma/dev.db`) to verify that UI operations correctly create/update records.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `tests/e2e/db.helper.ts` | Database helper class for E2E tests |
+
+### DbHelper Features
+
+The `DbHelper` class provides read-only queries against the SQLite database:
+
+| Method | What it checks |
+|--------|----------------|
+| `getUserByEmail(email)` | Verify user exists after login |
+| `getWorkflowInstance(filter)` | Verify workflow instance created after starting workflow |
+| `getFormSubmission(filter)` | Verify form submission record after form submit |
+| `getApprovalRequest(filter)` | Verify approval request with decision after manager approves |
+| `getNotifications(filter)` | Verify notification records exist |
+| `countWorkflowInstances(userId, status)` | Count workflow instances for a user |
+| `countNotifications(userId, isRead)` | Count notifications for a user |
+| `getActiveWorkflows()` | Verify workflows exist in DB |
+| `getActiveForms()` | Verify forms exist in DB |
+| `getAllUsers()` | Verify all users in DB |
+
+### Tests with DB Validation Added
+
+| Test | DB Validation |
+|------|---------------|
+| SCN-001 | Verifies employee user exists in DB after login |
+| SCN-002 | Verifies workflow instance created with PENDING status in DB |
+| SCN-003 | Verifies workflow instance created for employee + IT Equipment workflow in DB |
+| SCN-004 | Verifies notification count increased for employee |
+| SCN-007 | Verifies manager's workflow instances exist in DB |
+| SCN-008 | Verifies manager's notifications are queryable from DB |
+| SCN-009 | Verifies notifications are queryable from DB before UI check |
+| SCN-010 | Verifies workflow data exists in DB and notification records |
+| SCN-011 | Verifies admin exists with ADMIN role; all user roles present in DB |
+| SCN-012 | Verifies all test users exist in DB |
+| SCN-014 | Verifies Customer Feedback workflow exists in DB |
+| SCN-015 | Verifies Customer Feedback workflow instance created in DB |
+| SCN-019 | Verifies manager user exists with MANAGER role; instances and notifications in DB |
+| SCN-020 | Verifies admin has access to all core DB tables (users, workflows, forms) |
+
+### Example Pattern
+
+```typescript
+import { DbHelper } from './db.helper';
+
+test('SCN-002: Employee can start IT Equipment Request workflow', async ({ page }) => {
+  const db = new DbHelper();
+
+  // UI steps to start workflow
+  await login(page, TEST_USERS.employee);
+  await page.goto(`${BASE_URL}/workflows`);
+  await page.locator('.workflow-card a:has-text("Start Workflow")').first().click();
+  await page.waitForTimeout(2000);
+
+  // DB validation: verify workflow instance created
+  const employee = db.getUserByEmail(TEST_USERS.employee.email);
+  const instance = db.getWorkflowInstance({ userId: employee!.id });
+  expect(instance).toBeDefined();
+  expect(instance!.status).toBe('PENDING');
+
+  db.close();
+});
+```
+
+### Dependencies Added
+
+| Package | Purpose |
+|---------|---------|
+| `better-sqlite3` | Synchronous SQLite for Node.js |
+| `@types/better-sqlite3` | TypeScript type definitions |
+
+---
+
 ## 🔧 Fixes Applied
 
 ### Root Cause
@@ -110,7 +190,16 @@ The Angular frontend uses **localStorage** for storing workflows and forms data,
 | HTTP Client | Angular HttpClient with JWT Bearer tokens |
 | Backend | NestJS + SQLite |
 | ORM | Prisma |
+| E2E DB Validation | better-sqlite3 + DbHelper |
 | Test Accounts | admin@example.com, manager@example.com, employee@example.com |
+
+### E2E Database Validation
+
+| Feature | Details |
+|---------|---------|
+| Helper | `tests/e2e/db.helper.ts` |
+| Database | `backend/prisma/dev.db` (SQLite, read-only) |
+| Models | User, Form, Workflow, WorkflowInstance, FormSubmission, ApprovalRequest, Notification |
 
 ### API Services (New Architecture)
 
