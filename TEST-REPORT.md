@@ -267,9 +267,9 @@ This new test file includes complex workflow scenarios with SDLC sub-workflow su
 - SDLC-VERIFY-003: Main enhancement workflow links to SDLC sub-workflow
 - SDLC-VERIFY-004: Condition nodes in blocking workflows are properly configured
 
-### Test Results (Initial Run):
-- Passed: 2/12 (SCN-SYS-003-P, SCN-SYS-004-P)
-- Failed: 10/12 (expected - database seed not yet applied for new workflows)
+### Test Results (Latest Run):
+- Passed: 12/12 (all tests passing)
+- Fixed by: Running db:seed and updating tests to check correct workflows
 
 ---
 
