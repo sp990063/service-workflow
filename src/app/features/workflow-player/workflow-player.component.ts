@@ -160,8 +160,8 @@ interface ParallelApprovalState {
                       <p>Field: <strong>{{ currentNode()!.data['field'] || 'N/A' }}</strong></p>
                       <p>Operator: <strong>{{ currentNode()!.data['operator'] || 'equals' }}</strong></p>
                       <p>Value: <strong>{{ currentNode()!.data['value'] || 'N/A' }}</strong></p>
-                      @if (instance()?.formData[currentNode()!.data['field']]) {
-                        <p class="form-value">Current Value: <code>{{ instance()?.formData[currentNode()!.data['field']] }}</code></p>
+                      @if (getConditionFieldValue()) {
+                        <p class="form-value">Current Value: <code>{{ getConditionFieldValue() }}</code></p>
                       }
                       <p class="condition-note">Based on the form data, the workflow will proceed to the appropriate path.</p>
                       <button class="btn btn-primary" (click)="proceedFromCondition()">Evaluate Condition</button>
@@ -757,7 +757,17 @@ export class WorkflowPlayerComponent implements OnInit {
       }
     });
   }
-  
+
+  getConditionFieldValue(): string | null {
+    const inst = this.instance();
+    const node = this.currentNode();
+    if (!inst || !node || node.type !== 'condition') return null;
+    const field = node.data['field'] as string;
+    if (!field) return null;
+    const formData = inst.formData as Record<string, any>;
+    return formData[field] ?? null;
+  }
+
   proceedFromCondition() {
     const inst = this.instance();
     const wf = this.workflow();

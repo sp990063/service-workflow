@@ -1,16 +1,29 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { WorkflowService, WorkflowInstance } from '../core/services/workflow.service';
-import { AuthService } from '../core/services/auth.service';
-import { Workflow, WorkflowNode } from '../core/models';
+import { WorkflowService } from '../../core/services/workflow.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Workflow, WorkflowNode } from '../../core/models';
+
+// WorkflowInstance interface - defined locally since not exported from service
+interface WorkflowInstance {
+  id: string;
+  workflowId: string;
+  userId: string;
+  currentNodeId: string | null;
+  status: string;
+  formData: Record<string, any>;
+  history: Array<{nodeId: string; action: string; timestamp: string | Date}>;
+  createdAt: string;
+  updatedAt: string;
+}
 
 type NodeStatus = 'COMPLETED' | 'IN_PROGRESS' | 'PENDING';
 
 interface WorkflowStep {
   node: WorkflowNode;
   status: NodeStatus;
-  completedAt?: Date;
+  completedAt?: Date | string;
 }
 
 @Component({
@@ -103,7 +116,7 @@ interface WorkflowStep {
         </section>
 
         <!-- Action Buttons (if in-progress and current step is approval) -->
-        @if (instance()!.status === 'in-progress' && currentStep()?.node.type === 'approval') {
+        @if (instance()!.status === 'in-progress' && currentStep() && currentStep()!.node.type === 'approval') {
           <section class="action-buttons">
             <button class="btn btn-success" (click)="approve()">✓ Approve</button>
             <button class="btn btn-danger" (click)="reject()">✗ Reject</button>
