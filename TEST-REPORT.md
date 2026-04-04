@@ -11,7 +11,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 153 |
+| Total Tests | 159 |
 | Passed | ~45 ✅ |
 | Failed | ~108 ❌ |
 | Pass Rate | ~29% |
@@ -21,7 +21,7 @@
 ## 🧪 Complex Scenarios Test Suite (NEW)
 
 **File:** `tests/e2e/complex-scenarios.spec.ts`  
-**Tests:** 25  
+**Tests:** 31 (added 6 SDLC tests on 2026-04-04)  
 **Date Added:** 2026-04-04
 
 ### SCN-COMPLEX-001: Leave Request (Conditional Approval)
@@ -64,6 +64,31 @@
 | SCN-COMPLEX-005-P | Performance review - high rating proceeds to completion | Positive |
 | SCN-COMPLEX-005-N1 | Low rating triggers HR intervention | Negative |
 | SCN-COMPLEX-005-N2 | Late submission triggers escalation | Negative |
+
+### SCN-SDLCE: System Enhancement (SDLC Sub-workflow)
+
+| Test ID | Description | Type |
+|---------|-------------|------|
+| SCN-SDLCE-001-P | System enhancement triggers SDLC sub-workflow | Positive |
+| SCN-SDLCE-001-N | Enhancement blocked when budget exceeded | Negative |
+| SCN-SDLCE-002-P | Enhancement with infrastructure sub-workflow (network) | Positive |
+| SCN-SDLCE-002-N | DB sub-workflow rejected by DBA | Negative |
+| SCN-SDLCE-003-P | Parallel infrastructure sub-workflows complete | Positive |
+| SCN-SDLCE-003-N | Failed sub-workflow blocks SDLC | Negative |
+
+**Workflows Seeded:**
+- Leave Request (<=3 Days) - Manager approval only
+- Leave Request (>3 Days) - Manager + Director parallel approval
+- Expense Reimbursement - Manager + Finance parallel approval
+- IT Equipment Order - Manager then IT + Finance parallel
+- Account Setup Sub-Workflow
+- Training Sub-Workflow
+- Support Plan Sub-Workflow
+- Customer Onboarding - Parallel sub-workflows
+- Performance Review - Multi-stage with HR intervention
+- **System Enhancement Request - SDLC workflow (Requirements → Design → Development → Testing → UAT → Deployment)**
+- **Network Infrastructure Sub-Workflow**
+- **Database Infrastructure Sub-Workflow**
 
 **Workflows Seeded:**
 - Leave Request (<=3 Days) - Manager approval only
@@ -169,7 +194,7 @@
 |------|-------|---------|
 | prototype.spec.ts | 19 | Core component tests |
 | scenarios.spec.ts | 20 | End-to-end workflows |
-| complex-scenarios.spec.ts | 25 | Complex business scenarios |
+| complex-scenarios.spec.ts | 31 | Complex business scenarios (includes 6 SDLC tests) |
 | form-elements.spec.ts | 15 | Form element tests |
 | core-features.spec.ts | 20 | Feature-specific tests |
 | missing-features.spec.ts | 30 | Unimplemented features |

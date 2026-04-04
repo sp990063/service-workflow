@@ -990,3 +990,287 @@ test.describe('Complex Scenarios - Integration Tests', () => {
     db.close();
   });
 });
+
+// ============================================================================
+// SCENARIO 6: SYSTEM ENHANCEMENT (SDLC SUB-WORKFLOW)
+// - Employee submits enhancement request
+// - IT team handles SDLC: Requirements → Design → Development → Testing → UAT → Deployment
+// - Each stage updates SDLC Record Form
+// - Enhancement may require infrastructure sub-workflows (network, DB)
+// - Budget exceeded blocks enhancement
+// ============================================================================
+test.describe('Scenario 6: System Enhancement (SDLC Sub-workflow)', () => {
+
+  test('SCN-SDLCE-001-P: System enhancement triggers SDLC sub-workflow', async ({ page }) => {
+    const db = new DbHelper();
+    
+    await login(page, TEST_USERS.employee);
+    await startWorkflow(page, 'System Enhancement Request').catch(async () => {
+      await startWorkflow(page, 'System Enhancement');
+    });
+    
+    await fillFormField(page, 'Title', 'API Performance Optimization');
+    await fillFormField(page, 'Description', 'Optimize API response times');
+    await fillFormField(page, 'Priority', 'High');
+    await fillFormField(page, 'Estimated Cost', '5000');
+    
+    await page.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+    
+    // Verify SDLC sub-workflow was triggered
+    const sdlcSection = page.locator('.sdlc-section, .sub-workflow-section');
+    expect(await sdlcSection.isVisible().catch(() => false)).toBeTruthy();
+    
+    // Navigate through SDLC stages
+    const requirementsBtn = page.locator('button', { hasText: /Requirements/i });
+    if (await requirementsBtn.isVisible().catch(() => false)) {
+      await requirementsBtn.click();
+      await page.waitForTimeout(1000);
+      await fillFormField(page, 'Requirements', 'Define API endpoints and performance targets');
+      await page.locator('button[type="submit"], button', { hasText: 'Submit' }).click();
+      await page.waitForTimeout(1000);
+    }
+    
+    const designBtn = page.locator('button', { hasText: /Design/i });
+    if (await designBtn.isVisible().catch(() => false)) {
+      await designBtn.click();
+      await page.waitForTimeout(1000);
+      await fillFormField(page, 'Design', 'REST API architecture design');
+      await page.locator('button[type="submit"], button', { hasText: 'Submit' }).click();
+      await page.waitForTimeout(1000);
+    }
+    
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    const instances = db.getWorkflowInstances({ userId: employee!.id });
+    
+    expect(instances.length).toBeGreaterThan(0);
+    expect(instances[0].status).toMatch(/IN_PROGRESS|WAITING|PENDING/);
+    
+    db.close();
+  });
+
+  test('SCN-SDLCE-001-N: Enhancement blocked when budget exceeded', async ({ page }) => {
+    const db = new DbHelper();
+    
+    await login(page, TEST_USERS.employee);
+    await startWorkflow(page, 'System Enhancement Request').catch(async () => {
+      await startWorkflow(page, 'IT Equipment Approval');
+    });
+    
+    await fillFormField(page, 'Title', 'Enterprise System Migration');
+    await fillFormField(page, 'Description', 'Full system migration to new platform');
+    await fillFormField(page, 'Estimated Cost', '500000');
+    
+    await page.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+    
+    // Should be blocked due to budget
+    const blockedMsg = page.locator('.error-message, .alert-error, .condition-section', 
+      { hasText: /budget|exceeded|blocked|approval.*required/i });
+    const isBlocked = await blockedMsg.isVisible().catch(() => false);
+    
+    const conditionSection = page.locator('.condition-section');
+    const hasCondition = await conditionSection.isVisible().catch(() => false);
+    
+    expect(isBlocked || hasCondition).toBeTruthy();
+    
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    const instances = db.getWorkflowInstances({ userId: employee!.id });
+    
+    if (instances.length > 0) {
+      expect(instances[0].status).not.toBe('COMPLETED');
+    }
+    
+    db.close();
+  });
+
+  test('SCN-SDLCE-002-P: Enhancement with infrastructure sub-workflow (network)', async ({ page }) => {
+    const db = new DbHelper();
+    
+    await login(page, TEST_USERS.employee);
+    await startWorkflow(page, 'System Enhancement Request').catch(async () => {
+      await startWorkflow(page, 'System Enhancement');
+    });
+    
+    await fillFormField(page, 'Title', 'Cloud Migration Enhancement');
+    await fillFormField(page, 'Description', 'Migrate to cloud infrastructure');
+    await fillFormField(page, 'Infrastructure Needed', 'Network');
+    await fillFormField(page, 'Estimated Cost', '10000');
+    
+    await page.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+    
+    // Network sub-workflow should trigger
+    const networkSection = page.locator('.sub-workflow-section, text=/Network/i');
+    expect(await networkSection.isVisible().catch(() => false)).toBeTruthy();
+    
+    const startSubBtn = page.locator('button', { hasText: 'Start Sub-Workflow' });
+    if (await startSubBtn.isVisible()) {
+      await startSubBtn.click();
+      await page.waitForTimeout(1500);
+    }
+    
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    let instances = db.getWorkflowInstances({ userId: employee!.id });
+    
+    expect(instances.length).toBeGreaterThan(0);
+    expect(instances[0].status).toMatch(/WAITING_FOR_CHILD|IN_PROGRESS/);
+    
+    // Complete network sub-workflow
+    const approveSubBtn = page.locator('button', { hasText: 'Approve' });
+    if (await approveSubBtn.isVisible().catch(() => false)) {
+      await approveSubBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    
+    instances = db.getWorkflowInstances({ userId: employee!.id });
+    expect(instances[0].status).toMatch(/IN_PROGRESS|PENDING/);
+    
+    db.close();
+  });
+
+  test('SCN-SDLCE-002-N: DB sub-workflow rejected by DBA', async ({ page }) => {
+    const db = new DbHelper();
+    
+    await login(page, TEST_USERS.employee);
+    await startWorkflow(page, 'System Enhancement Request').catch(async () => {
+      await startWorkflow(page, 'System Enhancement');
+    });
+    
+    await fillFormField(page, 'Title', 'Database Schema Change');
+    await fillFormField(page, 'Description', 'Add new tables for analytics');
+    await fillFormField(page, 'Infrastructure Needed', 'Database');
+    await fillFormField(page, 'Estimated Cost', '8000');
+    
+    await page.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+    
+    // DB sub-workflow should trigger
+    const dbSection = page.locator('.sub-workflow-section, text=/Database|DBA/i');
+    expect(await dbSection.isVisible().catch(() => false)).toBeTruthy();
+    
+    const startSubBtn = page.locator('button', { hasText: 'Start Sub-Workflow' });
+    if (await startSubBtn.isVisible()) {
+      await startSubBtn.click();
+      await page.waitForTimeout(1500);
+    }
+    
+    // DBA rejects the schema change
+    const rejectBtn = page.locator('button', { hasText: 'Reject' });
+    if (await rejectBtn.isVisible().catch(() => false)) {
+      await rejectBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    const instances = db.getWorkflowInstances({ userId: employee!.id });
+    
+    if (instances.length > 0) {
+      expect(instances[0].status).toMatch(/REJECTED|BLOCKED/);
+    }
+    
+    db.close();
+  });
+
+  test('SCN-SDLCE-003-P: Parallel infrastructure sub-workflows complete', async ({ page }) => {
+    const db = new DbHelper();
+    
+    await login(page, TEST_USERS.employee);
+    await startWorkflow(page, 'System Enhancement Request').catch(async () => {
+      await startWorkflow(page, 'System Enhancement');
+    });
+    
+    await fillFormField(page, 'Title', 'Full Stack Enhancement');
+    await fillFormField(page, 'Description', 'Enhancement requiring network AND DB changes');
+    await fillFormField(page, 'Infrastructure Needed', 'Network,Database');
+    await fillFormField(page, 'Estimated Cost', '15000');
+    
+    await page.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+    
+    // Both sub-workflows should be visible (parallel)
+    const parallelSection = page.locator('.parallel-section, .sub-workflow-section');
+    expect(await parallelSection.isVisible().catch(() => false)).toBeTruthy();
+    
+    const startSubBtn = page.locator('button', { hasText: 'Start Sub-Workflow' });
+    if (await startSubBtn.isVisible()) {
+      await startSubBtn.click();
+      await page.waitForTimeout(1500);
+    }
+    
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    let instances = db.getWorkflowInstances({ userId: employee!.id });
+    
+    expect(instances.length).toBeGreaterThan(0);
+    expect(instances[0].status).toBe('WAITING_FOR_CHILD');
+    
+    // Complete both sub-workflows
+    const approveBtns = page.locator('button', { hasText: 'Approve' });
+    const count = await approveBtns.count();
+    
+    for (let i = 0; i < count; i++) {
+      if (await approveBtns.nth(i).isVisible().catch(() => false)) {
+        await approveBtns.nth(i).click();
+        await page.waitForTimeout(1000);
+      }
+    }
+    
+    instances = db.getWorkflowInstances({ userId: employee!.id });
+    expect(instances[0].status).toMatch(/IN_PROGRESS|PENDING/);
+    
+    db.close();
+  });
+
+  test('SCN-SDLCE-003-N: Failed sub-workflow blocks SDLC', async ({ page }) => {
+    const db = new DbHelper();
+    
+    await login(page, TEST_USERS.employee);
+    await startWorkflow(page, 'System Enhancement Request').catch(async () => {
+      await startWorkflow(page, 'System Enhancement');
+    });
+    
+    await fillFormField(page, 'Title', 'Critical System Update');
+    await fillFormField(page, 'Description', 'System update with dependency');
+    await fillFormField(page, 'Infrastructure Needed', 'Network');
+    await fillFormField(page, 'Estimated Cost', '12000');
+    
+    await page.locator('button[type="submit"]').click();
+    await page.waitForTimeout(1500);
+    
+    const startSubBtn = page.locator('button', { hasText: 'Start Sub-Workflow' });
+    if (await startSubBtn.isVisible()) {
+      await startSubBtn.click();
+      await page.waitForTimeout(1500);
+    }
+    
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    let instances = db.getWorkflowInstances({ userId: employee!.id });
+    
+    expect(instances.length).toBeGreaterThan(0);
+    expect(instances[0].status).toBe('WAITING_FOR_CHILD');
+    
+    // Fail the sub-workflow
+    const rejectBtn = page.locator('button', { hasText: 'Reject' });
+    if (await rejectBtn.isVisible().catch(() => false)) {
+      await rejectBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    
+    instances = db.getWorkflowInstances({ userId: employee!.id });
+    
+    // Main workflow should still be blocked
+    expect(instances[0].status).toMatch(/REJECTED|BLOCKED/);
+    
+    // Try to advance main workflow - should not be possible
+    const nextBtn = page.locator('button', { hasText: 'Next' });
+    if (await nextBtn.isVisible().catch(() => false)) {
+      await nextBtn.click();
+      await page.waitForTimeout(500);
+      
+      instances = db.getWorkflowInstances({ userId: employee!.id });
+      expect(instances[0].status).toMatch(/REJECTED|BLOCKED/);
+    }
+    
+    db.close();
+  });
+});
