@@ -3,3 +3,6 @@ dist/
 .angular/
 test-results/
 *.log
+
+# Test reports
+tests/e2e/reports/*.png
