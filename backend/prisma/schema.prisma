@@ -108,10 +108,13 @@ model User {
   formSubmissions   FormSubmission[]
   forms            Form[]
   workflows        Workflow[]
-  approvalRequests ApprovalRequest[]
+  approvalRequests ApprovalRequest[]  @relation("ApprovalOriginalApprover")
+  approvalsGivenAsActual ApprovalRequest[] @relation("ApprovalActualApprover")
   workflowInstances WorkflowInstance[]
   notifications    Notification[]
   members          Member[]
+  delegations       Delegation[]  @relation("Delegator")
+  delegatedTo      Delegation[]  @relation("Delegate")
 }
 
 model Form {
@@ -204,12 +207,31 @@ model ApprovalRequest {
   instanceId  String
   instance    WorkflowInstance @relation(fields: [instanceId], references: [id])
   nodeId      String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  userId      String   // Original approver
+  user        User     @relation("ApprovalOriginalApprover", fields: [userId], references: [id])
+  actualApproverId String? // Who actually approved (original or delegate)
+  actualApprover User? @relation("ApprovalActualApprover", fields: [actualApproverId], references: [id])
   decision    String?
   comment     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Delegation {
+  id           String   @id @default(uuid())
+  delegatorId  String   // Original approver
+  delegateId   String   // Person who can approve on behalf
+  reason       String?  // e.g., "Vacation", "Out of office"
+  startDate    DateTime
+  endDate      DateTime
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  
+  delegator    User     @relation("Delegator", fields: [delegatorId], references: [id])
+  delegate     User     @relation("Delegate", fields: [delegateId], references: [id])
+  
+  @@index([delegatorId])
+  @@index([delegateId])
 }
 
 model Notification {
