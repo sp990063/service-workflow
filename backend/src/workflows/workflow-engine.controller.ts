@@ -56,7 +56,7 @@ export class WorkflowEngineController {
   @Post('instances/:instanceId/submit')
   async submit(
     @Param('instanceId') instanceId: string,
-    @Body() body: { action: string; comment?: string },
+    @Body() body: { action: string; comment?: string; data?: Record<string, any> },
     @Request() req: any,
   ) {
     if (body.action === 'approve' || body.action === 'reject') {

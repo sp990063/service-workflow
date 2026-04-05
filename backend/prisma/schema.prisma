@@ -93,7 +93,7 @@ model Member {
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
-  password      String
+  password      String    // Empty string for LDAP users
   name          String
   department    String?
   createdAt     DateTime  @default(now())
@@ -101,6 +101,7 @@ model User {
 
   // Legacy: keep role for simple checks (e.g., seed data)
   role          String    @default("USER")  // ADMIN, MANAGER, USER
+  source        String    @default("LOCAL") // LOCAL, LDAP, SAML
   globalRoleId  String?   // FK to Role for global admin
   globalRole    Role?     @relation(fields: [globalRoleId], references: [id])
 

@@ -29,6 +29,11 @@ export class AdminController {
     return this.adminService.testLdapAuthentication(body.username, body.password);
   }
 
+  @Post('settings/sync-ldap')
+  async syncLdap() {
+    return this.adminService.syncLdapUsers();
+  }
+
   @Get('system-info')
   getSystemInfo() {
     return this.adminService.getSystemInfo();

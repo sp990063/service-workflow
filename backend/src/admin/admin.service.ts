@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService, SmtpConfig, LdapConfig } from '../config/configuration';
 import { EmailService } from '../notifications/email.service';
 import { LdapService } from '../config/ldap.service';
+import { PrismaService } from '../prisma.service';
 
 export interface SystemSettings {
   smtp: SmtpConfig;
@@ -26,6 +27,7 @@ export class AdminService {
     private configService: ConfigService,
     private emailService: EmailService,
     private ldapService: LdapService,
+    private prisma: PrismaService,
   ) {}
 
   getSystemSettings(): SystemSettings {
@@ -144,6 +146,66 @@ export class AdminService {
         ldap: this.configService.isLdapEnabled(),
       },
     };
+  }
+
+  async syncLdapUsers(): Promise<{ success: boolean; message: string; synced: number; errors: number }> {
+    if (!this.configService.isLdapEnabled()) {
+      return { success: false, message: 'LDAP is not enabled', synced: 0, errors: 0 };
+    }
+
+    try {
+      const ldapUsers = await this.ldapService.syncUsers();
+      let synced = 0;
+      let errors = 0;
+
+      for (const ldapUser of ldapUsers) {
+        try {
+          // Check if user already exists by email
+          const existingUser = await this.prisma.user.findUnique({
+            where: { email: ldapUser.email },
+          });
+
+          if (existingUser) {
+            // Update existing user if needed
+            await this.prisma.user.update({
+              where: { id: existingUser.id },
+              data: {
+                name: ldapUser.name,
+                // Only update role if currently LDAP-managed
+                // Could add a flag to track LDAP-managed users
+              },
+            });
+            this.logger.log(`Updated LDAP user: ${ldapUser.email}`);
+          } else {
+            // Create new user
+            await this.prisma.user.create({
+              data: {
+                email: ldapUser.email,
+                name: ldapUser.name,
+                password: '', // No password for LDAP users - they'll auth via LDAP
+                role: 'USER', // Default role for LDAP users
+                source: 'LDAP', // Track that this came from LDAP
+              },
+            });
+            this.logger.log(`Created LDAP user: ${ldapUser.email}`);
+          }
+          synced++;
+        } catch (err) {
+          this.logger.error(`Failed to sync user ${ldapUser.email}: ${err.message}`);
+          errors++;
+        }
+      }
+
+      return {
+        success: true,
+        message: `LDAP sync completed. Synced: ${synced}, Errors: ${errors}`,
+        synced,
+        errors,
+      };
+    } catch (error) {
+      this.logger.error(`LDAP sync failed: ${error.message}`);
+      return { success: false, message: `LDAP sync failed: ${error.message}`, synced: 0, errors: 0 };
+    }
   }
 
   private async checkDatabase(): Promise<boolean> {
