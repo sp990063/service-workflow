@@ -90,8 +90,9 @@
 ---
 
 ### 2.3 Escalation Rules (升級規則) ⏰
-**Status:** 待做
-**檔案:** `backend/src/workflows/escalation.service.ts` (new)
+**Status:** ✅ 已完成
+**Commit:** `6a3c43f7`
+**檔案:** `backend/src/escalations/`
 
 **需要做:**
 - [ ] 設置審批時限
