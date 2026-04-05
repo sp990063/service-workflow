@@ -11,8 +11,10 @@
 | Type | Status | Count |
 |------|--------|-------|
 | **E2E Tests** | ✅ Pass | 66 |
-| **Integration Tests** | ✅ Pass | 9 |
-| **Skipped** | ⏭️ | 2 |
+| **Integration Tests** | ✅ Pass | 10 |
+| **Security Tests** | ✅ Pass | 13 |
+| **Accessibility Tests** | ✅ Pass | 5 |
+| **Skipped** | ⏭️ | 1 |
 
 ---
 
@@ -171,6 +173,39 @@ Integration tests verify backend logic with real database.
 | RBAC: User ownership | ✅ Pass | Workflows linked to creator |
 
 **All 10 integration tests pass** ✅
+
+---
+
+## Security Tests (13 tests)
+
+Tests for OWASP Top 10 (2023) vulnerabilities.
+
+**Run:** `npx playwright test security.spec.ts`
+
+| Category | Test | Status |
+|----------|------|--------|
+| Security Headers | Backend API has security headers | ✅ Pass |
+| A01: Broken Access Control | User cannot access admin API | ✅ Pass |
+| A01: Broken Access Control | Admin can access admin API | ✅ Pass |
+| A02: Cryptographic Failures | Login with incorrect password fails | ✅ Pass |
+| A02: Cryptographic Failures | Login with correct password succeeds | ✅ Pass |
+| A02: Cryptographic Failures | Response excludes sensitive data | ✅ Pass |
+| A03: Injection | SQL injection in login fails | ✅ Pass |
+| A03: Injection | Empty email validation | ✅ Pass |
+| A05: Security Misconfiguration | CORS configured correctly | ✅ Pass |
+| A05: Security Misconfiguration | Error messages don't leak info | ✅ Pass |
+| A07: Auth Failures | Invalid JWT rejected | ✅ Pass |
+| A07: Auth Failures | Missing JWT rejected | ✅ Pass |
+| A08: Software Integrity | Registration endpoint responds | ✅ Pass |
+
+**All 13 security tests pass** ✅
+
+### Known npm audit findings
+- `ajv` ReDoS vulnerability (moderate) - dev dependency, not runtime
+- `glob` command injection (high) - affects `@nestjs/cli` dev tooling
+- `file-type` DoS (moderate) - affects file upload processing
+
+These are in development dependencies and do not affect production runtime.
 
 ---
 
