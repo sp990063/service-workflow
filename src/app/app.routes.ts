@@ -28,6 +28,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'analytics',
+    loadComponent: () => import('./features/analytics/analytics.component').then(m => m.AnalyticsComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'form-builder',
     loadComponent: () => import('./features/form-builder/form-builder.component').then(m => m.FormBuilderComponent),
     canActivate: [authGuard]

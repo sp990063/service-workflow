@@ -18,6 +18,7 @@ import { AuthService } from './core/services/auth.service';
             <a routerLink="/forms" routerLinkActive="active">Forms</a>
             <a routerLink="/workflows" routerLinkActive="active">Workflows</a>
             <a routerLink="/delegations" routerLinkActive="active">Delegations</a>
+            <a routerLink="/analytics" routerLinkActive="active">Analytics</a>
           </nav>
           <button class="logout-btn" (click)="logout()">Logout</button>
         </aside>
