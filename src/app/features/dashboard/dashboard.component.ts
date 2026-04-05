@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormService } from '../../core/services/form.service';
 import { WorkflowService } from '../../core/services/workflow.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Form, Workflow, DashboardStats } from '../../core/models';
 
 @Component({
@@ -61,6 +62,12 @@ import { Form, Workflow, DashboardStats } from '../../core/models';
             <span class="action-icon">⚡</span>
             <span class="action-label">New Workflow</span>
           </a>
+          @if (authService.isAdmin()) {
+            <a routerLink="/admin/users" class="action-card admin-action">
+              <span class="action-icon">👤</span>
+              <span class="action-label">Manage Users</span>
+            </a>
+          }
         </div>
       </div>
       
@@ -164,6 +171,17 @@ import { Form, Workflow, DashboardStats } from '../../core/models';
       border-color: var(--color-primary);
       background: rgba(37, 99, 235, 0.05);
     }
+    .admin-action {
+      border-color: #dc3545;
+      background: rgba(220, 53, 69, 0.05);
+    }
+    .admin-action:hover {
+      border-color: #dc3545;
+      background: rgba(220, 53, 69, 0.1);
+    }
+    .admin-action .action-icon {
+      color: #dc3545;
+    }
     .action-icon {
       font-size: 2rem;
       color: var(--color-primary);
@@ -217,8 +235,9 @@ export class DashboardComponent implements OnInit {
   loading = signal(true);
   
   constructor(
-    private formService: FormService,
-    private workflowService: WorkflowService
+    public formService: FormService,
+    public workflowService: WorkflowService,
+    public authService: AuthService
   ) {}
   
   ngOnInit() {

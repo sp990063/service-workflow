@@ -15,6 +15,7 @@ export class AuthService {
 
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
   readonly user = computed(() => this.currentUser());
+  readonly isAdmin = computed(() => this.currentUser()?.role?.toUpperCase() === 'ADMIN');
 
   constructor(
     private api: ApiService,

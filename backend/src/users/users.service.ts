@@ -27,6 +27,10 @@ export class UsersService {
     return this.prisma.user.update({ where: { id }, data });
   }
 
+  async updateRole(id: string, role: 'ADMIN' | 'MANAGER' | 'USER') {
+    return this.prisma.user.update({ where: { id }, data: { role } });
+  }
+
   async delete(id: string) {
     return this.prisma.user.delete({ where: { id } });
   }
