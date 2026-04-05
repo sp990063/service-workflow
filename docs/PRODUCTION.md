@@ -236,6 +236,93 @@ postgresql://serviceflow:MySecurePass@localhost:5432/serviceflow
 
 ---
 
+## SMTP Configuration
+
+### Environment Variables
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `SMTP_ENABLED` | Enable email notifications | No | false |
+| `SMTP_HOST` | SMTP server hostname | If SMTP enabled | - |
+| `SMTP_PORT` | SMTP port | No | 587 |
+| `SMTP_SECURE` | Use TLS/SSL | No | false |
+| `SMTP_USER` | SMTP username | If SMTP enabled | - |
+| `SMTP_PASSWORD` | SMTP password | If SMTP enabled | - |
+| `SMTP_FROM` | From email address | No | noreply@serviceflow.local |
+
+### Example Configuration
+
+```bash
+SMTP_ENABLED=true
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=serviceflow@yourcompany.com
+```
+
+### Email Features
+
+- **Workflow Notifications**: Email alerts for approval/rejection
+- **Password Reset**: Secure password reset via email
+- **Welcome Emails**: New user onboarding
+
+### Testing SMTP
+
+```bash
+curl -X POST http://localhost:3000/admin/settings/test-smtp \
+  -H "Authorization: Bearer <admin-token>"
+```
+
+---
+
+## LDAP Configuration
+
+### Environment Variables
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `LDAP_ENABLED` | Enable LDAP authentication | No | false |
+| `LDAP_URL` | LDAP server URL | If LDAP enabled | - |
+| `LDAP_BIND_DN` | Service account DN | If LDAP enabled | - |
+| `LDAP_BIND_PASSWORD` | Service account password | If LDAP enabled | - |
+| `LDAP_SEARCH_BASE` | User search base DN | If LDAP enabled | - |
+| `LDAP_SEARCH_FILTER` | User search filter | No | (uid={{username}}) |
+
+### Example Configuration
+
+```bash
+LDAP_ENABLED=true
+LDAP_URL=ldap://ldap.company.com:389
+LDAP_BIND_DN=cn=service,dc=company,dc=com
+LDAP_BIND_PASSWORD=service_password
+LDAP_SEARCH_BASE=ou=users,dc=company,dc=com
+LDAP_SEARCH_FILTER=(uid={{username}})
+```
+
+### LDAP Features
+
+- **Enterprise Authentication**: Login with corporate credentials
+- **User Sync**: Sync users from LDAP directory
+- **Group Mapping**: Map LDAP groups to ServiceFlow roles
+
+### Testing LDAP
+
+```bash
+# Test LDAP connection
+curl -X POST http://localhost:3000/admin/settings/test-ldap \
+  -H "Authorization: Bearer <admin-token>"
+
+# Test LDAP authentication
+curl -X POST http://localhost:3000/admin/settings/test-ldap-auth \
+  -H "Authorization: Bearer <admin-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "john.doe", "password": "secret"}'
+```
+
+---
+
 ## Initial Setup
 
 ### 1. Access Admin Panel
