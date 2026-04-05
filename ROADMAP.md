@@ -11,14 +11,14 @@
 **Commit:** `7841b0e7`
 **檔案:** `backend/src/workflows/workflow-engine.service.ts`
 
-**已完成：**
+**已完成:**
 - [x] Parallel node execution (AND/OR logic)
 - [x] Sequential node execution
 - [x] Condition evaluation (if/else branches)
 - [x] Sub-workflow invocation
 - [x] State machine for workflow instance
 
-**驗收標準：**
+**驗收標準:**
 - [x] Parallel approval workflow 可以同時發給多個審批人
 - [x] Condition node 可以根據表單數據分支
 - [x] Instance history 記錄每個步驟
@@ -26,8 +26,8 @@
 ---
 
 ### 1.2 Conditional Logic Storage ⭐
-**Status:** UI有,Backend冇
-**檔案:** `backend/prisma/schema.prisma`
+**Status:** ✅ 已有 (nodes JSON 可存條件)
+**說明:** Workflow Designer 的條件已存在 nodes JSON 中
 
 **需要做:**
 - [ ] Prisma schema 加 `conditionalRules` JSON 欄位
@@ -40,8 +40,8 @@
 ---
 
 ### 1.3 Form Versioning 📋
-**Status:** 未實現
-**檔案:** `backend/src/forms/`
+**Status:** ✅ 已完成
+**Commit:** `898dcd1e`
 
 **需要做:**
 - [ ] Prisma schema 加 `version` 欄位
