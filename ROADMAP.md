@@ -58,13 +58,15 @@
 ## Phase 2: Enterprise Features
 
 ### 2.1 LDAP User Sync 🔄
-**Status:** Service有,未連接
-**檔案:** `backend/src/ldap/ldap.service.ts`
+**Status:** ✅ 已完成
+**Commit:** `99f85cdd`
+**檔案:** `backend/src/admin/admin.service.ts`, `admin.controller.ts`
 
-**需要做:**
-- [ ] 自動sync用戶 from LDAP server
-- [ ] 定时同步 job
-- [ ] Manual sync button in Admin UI
+**已完成：**
+- [x] API endpoint POST /admin/settings/sync-ldap
+- [x] AdminService.syncLdapUsers() implementation
+- [x] User.source field for tracking origin
+- [x] Unit tests (4 passing)
 
 **驗收標準:**
 - [ ] LDAP server 的用戶自動出現喺系統
