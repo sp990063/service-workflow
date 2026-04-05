@@ -9,6 +9,7 @@ import { ApprovalsModule } from './approvals/approvals.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma.module';
 import { RbacModule } from './rbac/rbac.module';
+import { AdminModule } from './admin/admin.module';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 
 @Module({
@@ -26,6 +27,7 @@ import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.f
     ApprovalsModule,
     NotificationsModule,
     RbacModule,
+    AdminModule,
   ],
   providers: [
     {
