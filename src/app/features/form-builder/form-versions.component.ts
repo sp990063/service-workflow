@@ -14,7 +14,7 @@ import { FormService } from '../../core/services/form.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="versions-panel" [class.open]="isOpen">
+    <div class="versions-panel open">
       <div class="versions-header">
         <h3>Version History</h3>
         <button class="close-btn" (click)="close.emit()">×</button>

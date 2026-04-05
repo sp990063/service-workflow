@@ -25,6 +25,7 @@ export interface Form {
   name: string;
   description?: string;
   elements: FormElement[];
+  version?: number;
   createdAt: Date;
   updatedAt: Date;
 }

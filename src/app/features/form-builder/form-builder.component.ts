@@ -1,4 +1,4 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormService } from '../../core/services/form.service';
@@ -34,7 +34,7 @@ const ELEMENT_TYPES = [
 @Component({
   selector: 'app-form-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FormVersionsComponent],
   template: `
     <div class="form-builder">
       <div class="builder-header">
@@ -468,7 +468,7 @@ export class FormBuilderComponent {
     return el && ['dropdown', 'radio', 'checkbox', 'multiselect'].includes(el.type);
   });
   
-  constructor(private formService: FormService) {}
+  constructor(private formService: FormService, private cdr: ChangeDetectorRef) {}
   
   onDragStart(event: DragEvent, type: string) {
     event.dataTransfer?.setData('elementType', type);
@@ -537,7 +537,7 @@ export class FormBuilderComponent {
       // Update existing form
       this.formService.update(this.formId()!, data).subscribe({
         next: (form) => {
-          this.currentVersion.set(form.version);
+          this.currentVersion.set(form.version ?? 1);
           alert('Form updated!');
         },
         error: () => alert('Failed to update form.')
@@ -547,7 +547,8 @@ export class FormBuilderComponent {
       this.formService.create(data).subscribe({
         next: (form) => {
           this.formId.set(form.id);
-          this.currentVersion.set(form.version);
+          this.currentVersion.set(form.version ?? 1);
+          this.cdr.detectChanges(); // Force Angular to re-render
           alert('Form created!');
         },
         error: () => alert('Failed to create form.')
@@ -562,7 +563,8 @@ export class FormBuilderComponent {
         next: (form) => {
           this.formName = form.name;
           this.elements.set(form.elements || []);
-          this.currentVersion.set(form.version);
+          this.currentVersion.set(form.version ?? 1);
+          this.cdr.detectChanges(); // Force Angular to re-render
         }
       });
     }
