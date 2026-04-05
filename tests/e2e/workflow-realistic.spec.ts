@@ -16,7 +16,7 @@
 import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:4200';
-const TEST_USER = { email: 'admin@company.com', password: 'password123' };
+const TEST_USER = { email: 'admin@example.com', password: 'password123' };
 const TEST_DATA = {
   employeeName: 'John Smith',
   department: 'Engineering',
@@ -64,7 +64,8 @@ test.describe('Realistic IT Service Request Workflow', () => {
     // ========== PHASE 1: Create IT Equipment Request Form ==========
     await login(page);
     await page.goto(`${BASE_URL}/form-builder`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".element-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     await page.locator('.form-name-input').fill('IT Equipment Request Form');
     
@@ -126,7 +127,7 @@ test.describe('Realistic IT Service Request Workflow', () => {
     
     // Verify form was saved
     await page.goto(`${BASE_URL}/forms`, { waitUntil: 'networkidle' });
-    await expect(page.locator('h3')).toContainText('IT Equipment Request Form');
+    await expect(page.locator('h3').first()).toContainText('IT Equipment Request Form');
     
     // ========== PHASE 2: Create IT Equipment Request Approval Workflow ==========
     await page.goto(`${BASE_URL}/workflow-designer`, { waitUntil: 'networkidle' });
@@ -178,7 +179,7 @@ test.describe('Realistic IT Service Request Workflow', () => {
     
     // Verify workflow was saved
     await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
-    await expect(page.locator('h3')).toContainText('IT Equipment Request Approval');
+    await expect(page.locator('h3').first()).toContainText('IT Equipment Request Approval');
     
     // ========== PHASE 3: Execute the Workflow ==========
     
@@ -190,7 +191,8 @@ test.describe('Realistic IT Service Request Workflow', () => {
     
     // Step 1: Submit Equipment Request - click Start Workflow button
     await page.locator('button', { hasText: 'Start Workflow' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".step-content", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify we're on the Submit step
     await expect(page.locator('.step-header h2')).toContainText('Submit Equipment Request');
@@ -198,7 +200,8 @@ test.describe('Realistic IT Service Request Workflow', () => {
     // Fill in the form fields (simulated form data in task node)
     // For now, just advance to next step (form integration would require Form node type)
     await page.locator('button', { hasText: 'Next Step' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".step-content", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Step 2: Manager Review
     await expect(page.locator('.step-header h2')).toContainText('Manager Review');
@@ -206,7 +209,8 @@ test.describe('Realistic IT Service Request Workflow', () => {
     
     // Manager approves the request
     await page.locator('button', { hasText: 'Approve' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".completed-section", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify workflow completion (approval advances to End and marks complete)
     await expect(page.locator('.completed-section h2')).toContainText('Workflow Completed');
@@ -252,16 +256,19 @@ test.describe('Realistic IT Service Request Workflow', () => {
     
     // Start the workflow
     await page.locator('button', { hasText: 'Start Workflow' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".step-content", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Advance past task
     await page.locator('button', { hasText: 'Next Step' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".step-content", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Manager Review step - REJECT the request
     await expect(page.locator('.approval-section')).toBeVisible();
     await page.locator('button', { hasText: 'Reject' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".workflow-player", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify workflow advances (rejection path - workflow continues)
     // Note: Rejection notification feature not yet implemented, workflow continues to end
@@ -332,7 +339,8 @@ test.describe('Realistic IT Service Request Workflow', () => {
     
     // Start
     await page.locator('button', { hasText: 'Start Workflow' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".step-content", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify progress: Start is completed, Step 1 is active, Step 2 is pending
     // Note: End node may not have been added due to UI drag limitations
@@ -343,7 +351,8 @@ test.describe('Realistic IT Service Request Workflow', () => {
     
     // Advance to Step 2
     await page.locator('button', { hasText: 'Next Step' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".step-content", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify: Start + Step 1 completed, Step 2 active
     await expect(page.locator('.step-item.completed')).toHaveCount(2);

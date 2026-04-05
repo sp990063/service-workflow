@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
  */
 
 const BASE_URL = 'http://localhost:4200';
-const TEST_USER = { email: 'admin@company.com', password: 'password123' };
+const TEST_USER = { email: 'admin@example.com', password: 'password123' };
 
 async function login(page: any) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
@@ -54,7 +54,8 @@ test.describe('Condition Node', () => {
     // Drag Condition node to canvas
     const conditionNode = page.locator('.node-item', { hasText: 'Condition' });
     await conditionNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify Condition node was added
     await expect(page.locator('.workflow-node')).toHaveCount(2);
@@ -73,7 +74,8 @@ test.describe('Condition Node', () => {
     // Drag Condition node
     const conditionNode = page.locator('.node-item', { hasText: 'Condition' });
     await conditionNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Click to select the condition node
     const nodes = page.locator('.workflow-node');
@@ -103,12 +105,14 @@ test.describe('Condition Node', () => {
     // Add Condition
     const conditionNode = page.locator('.node-item', { hasText: 'Condition' });
     await conditionNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Add End
     const endNode = page.locator('.node-item', { hasText: 'End' });
     await endNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Save workflow
     page.on('dialog', dialog => dialog.accept());
@@ -175,17 +179,20 @@ test.describe('Parallel Split + Join Nodes', () => {
     // Add Parallel node
     const parallelNode = page.locator('.node-item', { hasText: 'Parallel' });
     await parallelNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Add Join node
     const joinNode = page.locator('.node-item', { hasText: 'Join' });
     await joinNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Add End node
     const endNode = page.locator('.node-item', { hasText: 'End' });
     await endNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify all nodes were added
     const nodes = page.locator('.workflow-node');
@@ -213,12 +220,14 @@ test.describe('Parallel Split + Join Nodes', () => {
     // Add Parallel
     const parallelNode = page.locator('.node-item', { hasText: 'Parallel' });
     await parallelNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Add End
     const endNode = page.locator('.node-item', { hasText: 'End' });
     await endNode.dragTo(page.locator('.canvas-container'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Save workflow
     page.on('dialog', dialog => dialog.accept());
@@ -270,7 +279,8 @@ test.describe('Date Range Form Element', () => {
     // Drag Date Range element to canvas
     const dateRangeEl = page.locator('.element-item', { hasText: 'Date Range' });
     await dateRangeEl.dragTo(page.locator('.canvas'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify element was added
     await expect(page.locator('.form-element')).toBeVisible();
@@ -285,7 +295,8 @@ test.describe('Date Range Form Element', () => {
     // Add Date Range element
     const dateRangeEl = page.locator('.element-item', { hasText: 'Date Range' });
     await dateRangeEl.dragTo(page.locator('.canvas'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify preview shows two date inputs with dash separator
     await expect(page.locator('.daterange-preview input[type="date"]')).toHaveCount(2);
@@ -299,7 +310,8 @@ test.describe('Date Range Form Element', () => {
     // Add Date Range element
     const dateRangeEl = page.locator('.element-item', { hasText: 'Date Range' });
     await dateRangeEl.dragTo(page.locator('.canvas'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Click to select element
     await page.locator('.form-element').click();
@@ -344,7 +356,8 @@ test.describe('Time Form Element', () => {
     // Drag Time element to canvas
     const timeEl = page.locator('.element-item', { hasText: 'Time' });
     await timeEl.dragTo(page.locator('.canvas'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify element was added
     await expect(page.locator('.form-element')).toBeVisible();
@@ -359,7 +372,8 @@ test.describe('Time Form Element', () => {
     // Add Time element
     const timeEl = page.locator('.element-item', { hasText: 'Time' });
     await timeEl.dragTo(page.locator('.canvas'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify preview shows time input
     await expect(page.locator('.element-preview input[type="time"]')).toBeVisible();
@@ -398,7 +412,8 @@ test.describe('File Upload Form Element', () => {
     // Drag File Upload element to canvas
     const fileEl = page.locator('.element-item', { hasText: 'File Upload' });
     await fileEl.dragTo(page.locator('.canvas'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify element was added
     await expect(page.locator('.form-element')).toBeVisible();
@@ -413,7 +428,8 @@ test.describe('File Upload Form Element', () => {
     // Add File Upload element
     const fileEl = page.locator('.element-item', { hasText: 'File Upload' });
     await fileEl.dragTo(page.locator('.canvas'));
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify preview shows file icon/text
     await expect(page.locator('.file-preview')).toBeVisible();

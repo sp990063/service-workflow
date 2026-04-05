@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:4200';
-const TEST_USER = { email: 'admin@company.com', password: 'password123' };
+const TEST_USER = { email: 'admin@example.com', password: 'password123' };
 
 async function login(page: any) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
@@ -66,7 +66,8 @@ test.describe('Workflow Integration', () => {
     await page.goto(`${BASE_URL}/workflow-designer`, { waitUntil: 'networkidle' });
     
     await page.locator('button', { hasText: '+ Start' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     await page.locator('.workflow-node').first().click();
     await page.waitForTimeout(300);
     
@@ -134,7 +135,8 @@ test.describe('Workflow Integration', () => {
     
     // Go to workflows list and start
     await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     await page.locator('a', { hasText: 'Start Workflow' }).first().click();
     await page.waitForTimeout(1000);
     
@@ -144,14 +146,16 @@ test.describe('Workflow Integration', () => {
     // Click Start Workflow button to begin - this advances past Start to Task
     await expect(page.locator('button', { hasText: 'Start Workflow' })).toBeVisible();
     await page.locator('button', { hasText: 'Start Workflow' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // After starting, Task step should be active (Start is completed)
     await expect(page.locator('.step-item.active .step-label')).toContainText('Review Request');
     
     // Complete task step - clicking Next Step on Task advances to End and marks workflow complete
     await page.locator('button', { hasText: 'Next Step' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Workflow should be completed now (advancing to End marks it complete)
     await expect(page.locator('.completed-section h2')).toContainText('Workflow Completed');
@@ -181,13 +185,15 @@ test.describe('Workflow Integration', () => {
     
     // Start workflow
     await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     await page.locator('a', { hasText: 'Start Workflow' }).first().click();
     await page.waitForTimeout(1000);
     
     // Click Start Workflow button
     await page.locator('button', { hasText: 'Start Workflow' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Verify progress: Start is completed (in history), Task is active
     await expect(page.locator('.step-item.completed')).toHaveCount(1); // Start is completed
@@ -200,7 +206,8 @@ test.describe('Workflow Integration', () => {
     
     // ========== PHASE 1: Create Form ==========
     await page.goto(`${BASE_URL}/form-builder`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     await page.locator('.form-name-input').fill('Service Request Form');
     
@@ -260,7 +267,8 @@ test.describe('Workflow Integration', () => {
     
     // ========== PHASE 3: Execute Workflow ==========
     await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     await expect(page.locator('h3')).toContainText('Service Request Approval');
     
@@ -271,12 +279,14 @@ test.describe('Workflow Integration', () => {
     
     // Click Start Workflow button to begin the workflow - this advances past Start to Task
     await page.locator('button', { hasText: 'Start Workflow' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Step 1: Task
     await expect(page.locator('.step-header h2')).toContainText('Submit Service Request');
     await page.locator('button', { hasText: 'Next Step' }).click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Step 2: Approval - verify we're on the approval step
     await expect(page.locator('.step-header h2')).toContainText('Manager Review');

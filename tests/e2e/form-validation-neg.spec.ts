@@ -19,7 +19,8 @@ test.describe('Form Validation - Negative Cases', () => {
 
   async function createFormWithFields(page: Page) {
     await page.goto(`${BASE_URL}/form-builder`);
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
 
     await page.locator('.form-name-input').fill('Validation Test Form');
 
@@ -53,7 +54,8 @@ test.describe('Form Validation - Negative Cases', () => {
     await login(page);
     await createFormWithFields(page);
     await page.goto(`${BASE_URL}/forms`);
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
     await page.waitForTimeout(1000);
     await page.fill('input[type="email"]', 'notanemail');
@@ -65,7 +67,8 @@ test.describe('Form Validation - Negative Cases', () => {
     await login(page);
     await createFormWithFields(page);
     await page.goto(`${BASE_URL}/forms`);
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
     await page.waitForTimeout(1000);
     // Try to submit without filling required fields
@@ -77,7 +80,8 @@ test.describe('Form Validation - Negative Cases', () => {
     await login(page);
     await createFormWithFields(page);
     await page.goto(`${BASE_URL}/forms`);
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
     await page.waitForTimeout(1000);
     const numInput = page.locator('input[type="number"]').first();

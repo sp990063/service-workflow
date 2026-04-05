@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
  */
 
 const BASE_URL = 'http://localhost:4200';
-const TEST_USER = { email: 'admin@company.com', password: 'password123' };
+const TEST_USER = { email: 'admin@example.com', password: 'password123' };
 
 async function login(page: any) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
@@ -83,7 +83,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Drag element to canvas
       await textElement.dragTo(canvas);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       // Verify element was added to canvas
       await expect(page.locator('.form-element')).toBeVisible();
@@ -125,7 +126,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       // Add an element
       const textEl = page.locator('.element-item', { hasText: 'Single Line Text' });
       await textEl.dragTo(page.locator('.canvas'));
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       // Verify element exists
       await expect(page.locator('.form-element')).toBeVisible();
@@ -181,7 +183,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       const textElement = page.locator('.element-item', { hasText: 'Single Line Text' });
       await expect(textElement).toBeVisible();
       await textElement.dragTo(page.locator('.canvas'));
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       // 3. Verify element was added to canvas
       const formElement = page.locator('.form-element');
@@ -191,7 +194,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       // 4. Add Email element
       const emailElement = page.locator('.element-item', { hasText: 'Email' });
       await emailElement.dragTo(page.locator('.canvas'));
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       // 5. Verify second element was added
       const allElements = page.locator('.form-element');
@@ -252,7 +256,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Click Add Start button
       await page.locator('button', { hasText: '+ Start' }).click();
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       // Verify node was added
       await expect(page.locator('.workflow-node')).toBeVisible();
@@ -321,17 +326,20 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Go to Form Builder
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       await expect(page.locator('body')).toBeVisible();
       
       // Go to Workflow Designer
       await page.goto(`${BASE_URL}/workflow-designer`);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       await expect(page.locator('body')).toBeVisible();
       
       // Go back to home
       await page.goto(BASE_URL);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       await expect(page.locator('body')).toBeVisible();
     });
   });
@@ -353,7 +361,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // First create a form
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       await page.locator('.form-name-input').fill('IT Service Request');
       await page.locator('.element-item', { hasText: 'Single Line Text' })
@@ -381,7 +390,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Create and save a form first
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       await page.locator('.form-name-input').fill('Employee Feedback Form');
       await page.locator('.element-item', { hasText: 'Single Line Text' })
@@ -412,7 +422,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Create a form with required fields
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       await page.locator('.form-name-input').fill('Support Request Form');
       await page.locator('.element-item', { hasText: 'Single Line Text' })
@@ -436,7 +447,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Go to forms list
       await page.goto(`${BASE_URL}/forms`);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       // Fill the form
       await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
@@ -459,7 +471,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Create a form with required field
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       await page.locator('.form-name-input').fill('Validation Test Form');
       await page.locator('.element-item', { hasText: 'Single Line Text' })
@@ -477,7 +490,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Go to forms list
       await page.goto(`${BASE_URL}/forms`);
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       // Fill the form without filling required field
       await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
@@ -485,7 +499,8 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Try to submit without filling required field
       await page.locator('button[type="submit"]').click();
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       // Should show error or not submit
       // (Validation should prevent submission)

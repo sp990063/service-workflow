@@ -626,7 +626,8 @@ test.describe('Scenario 4: Customer Onboarding (Sub-workflow)', () => {
     const nextBtn = page.locator('button', { hasText: 'Next Step' });
     if (await nextBtn.isVisible()) {
       await nextBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       const stillWaiting = page.locator('.waiting-message, text=/waiting/i');
       expect(await stillWaiting.isVisible().catch(() => false)).toBeTruthy();
@@ -981,7 +982,8 @@ test.describe('Complex Scenarios - Integration Tests', () => {
     
     if (await btnToTry.isVisible().catch(() => false)) {
       await btnToTry.click();
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       const updatedInstances = db.getWorkflowInstances({ userId: manager!.id });
       expect(updatedInstances[0].status).toBe('WAITING_FOR_CHILD');
@@ -1265,7 +1267,8 @@ test.describe('Scenario 6: System Enhancement (SDLC Sub-workflow)', () => {
     const nextBtn = page.locator('button', { hasText: 'Next' });
     if (await nextBtn.isVisible().catch(() => false)) {
       await nextBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
       
       instances = db.getWorkflowInstances({ userId: employee!.id });
       expect(instances[0].status).toMatch(/REJECTED|BLOCKED/);

@@ -14,7 +14,7 @@ const BASE_URL = 'http://localhost:4200';
 
 async function login(page: any, role: 'admin' | 'manager' | 'employee' = 'admin') {
   const users = {
-    admin: { email: 'admin@company.com', password: 'password123' },
+    admin: { email: 'admin@example.com', password: 'password123' },
     manager: { email: 'manager@company.com', password: 'password123' },
     employee: { email: 'employee@company.com', password: 'password123' },
   };
@@ -350,7 +350,8 @@ test.describe('Missing Workflow Node Functionality Tests', () => {
     
     // Add nodes to canvas
     await scriptNode.dragTo(page.locator('.canvas-container'), { targetPosition: { x: 200, y: 100 } });
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Select the script node
     const nodeOnCanvas = page.locator('.workflow-node').first();
@@ -398,7 +399,8 @@ test.describe('Missing Workflow Node Functionality Tests', () => {
     
     // Add Set Value node to canvas
     await setValueNode.dragTo(page.locator('.canvas-container'), { targetPosition: { x: 200, y: 100 } });
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Select the node
     const nodeOnCanvas = page.locator('.workflow-node').first();
@@ -445,7 +447,8 @@ test.describe('Missing Workflow Node Functionality Tests', () => {
     
     // Add Transform node to canvas
     await transformNode.dragTo(page.locator('.canvas-container'), { targetPosition: { x: 200, y: 100 } });
-    await page.waitForTimeout(500);
+    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     
     // Select the node
     const nodeOnCanvas = page.locator('.workflow-node').first();
