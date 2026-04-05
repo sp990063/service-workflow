@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormService } from '../../core/services/form.service';
@@ -122,14 +122,23 @@ import { Form } from '../../core/models';
     }
   `]
 })
-export class FormsListComponent implements OnInit {
+export class FormsListComponent implements OnInit, OnDestroy {
   forms = signal<Form[]>([]);
   loading = signal(true);
+  private refreshInterval: any;
   
   constructor(private formService: FormService) {}
   
   ngOnInit() {
     this.loadForms();
+    // Refresh forms list every 5 seconds to catch API-created forms
+    this.refreshInterval = setInterval(() => this.loadFormsSilent(), 5000);
+  }
+  
+  ngOnDestroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   }
   
   loadForms() {
@@ -141,6 +150,14 @@ export class FormsListComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
+      }
+    });
+  }
+  
+  private loadFormsSilent() {
+    this.formService.getAll().subscribe({
+      next: (forms) => {
+        this.forms.set(forms);
       }
     });
   }
