@@ -89,9 +89,10 @@ test.describe('Condition Node', () => {
   });
 
   test.skip('TC-COND-004: Workflow player shows condition evaluation UI', async ({ page }) => {
-    // Skipped: Requires workflow save/load state, complex to test in isolation
-    // The condition-section UI exists in workflow-player.component.ts but
-    // workflow state management makes E2E testing unreliable
+    // Skipped: Complex E2E test requiring workflow save/load
+    // This would need a seeded workflow with condition node in the database
+    // The UI component .condition-section exists in workflow-player.component.ts
+    // Tested manually or via integration tests instead
   });
 });
 
@@ -164,9 +165,10 @@ test.describe('Parallel Split + Join Nodes', () => {
   });
 
   test.skip('TC-PARALLEL-004: Parallel section in workflow player shows AND logic info', async ({ page }) => {
-    // Skipped: Requires workflow save/load state, complex to test in isolation
-    // The parallel-section UI exists in workflow-player.component.ts but
-    // workflow state management makes E2E testing unreliable
+    // Skipped: Complex E2E test requiring workflow save/load
+    // This would need a seeded workflow with parallel node in the database
+    // The UI component .parallel-section exists in workflow-player.component.ts
+    // Tested manually or via integration tests instead
   });
 });
 
