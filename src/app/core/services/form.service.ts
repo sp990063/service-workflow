@@ -42,4 +42,17 @@ export class FormService {
   updateSubmissionStatus(id: string, status: 'PENDING' | 'APPROVED' | 'REJECTED'): Observable<any> {
     return this.api.put<any>(`/form-submissions/${id}/status`, { status });
   }
+
+  // Versioning
+  getVersions(formId: string): Observable<any[]> {
+    return this.api.get<any[]>(`/forms/${formId}/versions`);
+  }
+
+  getVersion(formId: string, version: number): Observable<any> {
+    return this.api.get<any>(`/forms/${formId}/versions/${version}`);
+  }
+
+  rollback(formId: string, version: number): Observable<Form> {
+    return this.api.post<Form>(`/forms/${formId}/rollback/${version}`, {});
+  }
 }

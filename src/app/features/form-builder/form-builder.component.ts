@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormService } from '../../core/services/form.service';
 import { Form, FormElement } from '../../core/models';
+import { FormVersionsComponent } from './form-versions.component';
 
 const ELEMENT_TYPES = [
   { type: 'text', label: 'Single Line Text', icon: 'Aa' },
@@ -46,6 +47,9 @@ const ELEMENT_TYPES = [
           >
         </div>
         <div class="header-actions">
+          @if (formId()) {
+            <button class="btn btn-secondary" (click)="showVersions.set(true)">Versions</button>
+          }
           <button class="btn btn-secondary" (click)="clearForm()">Clear</button>
           <button class="btn btn-primary" (click)="saveForm()">Save Form</button>
         </div>
@@ -231,6 +235,15 @@ const ELEMENT_TYPES = [
         </aside>
       </div>
     </div>
+    
+    @if (showVersions() && formId()) {
+      <app-form-versions
+        [formId]="formId()!"
+        [currentVersion]="currentVersion()"
+        (close)="showVersions.set(false)"
+        (restored)="onFormRestored()"
+      />
+    }
   `,
   styles: [`
     .form-builder {
@@ -440,6 +453,9 @@ export class FormBuilderComponent {
   formName = 'Untitled Form';
   elements = signal<FormElement[]>([]);
   selectedElementId = signal<string | null>(null);
+  formId = signal<string | null>(null);
+  currentVersion = signal<number>(1);
+  showVersions = signal<boolean>(false);
   optionsText = '';
   
   selectedElement = computed(() => {
@@ -515,16 +531,40 @@ export class FormBuilderComponent {
   }
   
   saveForm() {
-    this.formService.create({
-      name: this.formName,
-      elements: this.elements()
-    }).subscribe({
-      next: () => {
-        alert('Form saved!');
-      },
-      error: () => {
-        alert('Failed to save form.');
-      }
-    });
+    const data = { name: this.formName, elements: this.elements() };
+    
+    if (this.formId()) {
+      // Update existing form
+      this.formService.update(this.formId()!, data).subscribe({
+        next: (form) => {
+          this.currentVersion.set(form.version);
+          alert('Form updated!');
+        },
+        error: () => alert('Failed to update form.')
+      });
+    } else {
+      // Create new form
+      this.formService.create(data).subscribe({
+        next: (form) => {
+          this.formId.set(form.id);
+          this.currentVersion.set(form.version);
+          alert('Form created!');
+        },
+        error: () => alert('Failed to create form.')
+      });
+    }
+  }
+  
+  onFormRestored() {
+    // Reload the form after rollback
+    if (this.formId()) {
+      this.formService.getById(this.formId()!).subscribe({
+        next: (form) => {
+          this.formName = form.name;
+          this.elements.set(form.elements || []);
+          this.currentVersion.set(form.version);
+        }
+      });
+    }
   }
 }
