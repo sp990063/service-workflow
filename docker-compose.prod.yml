@@ -6,17 +6,32 @@ services:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-serviceflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-serviceflow_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
       POSTGRES_DB: ${POSTGRES_DB:-serviceflow}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-serviceflow}"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+
+  # Redis for session/caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # Backend API
   backend:
@@ -24,23 +39,24 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-serviceflow}:${POSTGRES_PASSWORD:-serviceflow_password}@db:5432/${POSTGRES_DB:-serviceflow}
-      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
-      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-serviceflow}:${POSTGRES_PASSWORD:-change_this_password}@db:5432/${POSTGRES_DB:-serviceflow}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-you_must_change_this_in_production}
+      NODE_ENV: production
       PORT: 3000
-      # SMTP Configuration
+      # SMTP
       SMTP_ENABLED: ${SMTP_ENABLED:-false}
-      SMTP_HOST: ${SMTP_HOST:-smtp.example.com}
+      SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
-      # LDAP Configuration
+      # LDAP
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
-      LDAP_URL: ${LDAP_URL:-ldap://ldap.example.com}
-      LDAP_BIND_DN: ${LDAP_BIND_DN:-}
-      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-}
+      LDAP_URL: ${LDAP_URL}
+      LDAP_BIND_DN: ${LDAP_BIND_DN}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD}
       LDAP_SEARCH_BASE: ${LDAP_SEARCH_BASE:-dc=example,dc=com}
       LDAP_SEARCH_FILTER: ${LDAP_SEARCH_FILTER:-uid={{username}}}
     ports:
@@ -48,12 +64,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 40s
 
   # Frontend Angular App
   frontend:
@@ -63,9 +82,12 @@ services:
     environment:
       API_URL: ${API_URL:-http://backend:3000}
     ports:
-      - "4200:80"
+      - "80:80"
+      - "443:443"
     depends_on:
       - backend
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
