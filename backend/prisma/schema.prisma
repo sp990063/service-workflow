@@ -273,3 +273,19 @@ model EscalationLog {
   previousApproverId String?
   newApproverId     String?
 }
+
+model FormTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  elements    String   // JSON array of form elements
+  category    String   @default("general") // leave, expense, it, hr, general
+  isBuiltIn   Boolean  @default(false)
+  userId      String?
+  user       User?    @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([userId])
+}

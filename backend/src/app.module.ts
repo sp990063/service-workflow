@@ -13,6 +13,7 @@ import { AdminModule } from './admin/admin.module';
 import { DelegationsModule } from './delegations/delegations.module';
 import { EscalationsModule } from './escalations/escalations.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { FormTemplatesModule } from './form-templates/form-templates.module';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 
 @Module({
@@ -34,6 +35,7 @@ import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.f
     DelegationsModule,
     EscalationsModule,
     AnalyticsModule,
+    FormTemplatesModule,
   ],
   providers: [
     {
