@@ -207,8 +207,21 @@ sudo systemctl restart nginx
 |----------|-------------|----------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | Yes | - |
 | `JWT_SECRET` | JWT signing secret (min 32 chars) | Yes | - |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins | Yes | http://localhost:4200 |
 | `PORT` | Backend API port | No | 3000 |
 | `FRONTEND_URL` | Frontend URL for CORS | No | http://localhost |
+
+### Security Configuration
+
+| Feature | Setting | Description |
+|---------|---------|-------------|
+| Rate Limiting (Global) | 100 req/min | Maximum requests per minute |
+| Rate Limiting (Login) | 5 attempts/min | Login endpoint limit |
+| Rate Limiting (Register) | 3 attempts/min | Registration limit |
+| Password Min Length | 12 chars | Minimum password length |
+| Password Complexity | Required | Must include: A-Z, a-z, 0-9, @$!%*?& |
+| JWT Expiry | 24 hours | Token expiration time |
+| Security Headers | Helmet.js | XSS, clickjacking, MIME sniffing protection |
 
 ### Database URL Format
 
@@ -383,8 +396,21 @@ docker-compose exec backend npx prisma db seed
 
 ## Security Checklist
 
-- [ ] Change default admin password
+### Already Implemented ✅
+- [x] Strong password policy (12+ chars, complexity required)
+- [x] Rate limiting on all endpoints (100 req/min)
+- [x] Stricter rate limiting on auth endpoints (5 login/min)
+- [x] Helmet.js security headers
+- [x] CORS with configurable origins
+- [x] JWT authentication with 24h expiry
+- [x] Bcrypt password hashing (10 salt rounds)
+- [x] Input validation with whitelist
+- [x] Error responses without stack traces
+
+### Required in Production ⬜
+- [ ] Change default admin password immediately
 - [ ] Use strong JWT_SECRET (32+ random characters)
+- [ ] Set ALLOWED_ORIGINS to your domain
 - [ ] Configure SSL/TLS (use reverse proxy like Traefik or nginx with Let's Encrypt)
 - [ ] Enable firewall (allow only 80, 443)
 - [ ] Regular database backups
