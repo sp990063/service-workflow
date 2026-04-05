@@ -128,8 +128,23 @@ model Form {
 
   submissions FormSubmission[]
   members     Member[]  // Project-scoped permissions
+  versions    FormVersion[] // Version history
 
   @@index([userId])
+}
+
+model FormVersion {
+  id         String   @id @default(uuid())
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  version   Int
+  elements  String   // JSON snapshot
+  name      String
+  createdAt DateTime @default(now())
+  createdBy String
+
+  @@unique([formId, version])
+  @@index([formId])
 }
 
 model FormSubmission {

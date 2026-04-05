@@ -53,7 +53,46 @@ export class FormsController {
     if (role === Role.USER && form.userId !== userId) {
       throw new Error('Access denied');
     }
-    return this.formsService.update(id, body);
+    return this.formsService.update(id, body, userId);
+  }
+
+  // ============ Versioning ============
+
+  @Get(':id/versions')
+  async getVersions(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: string) {
+    const form = await this.formsService.findById(id);
+    if (!form) throw new Error('Form not found');
+    
+    if (role === Role.USER && form.userId !== userId) {
+      throw new Error('Access denied');
+    }
+    return this.formsService.getVersions(id);
+  }
+
+  @Get(':id/versions/:version')
+  async getVersion(
+    @Param('id') id: string,
+    @Param('version') version: number,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+  ) {
+    const form = await this.formsService.findById(id);
+    if (!form) throw new Error('Form not found');
+    
+    if (role === Role.USER && form.userId !== userId) {
+      throw new Error('Access denied');
+    }
+    return this.formsService.getVersion(id, version);
+  }
+
+  @Post(':id/rollback/:version')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.USER)
+  async rollback(
+    @Param('id') id: string,
+    @Param('version') version: number,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.formsService.rollback(id, version, userId);
   }
 
   @Delete(':id')
