@@ -74,8 +74,9 @@
 ---
 
 ### 2.2 Delegation (代理審批) 👤
-**Status:** 未實現
-**檔案:** `backend/src/approvals/delegation.service.ts` (new)
+**Status:** ✅ 已完成
+**Commit:** `12e5dc0a`
+**檔案:** `backend/src/delegations/`
 
 **需要做:**
 - [ ] 用戶可以設置代理
@@ -89,7 +90,7 @@
 ---
 
 ### 2.3 Escalation Rules (升級規則) ⏰
-**Status:** 未實現
+**Status:** 待做
 **檔案:** `backend/src/workflows/escalation.service.ts` (new)
 
 **需要做:**
