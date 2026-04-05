@@ -152,8 +152,8 @@
 ---
 
 ### 4.2 Docker Compose 完善 🐳
-**Status:** 現有但未驗證
-**檔案:** `docker-compose.yml`
+**Status:** ✅ 已完成
+**Commit:** `b6e0f7c3`
 
 **需要做:**
 - [ ] 驗證所有services正常啟動
@@ -166,8 +166,8 @@
 ---
 
 ### 4.3 Form Templates Library 📝
-**Status:** 未實現
-**檔案:** `backend/src/forms/templates/` (new)
+**Status:** ✅ 已完成
+**Commit:** `9c1f5e7a`
 
 **需要做:**
 - [ ] 預設範本 (Leave request, Expense, IT request)
