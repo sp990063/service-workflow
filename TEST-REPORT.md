@@ -170,7 +170,7 @@ Integration tests verify backend logic with real database.
 | Get workflow instances | ✅ Pass | Query by workflowId |
 | RBAC: User ownership | ✅ Pass | Workflows linked to creator |
 
-**All 9 integration tests pass** ✅
+**All 10 integration tests pass** ✅
 
 ---
 
