@@ -44,6 +44,11 @@ export class WorkflowsService {
     return this.parseJsonFields(workflow);
   }
 
+  async findByName(name: string) {
+    const workflow = await this.prisma.workflow.findFirst({ where: { name } });
+    return this.parseJsonFields(workflow);
+  }
+
   async create(data: { name: string; description?: string; nodes: any[]; connections: any[]; userId: string }) {
     return this.prisma.workflow.create({
       data: {
