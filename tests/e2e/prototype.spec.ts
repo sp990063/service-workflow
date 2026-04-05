@@ -83,7 +83,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Drag element to canvas
       await textElement.dragTo(canvas);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".form-element", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       // Verify element was added to canvas
@@ -126,7 +126,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       // Add an element
       const textEl = page.locator('.element-item', { hasText: 'Single Line Text' });
       await textEl.dragTo(page.locator('.canvas'));
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".form-element", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       // Verify element exists
@@ -183,7 +183,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       const textElement = page.locator('.element-item', { hasText: 'Single Line Text' });
       await expect(textElement).toBeVisible();
       await textElement.dragTo(page.locator('.canvas'));
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".form-element", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       // 3. Verify element was added to canvas
@@ -194,7 +194,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       // 4. Add Email element
       const emailElement = page.locator('.element-item', { hasText: 'Email' });
       await emailElement.dragTo(page.locator('.canvas'));
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".form-element", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       // 5. Verify second element was added
@@ -326,7 +326,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Go to Form Builder
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".element-item", { timeout: 30000 });
     await page.waitForTimeout(1000);
       await expect(page.locator('body')).toBeVisible();
       
@@ -338,7 +338,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Go back to home
       await page.goto(BASE_URL);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector("h1", { timeout: 30000 });
     await page.waitForTimeout(1000);
       await expect(page.locator('body')).toBeVisible();
     });
@@ -361,7 +361,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // First create a form
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".element-item", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       await page.locator('.form-name-input').fill('IT Service Request');
@@ -378,7 +378,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       await page.waitForTimeout(1000);
       
       // Find the saved form
-      await expect(page.locator('.form-card h3')).toContainText('IT Service Request');
+      await expect(page.locator('.form-card h3').first()).toContainText('IT Service Request');
     });
   });
 
@@ -390,7 +390,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Create and save a form first
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".element-item", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       await page.locator('.form-name-input').fill('Employee Feedback Form');
@@ -410,7 +410,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       await page.waitForTimeout(1000);
       
       // Click Fill Form button
-      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).first().click();
       await page.waitForTimeout(1000);
       
       // Verify form fill page loads
@@ -422,7 +422,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Create a form with required fields
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".element-item", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       await page.locator('.form-name-input').fill('Support Request Form');
@@ -447,11 +447,11 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Go to forms list
       await page.goto(`${BASE_URL}/forms`);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector("h1", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       // Fill the form
-      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).first().click();
       await page.waitForTimeout(1000);
       
       // Fill in the form fields
@@ -471,7 +471,7 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Create a form with required field
       await page.goto(`${BASE_URL}/form-builder`);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector(".element-item", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       await page.locator('.form-name-input').fill('Validation Test Form');
@@ -490,17 +490,16 @@ test.describe('ServiceFlow MVP - Comprehensive E2E Tests', () => {
       
       // Go to forms list
       await page.goto(`${BASE_URL}/forms`);
-      await page.waitForSelector(".node-item", { timeout: 30000 });
+      await page.waitForSelector("h1", { timeout: 30000 });
     await page.waitForTimeout(1000);
       
       // Fill the form without filling required field
-      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+      await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).first().click();
       await page.waitForTimeout(1000);
       
       // Try to submit without filling required field
       await page.locator('button[type="submit"]').click();
-      await page.waitForSelector(".node-item", { timeout: 30000 });
-    await page.waitForTimeout(1000);
+      await page.waitForTimeout(1000);
       
       // Should show error or not submit
       // (Validation should prevent submission)
