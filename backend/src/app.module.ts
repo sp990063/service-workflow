@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_FILTER } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { FormsModule } from './forms/forms.module';
@@ -7,9 +9,15 @@ import { ApprovalsModule } from './approvals/approvals.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma.module';
 import { RbacModule } from './rbac/rbac.module';
+import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 
 @Module({
   imports: [
+    // Rate limiting: 100 requests per minute globally
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -18,6 +26,12 @@ import { RbacModule } from './rbac/rbac.module';
     ApprovalsModule,
     NotificationsModule,
     RbacModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: ThrottlerExceptionFilter,
+    },
   ],
 })
 export class AppModule {}
