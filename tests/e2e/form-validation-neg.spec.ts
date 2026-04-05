@@ -11,8 +11,8 @@ test.describe('Form Validation - Negative Cases', () => {
       await overlay.click({ position: { x: 10, y: 10 } }).catch(() => {});
       await page.keyboard.press('Escape');
     }
-    await page.fill('input#email', 'admin@example.com');
-    await page.fill('input#password', 'password123');
+    await page.fill('input[type="email"]', 'admin@example.com');
+    await page.fill('input[type="password"]', 'password123');
     await page.click('button[type="submit"]');
     await page.waitForURL(`${BASE_URL}/**`, { timeout: 10000 });
   }

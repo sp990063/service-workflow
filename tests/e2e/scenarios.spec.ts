@@ -118,8 +118,8 @@ async function seedStorage(page: any) {
 
 async function login(page: any, user: { email: string; password: string; name: string }) {
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
-  await page.locator('input#email').fill(user.email);
-  await page.locator('input#password').fill(user.password);
+  await page.locator('input[type="email"]').fill(user.email);
+  await page.locator('input[type="password"]').fill(user.password);
   await page.locator('button[type="submit"]').click();
   await page.waitForTimeout(2000);
 }

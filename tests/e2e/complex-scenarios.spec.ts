@@ -32,15 +32,15 @@ const TEST_USERS = {
 // ============================================================================
 
 async function login(page: any, user: { email: string; password: string; name: string }) {
-  await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
-  await page.locator('input#email').fill(user.email);
-  await page.locator('input#password').fill(user.password);
+  await page.goto(`${BASE_URL}/login`);
+  await page.locator('input[type="email"]').fill(user.email);
+  await page.locator('input[type="password"]').fill(user.password);
   await page.locator('button[type="submit"]').click();
   await page.waitForTimeout(2000);
 }
 
 async function startWorkflow(page: any, workflowName: string) {
-  await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE_URL}/workflows`);
   await page.waitForTimeout(1000);
   
   const wfCard = page.locator('.workflow-card', { has: page.locator('h3', { hasText: workflowName }) });

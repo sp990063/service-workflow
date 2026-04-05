@@ -22,8 +22,8 @@ const BASE_URL = 'http://localhost:4200';
 
 async function login(page: Page) {
   await page.goto(`${BASE_URL}/login`);
-  await page.fill('input#email', 'admin@example.com');
-  await page.fill('input#password', 'password123');
+  await page.fill('input[type="email"]', 'admin@example.com');
+  await page.fill('input[type="password"]', 'password123');
   await page.click('button[type="submit"]');
   await page.waitForURL(`${BASE_URL}/**`, { timeout: 10000 });
 }
@@ -42,7 +42,7 @@ test.describe('Form Element Tests', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
     await page.goto(`${BASE_URL}/form-builder`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
   });
 
   // Helper function to get element on canvas by label
