@@ -52,7 +52,7 @@ const ELEMENT_TYPES = [
       </div>
       
       <div class="builder-body">
-        <aside class="palette">
+        <aside class="palette" tabindex="0" role="region" aria-label="Form elements palette">
           <h3>Elements</h3>
           <div class="element-list">
             @for (el of elementTypes; track el.type) {

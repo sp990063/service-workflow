@@ -25,6 +25,7 @@
     "@angular-devkit/build-angular": "18.2.0",
     "@angular/cli": "18.2.0",
     "@angular/compiler-cli": "18.2.0",
+    "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.59.1",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.8.0",
