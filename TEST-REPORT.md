@@ -1,18 +1,18 @@
 # Test Report - Service Workflow
 
 **Last Updated:** 2026-04-05
-**Test Framework:** Playwright E2E
+**Test Framework:** Playwright E2E + Jest Integration
 **Base URL:** http://localhost:4200
 
 ---
 
 ## Summary
 
-| Status | Count |
-|--------|-------|
-| ✅ Passed | 66 |
-| ❌ Failed | TBD (pending full run) |
-| ⏭️ Skipped | 2 (TC-COND-004, TC-PARALLEL-004) |
+| Type | Status | Count |
+|------|--------|-------|
+| **E2E Tests** | ✅ Pass | 66 |
+| **Integration Tests** | ✅ Pass | 9 |
+| **Skipped** | ⏭️ | 2 |
 
 ---
 
@@ -145,8 +145,32 @@ Some tests in `complex-scenarios.spec.ts` have timeout issues due to:
 These tests work but take >5 minutes to run.
 
 ### Skipped Tests
-- **TC-COND-004**: Requires workflow save/load state (complex E2E)
-- **TC-PARALLEL-004**: Requires workflow save/load state (complex E2E)
+- **TC-COND-004**: Requires workflow save/load state (complex E2E) - use integration tests instead
+- **TC-PARALLEL-004**: Requires workflow save/load state (complex E2E) - use integration tests instead
+
+---
+
+## Integration Tests
+
+Integration tests verify backend logic with real database.
+
+**Run:** `cd backend && npm run test:integration`
+
+### Workflow Integration Tests (9 tests)
+
+| Test | Status | Notes |
+|------|--------|-------|
+| Create workflow with START node | ✅ Pass | |
+| Create workflow with CONDITION node | ✅ Pass | Verifies condition node structure |
+| Create workflow with PARALLEL node | ✅ Pass | Verifies parallel node with AND join |
+| Create workflow with FORM node | ✅ Pass | Verifies form node with formId |
+| Start workflow instance | ✅ Pass | Sets IN_PROGRESS status |
+| Advance workflow to next node | ✅ Pass | Updates currentNodeId |
+| Complete workflow instance | ✅ Pass | Sets COMPLETED status |
+| Get workflow instances | ✅ Pass | Query by workflowId |
+| RBAC: User ownership | ✅ Pass | Workflows linked to creator |
+
+**All 9 integration tests pass** ✅
 
 ---
 
@@ -176,6 +200,20 @@ npx playwright test --reporter=list
 - **Backend**: http://localhost:3000
 - **Database**: SQLite (dev) / PostgreSQL (prod)
 - **Browser**: Chromium (Playwright default)
+
+---
+
+## When to Use Each Test Type
+
+| Type | Speed | Use When |
+|------|-------|----------|
+| **Integration** | ~1s | Backend logic, DB operations, RBAC |
+| **E2E** | ~1-5min | Full UI workflows, user interactions |
+
+**Recommendation:**
+- Use integration tests for business logic (fast feedback)
+- Use E2E tests for critical user journeys (full coverage)
+- Skip complex E2E tests that require seeded data → use integration tests instead
 
 ---
 
