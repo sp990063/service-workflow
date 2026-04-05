@@ -1,0 +1,117 @@
+# ============================================
+# ServiceFlow - Production Docker Compose
+# ============================================
+
+version: '3.8'
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: serviceflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-serviceflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-serviceflow}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/prisma/migrations:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-serviceflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - serviceflow-network
+
+  # ============================================
+  # Backend API (NestJS)
+  # ============================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-production
+    container_name: serviceflow-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-serviceflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-serviceflow}
+      JWT_SECRET: ${JWT_SECRET:-changeme-in-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - serviceflow-network
+
+  # ============================================
+  # Frontend (Angular + Nginx)
+  # ============================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-production
+    container_name: serviceflow-web
+    restart: unless-stopped
+    environment:
+      NGINX_HOST: localhost
+      NGINX_PORT: 80
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - serviceflow-network
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  serviceflow-network:
+    driver: bridge
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+    driver: local
+
+# ============================================
+# Usage
+# ============================================
+# 
+# 1. Create .env file:
+#    cp .env.example .env
+#    # Edit .env with your production values
+#
+# 2. Build and start:
+#    docker-compose up -d --build
+#
+# 3. Check status:
+#    docker-compose ps
+#
+# 4. View logs:
+#    docker-compose logs -f
+#
+# 5. Stop:
+#    docker-compose down
+#
+# 6. Stop and remove volumes:
+#    docker-compose down -v
+#
+# ============================================
