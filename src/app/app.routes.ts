@@ -23,6 +23,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'delegations',
+    loadComponent: () => import('./features/delegations/delegations.component').then(m => m.DelegationsComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'form-builder',
     loadComponent: () => import('./features/form-builder/form-builder.component').then(m => m.FormBuilderComponent),
     canActivate: [authGuard]

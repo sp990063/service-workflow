@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../common/guards/roles.guard';
 import { UsersService } from './users.service';
@@ -8,6 +8,16 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private usersService: UsersService) {}
+
+  @Post('lookup')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.USER)
+  async lookup(@Body() body: { email: string }) {
+    const user = await this.usersService.findByEmail(body.email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return { id: user.id, email: user.email, name: user.name };
+  }
 
   @Get()
   @Roles(Role.ADMIN) // Only admins can list all users
