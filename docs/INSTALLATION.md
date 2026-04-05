@@ -612,6 +612,89 @@ sudo chown -R www-data:www-data /opt/serviceflow
 sudo chmod -R 755 /opt/serviceflow
 ```
 
+### SMTP Troubleshooting
+
+#### Test SMTP Connection
+
+```bash
+curl -X POST http://localhost:3000/admin/settings/test-smtp \
+  -H "Authorization: Bearer <admin-token>"
+```
+
+#### Common SMTP Issues
+
+| Issue | Solution |
+|-------|---------|
+| Connection refused | Check SMTP_HOST and port |
+| Authentication failed | Verify SMTP_USER and SMTP_PASSWORD |
+| TLS/SSL error | Check if SMTP_SECURE matches port (587=TLS, 465=SSL) |
+| Gmail blocked | Enable "Less secure app" or use App Password |
+
+#### Gmail App Password Setup
+
+1. Enable 2FA on Google account
+2. Go to Security > App passwords
+3. Generate new app password for "Mail"
+4. Use app password as SMTP_PASSWORD
+
+### LDAP Troubleshooting
+
+#### Test LDAP Connection
+
+```bash
+# Test connection
+curl -X POST http://localhost:3000/admin/settings/test-ldap \
+  -H "Authorization: Bearer <admin-token>"
+
+# Test authentication
+curl -X POST http://localhost:3000/admin/settings/test-ldap-auth \
+  -H "Authorization: Bearer <admin-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "john.doe", "password": "secret"}'
+```
+
+#### Common LDAP Issues
+
+| Issue | Solution |
+|-------|---------|
+| Connection timeout | Check LDAP_URL and firewall |
+| Invalid Bind DN | Verify service account DN format |
+| Search base not found | Check LDAP_SEARCH_BASE is correct |
+| User not found | Verify LDAP_SEARCH_FILTER matches your directory |
+| Authentication fails | Check username/password format (DOMAIN\\user or user@domain) |
+
+#### LDAP Filter Examples
+
+```bash
+# Active Directory
+LDAP_SEARCH_FILTER="(sAMAccountName={{username}})"
+
+# OpenLDAP
+LDAP_SEARCH_FILTER="(uid={{username}})"
+
+# Generic
+LDAP_SEARCH_FILTER="(mail={{username}}@company.com)"
+```
+
+### Health Check
+
+```bash
+curl http://localhost:3000/admin/health
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-04-05T12:00:00.000Z",
+  "services": {
+    "database": true,
+    "smtp": false,
+    "ldap": false
+  }
+}
+```
+
 ---
 
 ## Support

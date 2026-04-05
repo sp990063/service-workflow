@@ -272,6 +272,73 @@ Only users with **Admin** role can access:
 
 ---
 
+## Admin Panel - System Settings
+
+### Accessing Admin Settings
+
+Only users with **Admin** role can access system settings.
+
+1. Click **Settings** on the Dashboard quick actions (Admin only)
+2. Or navigate directly to `/admin/settings`
+
+### Settings Tabs
+
+The Admin Settings page has three tabs:
+
+#### SMTP Settings Tab
+
+Configure email notifications for workflow events.
+
+| Field | Description |
+|-------|-------------|
+| Enable SMTP | Turn email notifications on/off |
+| SMTP Host | Email server hostname (e.g., smtp.gmail.com) |
+| Port | Email server port (587 for TLS, 465 for SSL) |
+| SMTP User | Username for email account |
+| SMTP Password | Password for email account |
+| From Address | Sender email address |
+| Use TLS/SSL | Enable secure connection |
+
+**Testing SMTP:**
+- Click **Test Connection** to verify SMTP settings
+- A success message confirms email can be sent
+
+#### LDAP Settings Tab
+
+Configure enterprise LDAP authentication for corporate login.
+
+| Field | Description |
+|-------|-------------|
+| Enable LDAP | Turn LDAP authentication on/off |
+| LDAP URL | LDAP server URL (e.g., ldap://ldap.company.com:389) |
+| Bind DN | Service account DN for searching users |
+| Bind Password | Service account password |
+| Search Base | Base DN for user search |
+| Search Filter | Filter to find users (use {username} placeholder) |
+
+**Testing LDAP:**
+- Click **Test Connection** to verify LDAP server is reachable
+- Click **Test Authentication** to test user login against LDAP
+
+#### Server Info Tab
+
+View system information and status.
+
+| Info | Description |
+|------|-------------|
+| Version | ServiceFlow version number |
+| Environment | development/staging/production |
+| Node Version | Node.js version running the server |
+| Platform | Operating system |
+| Uptime | Time since last server restart |
+| Features | Status of SMTP, LDAP, SSO integrations |
+
+**Health Check:**
+- Click **Health Check** to see detailed system health
+- Shows database, SMTP, and LDAP connection status
+
+---
+
 ## Tips & Best Practices
 
 ### Forms
