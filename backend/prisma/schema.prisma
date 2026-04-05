@@ -281,8 +281,7 @@ model FormTemplate {
   elements    String   // JSON array of form elements
   category    String   @default("general") // leave, expense, it, hr, general
   isBuiltIn   Boolean  @default(false)
-  userId      String?
-  user       User?    @relation(fields: [userId], references: [id])
+  userId      String?  // Owner user ID (not a FK relation)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

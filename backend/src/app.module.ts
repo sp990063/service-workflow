@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { FormsModule } from './forms/forms.module';
@@ -14,6 +14,7 @@ import { DelegationsModule } from './delegations/delegations.module';
 import { EscalationsModule } from './escalations/escalations.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FormTemplatesModule } from './form-templates/form-templates.module';
+import { LoggingModule } from './common/logging/logging.module';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 
 @Module({
@@ -23,6 +24,7 @@ import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.f
       ttl: 60000,
       limit: 100,
     }]),
+    LoggingModule,
     PrismaModule,
     AuthModule,
     UsersModule,

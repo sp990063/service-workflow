@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
+import { LoggingService } from './common/logging/logging.service';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -55,7 +56,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.getHttpAdapter().get('/health', (req: any, res: any) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
