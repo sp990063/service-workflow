@@ -2,7 +2,7 @@
  * Workflow Integration Tests
  * 
  * These tests verify workflow CRUD and state management.
- * Run with: npm run test:integration
+ * Run with: npx jest --config jest-integration.config.js
  * 
  * Note: These use the actual database, not mocks.
  */
@@ -11,7 +11,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const TEST_USER_ID = 'integration-test-user';
 const TEST_WORKFLOW_NAME = `Test-Workflow-${Date.now()}`;
 
 async function cleanup() {
@@ -19,14 +18,20 @@ async function cleanup() {
     where: { workflow: { name: { contains: 'Test-Workflow-' } } }
   });
   await prisma.workflow.deleteMany({
-    where: { name: { contains: 'Test-Workflow-' } }
-  });
+    where: { name: { contains: 'Test-Workflow-' } } }
+  );
 }
 
 describe('Workflow Integration Tests', () => {
   beforeAll(async () => {
     // Clean up any existing test data
     await cleanup();
+    
+    // Verify test user exists
+    const user = await prisma.user.findFirst({ where: { email: 'employee@example.com' } });
+    if (!user) {
+      throw new Error('Test user not found - run npm run db:seed first');
+    }
   });
 
   afterAll(async () => {
@@ -37,6 +42,9 @@ describe('Workflow Integration Tests', () => {
 
   describe('Workflow Creation with Nodes', () => {
     it('should create workflow with START node', async () => {
+      // Get actual user id from seeded user
+      const user = await prisma.user.findFirst({ where: { email: 'employee@example.com' } });
+      
       const workflow = await prisma.workflow.create({
         data: {
           name: `${TEST_WORKFLOW_NAME}-start`,
@@ -48,7 +56,7 @@ describe('Workflow Integration Tests', () => {
           connections: JSON.stringify([
             { from: 'start-1', to: 'end-1' },
           ]),
-          userId: TEST_USER_ID,
+          userId: user!.id,
         },
       });
 
@@ -61,6 +69,8 @@ describe('Workflow Integration Tests', () => {
     });
 
     it('should create workflow with CONDITION node', async () => {
+      const user = await prisma.user.findFirst({ where: { email: 'employee@example.com' } });
+      
       const workflow = await prisma.workflow.create({
         data: {
           name: `${TEST_WORKFLOW_NAME}-condition`,
@@ -74,7 +84,7 @@ describe('Workflow Integration Tests', () => {
             { from: 'start-1', to: 'cond-1' },
             { from: 'cond-1', to: 'end-1' },
           ]),
-          userId: TEST_USER_ID,
+          userId: user!.id,
         },
       });
 
@@ -86,6 +96,8 @@ describe('Workflow Integration Tests', () => {
     });
 
     it('should create workflow with PARALLEL node', async () => {
+      const user = await prisma.user.findFirst({ where: { email: 'employee@example.com' } });
+      
       const workflow = await prisma.workflow.create({
         data: {
           name: `${TEST_WORKFLOW_NAME}-parallel`,
@@ -99,7 +111,7 @@ describe('Workflow Integration Tests', () => {
             { from: 'start-1', to: 'parallel-1' },
             { from: 'parallel-1', to: 'end-1' },
           ]),
-          userId: TEST_USER_ID,
+          userId: user!.id,
         },
       });
 
@@ -111,6 +123,8 @@ describe('Workflow Integration Tests', () => {
     });
 
     it('should create workflow with FORM node', async () => {
+      const user = await prisma.user.findFirst({ where: { email: 'employee@example.com' } });
+      
       const workflow = await prisma.workflow.create({
         data: {
           name: `${TEST_WORKFLOW_NAME}-form`,
@@ -124,7 +138,7 @@ describe('Workflow Integration Tests', () => {
             { from: 'start-1', to: 'form-1' },
             { from: 'form-1', to: 'end-1' },
           ]),
-          userId: TEST_USER_ID,
+          userId: user!.id,
         },
       });
 
@@ -139,8 +153,13 @@ describe('Workflow Integration Tests', () => {
   describe('Workflow Instance Lifecycle', () => {
     let workflowId: string;
     let instanceId: string;
+    let actualUserId: string;
 
     beforeAll(async () => {
+      // Get actual user id
+      const user = await prisma.user.findFirst({ where: { email: 'employee@example.com' } });
+      actualUserId = user!.id;
+      
       // Find the start workflow
       const workflow = await prisma.workflow.findFirst({
         where: { name: `${TEST_WORKFLOW_NAME}-start` }
@@ -155,7 +174,7 @@ describe('Workflow Integration Tests', () => {
       const instance = await prisma.workflowInstance.create({
         data: {
           workflowId,
-          userId: TEST_USER_ID,
+          userId: actualUserId,
           currentNodeId: startNode.id,
           status: 'IN_PROGRESS',
           formData: '{}',
@@ -209,28 +228,33 @@ describe('Workflow Integration Tests', () => {
 
   describe('RBAC Enforcement', () => {
     it('should associate workflow with user on create', async () => {
+      const user = await prisma.user.findFirst({ where: { email: 'employee@example.com' } });
+      
       const workflows = await prisma.workflow.findMany({
-        where: { userId: TEST_USER_ID },
+        where: { userId: user!.id },
       });
 
+      // Should have created workflows in this test
       expect(workflows.length).toBeGreaterThan(0);
       workflows.forEach(w => {
-        expect(w.userId).toBe(TEST_USER_ID);
+        expect(w.userId).toBe(user!.id);
       });
     });
 
     it('should filter workflows by user', async () => {
+      const user = await prisma.user.findFirst({ where: { email: 'employee@example.com' } });
+      
       const myWorkflows = await prisma.workflow.findMany({
-        where: { userId: TEST_USER_ID },
+        where: { userId: user!.id },
       });
 
       const otherWorkflows = await prisma.workflow.findMany({
-        where: { userId: { not: TEST_USER_ID } },
+        where: { userId: { not: user!.id } },
       });
 
       // All my workflows should have my userId
       myWorkflows.forEach(w => {
-        expect(w.userId).toBe(TEST_USER_ID);
+        expect(w.userId).toBe(user!.id);
       });
     });
   });
