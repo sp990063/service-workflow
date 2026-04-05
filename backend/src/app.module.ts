@@ -6,6 +6,7 @@ import { WorkflowsModule } from './workflows/workflows.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma.module';
+import { RbacModule } from './rbac/rbac.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PrismaModule } from './prisma.module';
     WorkflowsModule,
     ApprovalsModule,
     NotificationsModule,
+    RbacModule,
   ],
 })
 export class AppModule {}
