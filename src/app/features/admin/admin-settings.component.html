@@ -1,0 +1,192 @@
+<div class="admin-settings">
+  <div class="page-header">
+    <h1>System Settings</h1>
+    <p class="subtitle">Configure SMTP, LDAP, and server settings</p>
+  </div>
+
+  <div *ngIf="loading()">
+    <div class="loading">Loading settings...</div>
+  </div>
+
+  <div *ngIf="!loading() && error()">
+    <div class="error-message">
+      <p>{{ error() }}</p>
+      <button class="btn btn-primary" (click)="loadSettings()">Retry</button>
+    </div>
+  </div>
+
+  <div *ngIf="!loading() && !error()">
+    <div class="settings-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'smtp'" (click)="activeTab = 'smtp'">
+        SMTP Settings
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'ldap'" (click)="activeTab = 'ldap'">
+        LDAP Settings
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'server'" (click)="activeTab = 'server'">
+        Server Info
+      </button>
+    </div>
+
+    <!-- SMTP Settings -->
+    <div *ngIf="activeTab === 'smtp'" class="settings-section">
+      <div class="section-header">
+        <h2>SMTP Configuration</h2>
+        <label class="toggle">
+          <input type="checkbox" [(ngModel)]="smtpEnabled">
+          <span>Enable SMTP</span>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>SMTP Host</label>
+          <input type="text" [(ngModel)]="smtpSettings.host" placeholder="smtp.example.com">
+        </div>
+        <div class="form-group">
+          <label>Port</label>
+          <input type="number" [(ngModel)]="smtpSettings.port" placeholder="587">
+        </div>
+        <div class="form-group">
+          <label>SMTP User</label>
+          <input type="text" [(ngModel)]="smtpSettings.user" placeholder="user@example.com">
+        </div>
+        <div class="form-group">
+          <label>SMTP Password</label>
+          <input type="password" [(ngModel)]="smtpSettings.password" placeholder="********">
+        </div>
+        <div class="form-group">
+          <label>From Address</label>
+          <input type="email" [(ngModel)]="smtpSettings.from" placeholder="noreply@example.com">
+        </div>
+        <div class="form-group">
+          <label>Use TLS/SSL</label>
+          <select [(ngModel)]="smtpSettings.secure">
+            <option [ngValue]="false">No (Port 587)</option>
+            <option [ngValue]="true">Yes (Port 465)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-secondary" (click)="testSmtp()" [disabled]="testingSmtp()">
+          {{ testingSmtp() ? 'Testing...' : 'Test Connection' }}
+        </button>
+      </div>
+
+      <div *ngIf="smtpTestResult()" class="test-result" 
+           [class.success]="smtpTestResult()?.success" 
+           [class.error]="!smtpTestResult()?.success">
+        {{ smtpTestResult()?.message }}
+      </div>
+    </div>
+
+    <!-- LDAP Settings -->
+    <div *ngIf="activeTab === 'ldap'" class="settings-section">
+      <div class="section-header">
+        <h2>LDAP Configuration</h2>
+        <label class="toggle">
+          <input type="checkbox" [(ngModel)]="ldapEnabled">
+          <span>Enable LDAP</span>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>LDAP URL</label>
+          <input type="text" [(ngModel)]="ldapSettings.url" placeholder="ldap://ldap.example.com:389">
+        </div>
+        <div class="form-group full-width">
+          <label>Bind DN (Service Account)</label>
+          <input type="text" [(ngModel)]="ldapSettings.bindDN" placeholder="cn=service,dc=example,dc=com">
+        </div>
+        <div class="form-group full-width">
+          <label>Bind Password</label>
+          <input type="password" [(ngModel)]="ldapSettings.bindPassword" placeholder="********">
+        </div>
+        <div class="form-group full-width">
+          <label>Search Base</label>
+          <input type="text" [(ngModel)]="ldapSettings.searchBase" placeholder="ou=users,dc=example,dc=com">
+        </div>
+        <div class="form-group full-width">
+          <label>Search Filter</label>
+          <input type="text" [(ngModel)]="ldapSettings.searchFilter" placeholder="(uid={username})">
+          <small>Use &#123;username&#125; as placeholder for login name</small>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-secondary" (click)="testLdap()" [disabled]="testingLdap()">
+          {{ testingLdap() ? 'Testing...' : 'Test Connection' }}
+        </button>
+        <button class="btn btn-outline" (click)="testLdapAuth()" [disabled]="testingLdap()">
+          Test Authentication
+        </button>
+      </div>
+
+      <div *ngIf="ldapTestResult()" class="test-result" 
+           [class.success]="ldapTestResult()?.success" 
+           [class.error]="!ldapTestResult()?.success">
+        {{ ldapTestResult()?.message }}
+      </div>
+
+      <div *ngIf="ldapEnabled" class="ldap-auth-test">
+        <h3>Quick LDAP Auth Test</h3>
+        <div class="form-row">
+          <input type="text" [(ngModel)]="ldapTestUsername" placeholder="Username">
+          <input type="password" [(ngModel)]="ldapTestPassword" placeholder="Password">
+          <button class="btn btn-primary" (click)="testLdapAuth()">Login</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Server Info -->
+    <div *ngIf="activeTab === 'server'" class="settings-section">
+      <div class="section-header">
+        <h2>Server Information</h2>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>Application</h3>
+          <p><strong>Version:</strong> {{ systemInfo()?.version || '1.0.0' }}</p>
+          <p><strong>Environment:</strong> {{ systemInfo()?.environment || 'production' }}</p>
+        </div>
+        <div class="info-card">
+          <h3>Server</h3>
+          <p><strong>Node:</strong> {{ systemInfo()?.nodeVersion }}</p>
+          <p><strong>Platform:</strong> {{ systemInfo()?.platform }}</p>
+          <p><strong>Uptime:</strong> {{ formatUptime(systemInfo()?.uptime) }}</p>
+        </div>
+        <div class="info-card">
+          <h3>Features</h3>
+          <p>
+            <span class="status-dot" [class.active]="settings()?.features?.smtpEnabled"></span>
+            SMTP Email
+          </p>
+          <p>
+            <span class="status-dot" [class.active]="settings()?.features?.ldapEnabled"></span>
+            LDAP Authentication
+          </p>
+          <p>
+            <span class="status-dot" [class.active]="settings()?.features?.ssoEnabled"></span>
+            SSO
+          </p>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-secondary" (click)="checkHealth()">Health Check</button>
+      </div>
+
+      <div *ngIf="healthCheck()" class="health-result">
+        <h3>Health Check Results</h3>
+        <pre>{{ healthCheck() | json }}</pre>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <strong>Note:</strong> Settings changes require server restart to take effect.
+    </div>
+  </div>
+</div>

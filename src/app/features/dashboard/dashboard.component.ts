@@ -67,6 +67,10 @@ import { Form, Workflow, DashboardStats } from '../../core/models';
               <span class="action-icon">👤</span>
               <span class="action-label">Manage Users</span>
             </a>
+            <a routerLink="/admin/settings" class="action-card admin-action">
+              <span class="action-icon">⚙️</span>
+              <span class="action-label">Settings</span>
+            </a>
           }
         </div>
       </div>

@@ -18,6 +18,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'admin/settings',
+    loadComponent: () => import('./features/admin/admin-settings.component').then(m => m.AdminSettingsComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'form-builder',
     loadComponent: () => import('./features/form-builder/form-builder.component').then(m => m.FormBuilderComponent),
     canActivate: [authGuard]
