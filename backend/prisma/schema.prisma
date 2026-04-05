@@ -180,6 +180,7 @@ model Workflow {
 
   instances   WorkflowInstance[]
   members     Member[]  // Project-scoped permissions
+  escalationRules EscalationRule[]
 
   @@index([userId])
 }
@@ -244,4 +245,31 @@ model Notification {
   data      String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model EscalationRule {
+  id              String   @id @default(uuid())
+  workflowId       String?
+  workflow        Workflow? @relation(fields: [workflowId], references: [id])
+  nodeType        String   // approval, form, task
+  timeoutMinutes  Int      // Minutes before escalation
+  level1ApproverId String?
+  level2ApproverId String?
+  level3ApproverId String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([workflowId])
+}
+
+model EscalationLog {
+  id                String   @id @default(uuid())
+  instanceId        String
+  approvalRequestId String
+  level             Int      // 0 = original, 1 = first escalation, etc.
+  escalatedAt       DateTime @default(now())
+  reason            String   // e.g., "Timeout after 24 hours"
+  previousApproverId String?
+  newApproverId     String?
 }
