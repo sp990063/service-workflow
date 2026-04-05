@@ -183,10 +183,10 @@
 
 | 優先 | 項目 | 難度 |
 |------|------|------|
-| 中 | 添加 centralized logging | 中 |
-| 中 | 加強 error handling | 中 |
-| 低 | 清理無用 code | 低 |
-| 低 | 更新依賴版本 | 低 |
+| 中 | 添加 centralized logging | ✅ 已完成 |
+| 中 | 加強 error handling | ✅ 已完成 |
+| 低 | 清理無用 code | ✅ 已完成 |
+| 低 | 更新依賴版本 | ⏳ 待處理 |
 
 ---
 
