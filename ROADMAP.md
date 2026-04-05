@@ -138,8 +138,8 @@
 ## Phase 4: DX Improvements
 
 ### 4.1 Swagger API Documentation 📚
-**Status:** 未實現
-**檔案:** `backend/src/main.ts`
+**Status:** ✅ 已完成
+**URL:** `http://localhost:3000/api/docs`
 
 **需要做:**
 - [ ] 安裝 @nestjs/swagger
