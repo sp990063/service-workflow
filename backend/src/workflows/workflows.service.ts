@@ -31,18 +31,27 @@ export class WorkflowsService {
     return workflows.map(w => this.parseJsonFields(w));
   }
 
+  async findAllByUser(userId: string) {
+    const workflows = await this.prisma.workflow.findMany({
+      where: { isActive: true, userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return workflows.map(w => this.parseJsonFields(w));
+  }
+
   async findById(id: string) {
     const workflow = await this.prisma.workflow.findUnique({ where: { id } });
     return this.parseJsonFields(workflow);
   }
 
-  async create(data: { name: string; description?: string; nodes: any[]; connections: any[] }) {
+  async create(data: { name: string; description?: string; nodes: any[]; connections: any[]; userId: string }) {
     return this.prisma.workflow.create({
       data: {
         name: data.name,
         description: data.description,
         nodes: JSON.stringify(data.nodes),
         connections: JSON.stringify(data.connections),
+        userId: data.userId,
       },
     });
   }

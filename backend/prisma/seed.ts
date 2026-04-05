@@ -54,6 +54,7 @@ async function main() {
   const sampleForm = await prisma.form.create({
     data: {
       name: 'IT Equipment Request',
+      userId: admin.id,
       description: 'Request form for IT equipment',
       elements: JSON.stringify([
         {
@@ -95,6 +96,7 @@ async function main() {
   const sampleWorkflow = await prisma.workflow.create({
     data: {
       name: 'IT Equipment Approval',
+      userId: admin.id,
       description: 'Workflow for IT equipment requests',
       category: 'IT',
       nodes: JSON.stringify([
@@ -138,6 +140,7 @@ async function main() {
   const feedbackForm = await prisma.form.create({
     data: {
       name: 'Customer Feedback',
+      userId: admin.id,
       description: 'Capture customer feedback',
       elements: JSON.stringify([
         {
@@ -170,6 +173,7 @@ async function main() {
   const feedbackWorkflow = await prisma.workflow.create({
     data: {
       name: 'Customer Feedback Workflow',
+      userId: admin.id,
       description: 'Process customer feedback submissions',
       category: 'Customer Service',
       nodes: JSON.stringify([
@@ -234,6 +238,7 @@ async function main() {
   const sdlcWorkflow = await prisma.workflow.create({
     data: {
       name: 'SDLC Process',
+      userId: admin.id,
       description: 'Software Development Life Cycle - Requirements to Deployment',
       category: 'IT',
       nodes: JSON.stringify([
@@ -265,6 +270,7 @@ async function main() {
   const enhancementForm = await prisma.form.create({
     data: {
       name: 'System Enhancement Request',
+      userId: admin.id,
       description: 'Submit a system enhancement request for IT review',
       elements: JSON.stringify([
         { id: 'enh-title', type: 'text', label: 'Enhancement Title', placeholder: 'Enter enhancement title', required: true },
@@ -284,6 +290,7 @@ async function main() {
   await prisma.workflow.create({
     data: {
       name: 'System Enhancement Request',
+      userId: admin.id,
       description: 'Submit and track system enhancement requests through SDLC',
       category: 'IT',
       nodes: JSON.stringify([
@@ -307,6 +314,7 @@ async function main() {
   await prisma.workflow.create({
     data: {
       name: 'SDLC with Rejection',
+      userId: admin.id,
       description: 'SDLC process with BA rejection at requirements stage',
       category: 'IT',
       nodes: JSON.stringify([
@@ -334,6 +342,7 @@ async function main() {
   await prisma.workflow.create({
     data: {
       name: 'Budget Check Workflow',
+      userId: admin.id,
       description: 'Enhancement request blocked when budget exceeds limit',
       category: 'IT',
       nodes: JSON.stringify([
@@ -362,6 +371,7 @@ async function main() {
   await prisma.workflow.create({
     data: {
       name: 'Test Failure Blocking Workflow',
+      userId: admin.id,
       description: 'Blocks deployment when QA finds critical bugs',
       category: 'IT',
       nodes: JSON.stringify([

@@ -5,11 +5,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Enable seed script
-toolchain {
-  previewFeatures = ["prismaSchemaFolder]
-}
-
 // Run seed: npx prisma db seed
 // Or: npm run db:seed
 
@@ -29,6 +24,8 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   formSubmissions  FormSubmission[]
+  forms           Form[]
+  workflows       Workflow[]
   approvalRequests ApprovalRequest[]
   workflowInstances WorkflowInstance[]
   notifications    Notification[]
@@ -45,6 +42,9 @@ model Form {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
 
   submissions FormSubmission[]
 }
@@ -72,6 +72,9 @@ model Workflow {
   category    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
 
   instances WorkflowInstance[]
 }

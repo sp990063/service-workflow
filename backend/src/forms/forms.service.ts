@@ -13,6 +13,14 @@ export class FormsService {
     return forms.map(f => ({ ...f, elements: JSON.parse(f.elements as string) }));
   }
 
+  async findAllByUser(userId: string) {
+    const forms = await this.prisma.form.findMany({
+      where: { isActive: true, userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return forms.map(f => ({ ...f, elements: JSON.parse(f.elements as string) }));
+  }
+
   async findById(id: string) {
     const form = await this.prisma.form.findUnique({ where: { id } });
     if (form) {
@@ -21,12 +29,13 @@ export class FormsService {
     return null;
   }
 
-  async create(data: { name: string; description?: string; elements: any[] }) {
+  async create(data: { name: string; description?: string; elements: any[]; userId: string }) {
     return this.prisma.form.create({
       data: {
         name: data.name,
         description: data.description,
         elements: JSON.stringify(data.elements),
+        userId: data.userId,
       },
     });
   }

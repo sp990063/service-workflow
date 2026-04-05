@@ -1,59 +1,112 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from '../common/guards/roles.guard';
 import { FormsService } from './forms.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('forms')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class FormsController {
   constructor(private formsService: FormsService) {}
 
   @Get()
-  async findAll() {
+  async findAll(@CurrentUser('id') userId: string, @CurrentUser('role') role: string) {
+    if (role === Role.USER) {
+      return this.formsService.findAllByUser(userId);
+    }
     return this.formsService.findAll();
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.formsService.findById(id);
+  async findOne(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: string) {
+    const form = await this.formsService.findById(id);
+    if (!form) return null;
+    
+    if (role === Role.USER && form.userId !== userId) {
+      throw new Error('Access denied');
+    }
+    return form;
   }
 
   @Post()
-  async create(@Body() body: { name: string; description?: string; elements: any[] }) {
-    return this.formsService.create(body);
+  @Roles(Role.ADMIN, Role.MANAGER, Role.USER)
+  async create(
+    @Body() body: { name: string; description?: string; elements: any[] },
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.formsService.create({
+      ...body,
+      userId,
+    });
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: { name?: string; description?: string; elements?: any[] }) {
+  async update(
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string; elements?: any[] },
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+  ) {
+    const form = await this.formsService.findById(id);
+    if (!form) throw new Error('Form not found');
+    
+    if (role === Role.USER && form.userId !== userId) {
+      throw new Error('Access denied');
+    }
     return this.formsService.update(id, body);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: string) {
+    const form = await this.formsService.findById(id);
+    if (!form) throw new Error('Form not found');
+    
+    if (role === Role.USER && form.userId !== userId) {
+      throw new Error('Access denied');
+    }
     return this.formsService.delete(id);
   }
 
   @Get(':id/submissions')
-  async getSubmissions(@Param('id') id: string) {
+  async getSubmissions(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: string) {
+    const form = await this.formsService.findById(id);
+    if (!form) throw new Error('Form not found');
+    
+    if (role === Role.USER && form.userId !== userId) {
+      throw new Error('Access denied');
+    }
     return this.formsService.getSubmissions(id);
   }
 
   @Post(':id/submit')
-  async submit(@Param('id') id: string, @Body() body: { userId: string; data: Record<string, any> }) {
-    return this.formsService.createSubmission({ formId: id, userId: body.userId, formData: body.data });
+  @Roles(Role.ADMIN, Role.MANAGER, Role.USER)
+  async submit(
+    @Param('id') id: string,
+    @Body() body: { data: Record<string, any> },
+    @CurrentUser('id') userId: string, // userId from JWT, not body
+  ) {
+    return this.formsService.createSubmission({ formId: id, userId, formData: body.data });
   }
 }
 
 @Controller('form-submissions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class FormSubmissionsController {
   constructor(private formsService: FormsService) {}
 
   @Get(':id')
-  async getSubmission(@Param('id') id: string) {
-    return this.formsService.getSubmission(id);
+  async getSubmission(@Param('id') id: string, @CurrentUser('role') role: string) {
+    const submission = await this.formsService.getSubmission(id);
+    if (!submission) return null;
+    
+    if (role === Role.USER && submission.userId !== id) {
+      throw new Error('Access denied');
+    }
+    return submission;
   }
 
   @Put(':id/status')
+  @Roles(Role.ADMIN, Role.MANAGER) // Only admins/managers can update status
   async updateStatus(@Param('id') id: string, @Body() body: { status: 'PENDING' | 'APPROVED' | 'REJECTED' }) {
     return this.formsService.updateSubmissionStatus(id, body.status);
   }
