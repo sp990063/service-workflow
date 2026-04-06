@@ -657,10 +657,10 @@ export class WorkflowInstanceDetailComponent implements OnInit {
       timestamp: new Date()
     });
 
-    inst.status = 'completed';
+    inst.status = 'REJECTED';
     inst.currentNodeId = null;
 
-    this.workflowService.completeInstance(inst.id).subscribe({
+    this.workflowService.rejectInstance(inst.id).subscribe({
       next: (updated: any) => this.instance.set({ ...updated }),
       error: () => this.instance.set({ ...inst })
     });

@@ -334,6 +334,17 @@ export class WorkflowsService {
     return this.parseInstanceFields(updated);
   }
 
+  async rejectInstance(id: string) {
+    const updated = await this.prisma.workflowInstance.update({
+      where: { id },
+      data: {
+        status: 'REJECTED',
+        currentNodeId: null,
+      },
+    });
+    return this.parseInstanceFields(updated);
+  }
+
   async createChildInstance(parentId: string, childWorkflowId: string, userId: string, formData: any) {
     const childWorkflow = await this.findById(childWorkflowId);
     if (!childWorkflow) {

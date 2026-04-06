@@ -139,6 +139,11 @@ export class WorkflowInstancesController {
     return this.workflowsService.completeInstance(id);
   }
 
+  @Post(':id/reject')
+  async rejectInstance(@Param('id') id: string) {
+    return this.workflowsService.rejectInstance(id);
+  }
+
   @Post(':id/child')
   async createChildInstance(
     @Param('id') id: string,

@@ -55,6 +55,10 @@ export class WorkflowService {
     return this.api.post<any>(`/workflow-instances/${id}/complete`, {});
   }
 
+  rejectInstance(id: string): Observable<any> {
+    return this.api.post<any>(`/workflow-instances/${id}/reject`, {});
+  }
+
   createChildInstance(id: string, childWorkflowId: string, userId: string, formData: any): Observable<any> {
     return this.api.post<any>(`/workflow-instances/${id}/child`, { childWorkflowId, userId, formData });
   }

@@ -489,9 +489,13 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     const approvalSection = page.locator('.approval-section');
     expect(await approvalSection.isVisible().catch(() => false)).toBeTruthy();
     
+    const instanceId = instances[0]?.id;
+    
     await login(page, TEST_USERS.manager);
-    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1000);
+    if (instanceId) {
+      await page.goto(`${BASE_URL}/workflow-instance/${instanceId}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+    }
     await approveStep(page);
     
     instances = db.getWorkflowInstances({ userId: employee!.id });
@@ -515,16 +519,22 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     await page.locator('button[type="submit"]').click();
     await page.waitForTimeout(1500);
     
-    await login(page, TEST_USERS.manager);
-    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1000);
-    await rejectStep(page);
-    
     const employee = db.getUserByEmail(TEST_USERS.employee.email);
     const instances = db.getWorkflowInstances({ userId: employee!.id });
+    const instanceId = instances[0]?.id;
     
-    if (instances.length > 0) {
-      expect(instances[0].status).toMatch(/REJECTED/);
+    await login(page, TEST_USERS.manager);
+    if (instanceId) {
+      await page.goto(`${BASE_URL}/workflow-instance/${instanceId}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+    }
+    await rejectStep(page);
+    
+    // Refresh instances to get updated status
+    const updatedInstances = db.getWorkflowInstances({ userId: employee!.id });
+    
+    if (updatedInstances.length > 0) {
+      expect(updatedInstances[0].status).toMatch(/REJECTED/);
     }
     
     db.close();
