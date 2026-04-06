@@ -1,6 +1,6 @@
 # Test Report - Service Workflow
 
-**Last Updated:** 2026-04-06 13:25 GMT+8
+**Last Updated:** 2026-04-06 14:05 GMT+8
 **Test Framework:** Playwright E2E + Jest Integration
 **Base URL:** http://localhost:4200
 
@@ -17,7 +17,11 @@
 | Workflow save 500 error | `nodes`/`connections` undefined時 `JSON.stringify` 問題 | ✅ 已修 |
 | NotificationsModule ConfigService DI error | 加入 ConfigService providers | ✅ 已修 |
 | workflow.spec.ts strict locator violation | 加 `.first()` | ✅ 已修 |
-| workflow.spec.ts player `.node-item` selector | 改用 `waitForTimeout` | ✅ 已修 |
+| Workflow player enum case sensitivity | `'completed'`→`'COMPLETED'`, `'in-progress'`→`'IN_PROGRESS'` 等 | ✅ 已修 |
+| Workflow player orphaned code | 移除重複的 `startWorkflow` 方法代碼 | ✅ 已修 |
+| Missing NgZone import | 加入 NgZone import | ✅ 已修 |
+| Backend history parsing | `advanceInstance` 中 `instance.history` 需要 JSON.parse | ✅ 已修 |
+| Backend parseInstanceFields | 解析 `history` 字串欄位 | ✅ 已修 |
 
 ---
 
@@ -35,13 +39,13 @@
 | form-elements.spec.ts | 15 | 0 | 0 | ✅ |
 | form-validation-neg.spec.ts | 3 | 0 | 0 | ✅ |
 | admin-settings.spec.ts | 5 | 0 | 0 | ✅ |
-| workflow.spec.ts | 7 | 2 | 1 | ⚠️ |
-| subworkflow.spec.ts | 3 | 1 | 0 | ⚠️ |
+| workflow.spec.ts | 9 | 0 | 0 | ✅ |
+| subworkflow.spec.ts | 3 | 3 | 0 | ❌ |
 | workflow-realistic.spec.ts | 1 | 2 | 0 | ❌ |
 | form-versioning.spec.ts | 0 | 1 | 0 | ❌ |
 | complex-scenarios.spec.ts | 0 | 31 | 0 | ❌ |
 | missing-features.spec.ts | 18 | 26 | 0 | ✅ |
-| **E2E Total** | **~163** | **~64** | **~7** | |
+| **E2E Total** | **~165** | **~64** | **~7** | |
 
 **Backend Integration Tests: ✅ 102/102**
 
@@ -49,53 +53,38 @@
 
 ## 🔴 仍需修復
 
-### 1. workflow.spec.ts - Workflow Player 功能問題（P1）
+### workflow.spec.ts - 已全部修復！✅
+- TC-WFPLAYER-001, TC-WFPLAYER-002 - 已通過
 
-| Test | 問題 |
-|------|------|
-| TC-WFPLAYER-001 | 點擊 "Start Workflow" 後 step items 不出現 |
-| TC-WFPLAYER-002 | 同上 |
+### subworkflow.spec.ts（3 failed）
+- TC-SUB-002: Sub-Workflow node appears in palette
+- TC-SUB-005: Sub-workflow UI flow
+- TC-SUB-006: Sub-workflow properties panel has workflow dropdown
 
-**Root cause:** Workflow player UI 在點擊 "Start Workflow" 後，step items (.step-item.completed/active) 未出現。可能原因：
-- `startWorkflow()` 成功執行但 component 未正確 re-render
-- 測試預期的 step-item selectors 與實際 UI 不匹配
-- 需要 snapshot 確認 player 實際 render 了什麼
+### workflow-realistic.spec.ts（2 failed）
+- 需要調查
 
-### 2. workflow-realistic.spec.ts - Stale Data（P2）
+### form-versioning.spec.ts（1 failed）
+- 需要調查
 
-| Test | 問題 |
-|------|------|
-| TC-REAL-001 | 預期 "IT Equipment Request Form" 得到 "Customer Feedback" |
-| TC-REAL-002 | `.approval-section` selector 不存在 |
-
-### 3. subworkflow.spec.ts（P1）
-
-| Test | 問題 |
-|------|------|
-| TC-SUB-005 | Sub-workflow save fails，child workflow ID undefined |
-
-### 4. form-versioning.spec.ts（P1）
-
-| Test | 問題 |
-|------|------|
-| TC-FV-001 | Versions button 不出現 |
-
-### 5. complex-scenarios.spec.ts（P1）
-
-31 tests timeout - login/navigation 問題
-
-### 6. scenarios.spec.ts（P2）
-
-未測試
+### complex-scenarios.spec.ts（31 failed, all timeout）
+- 最大問題：所有測試 timeout
+- 可能原因：mock data 或 test setup 問題
 
 ---
 
-## 維修總結
+## 📝 修復筆記
 
-- **E2E 測試修復:** 4 test files × 9+ tests 修復
-- **Backend 修復:** 2 bugs（JSON.stringify undefined, ConfigService DI）
-- **剩餘問題:** 5 test suites 有 P1/P2 問題，共 ~64 tests fail（但大部分係預期 fail，因為 features 未實現）
+### Backend Workflow Player Fix
+1. **歷史記錄格式問題**：`advanceInstance` 假設 `instance.history` 是陣列，但 Prisma 返回的是 JSON 字串
+2. **parseInstanceFields**：只解析 `formData`，沒有解析 `history`
+3. **Frontend enum case**：TypeScript interface 定義 `'COMPLETED'` 但代碼使用 `'completed'`
+
+### Frontend Component Fix
+1. **Orphaned code**：`startWorkflow` 方法在 line 848 關閉，但有重複的代碼在 lines 849-883（class level）
+2. **NgZone import**：constructor 使用 `NgZone` 但沒有從 '@angular/core' 導入
+3. **Enum case**：所有 status 賦值使用小寫，但 interface 定義是大寫
 
 ---
 
-*Updated: 2026-04-06 13:25 GMT+8*
+*Last updated: 2026-04-06 14:05*
