@@ -43,6 +43,10 @@ export class WorkflowService {
     return this.api.get<any>(`/workflow-instances/${id}`);
   }
 
+  updateInstance(id: string, data: { formData?: Record<string, any> }): Observable<any> {
+    return this.api.put<any>(`/workflow-instances/${id}`, data);
+  }
+
   advanceInstance(id: string, nextNodeId: string, addToHistory: any[]): Observable<any> {
     return this.api.post<any>(`/workflow-instances/${id}/advance`, { nextNodeId, addToHistory });
   }

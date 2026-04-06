@@ -32,7 +32,7 @@ export interface Form {
 
 export interface WorkflowNode {
   id: string;
-  type: 'start' | 'end' | 'task' | 'condition' | 'approval' | 'parallel' | 'join' | 'sub-workflow' | 'script' | 'setvalue' | 'transform';
+  type: 'start' | 'end' | 'form' | 'task' | 'condition' | 'approval' | 'parallel' | 'join' | 'sub-workflow' | 'script' | 'setvalue' | 'transform';
   position: { x: number; y: number };
   data: Record<string, unknown>;
 }

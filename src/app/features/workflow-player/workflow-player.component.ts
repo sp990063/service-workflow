@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Workflow, WorkflowNode } from '../../core/models';
+import { FormService } from '../../core/services/form.service';
+import { Workflow, WorkflowNode, Form } from '../../core/models';
 
 interface WorkflowInstance {
   id: string;
@@ -165,6 +166,136 @@ interface ParallelApprovalState {
                       }
                       <p class="condition-note">Based on the form data, the workflow will proceed to the appropriate path.</p>
                       <button class="btn btn-primary" (click)="proceedFromCondition()">Evaluate Condition</button>
+                    </div>
+                  }
+
+                  <!-- Form: Show inline form fields -->
+                  @if (currentNode()!.type === 'form') {
+                    <div class="form-section">
+                      <h4>Form</h4>
+                      @if (currentForm()) {
+                        <p class="form-description">{{ currentNode()!.data['description'] || 'Please fill out the form below.' }}</p>
+                        <div class="form-fields">
+                          @for (element of currentForm()!.elements; track element.id; let i = $index) {
+                            <div class="form-field">
+                              <label [for]="'field-' + i">
+                                {{ element.label }}
+                                @if (element.required) { <span class="required">*</span> }
+                              </label>
+                              @switch (element.type) {
+                                @case ('text') {
+                                  <input 
+                                    type="text" 
+                                    [id]="'field-' + i"
+                                    [(ngModel)]="formData()[element.id]"
+                                    [name]="'field-' + element.id"
+                                    [placeholder]="element.placeholder || ''"
+                                    [required]="element.required"
+                                  >
+                                }
+                                @case ('number') {
+                                  <input 
+                                    type="number" 
+                                    [id]="'field-' + i"
+                                    [(ngModel)]="formData()[element.id]"
+                                    [name]="'field-' + element.id"
+                                    [placeholder]="element.placeholder || ''"
+                                    [required]="element.required"
+                                  >
+                                }
+                                @case ('textarea') {
+                                  <textarea 
+                                    [id]="'field-' + i"
+                                    [(ngModel)]="formData()[element.id]"
+                                    [name]="'field-' + element.id"
+                                    [placeholder]="element.placeholder || ''"
+                                    [required]="element.required"
+                                    rows="3"
+                                  ></textarea>
+                                }
+                                @case ('email') {
+                                  <input 
+                                    type="email" 
+                                    [id]="'field-' + i"
+                                    [(ngModel)]="formData()[element.id]"
+                                    [name]="'field-' + element.id"
+                                    [placeholder]="element.placeholder || 'email@example.com'"
+                                    [required]="element.required"
+                                  >
+                                }
+                                @case ('date') {
+                                  <input 
+                                    type="date" 
+                                    [id]="'field-' + i"
+                                    [(ngModel)]="formData()[element.id]"
+                                    [name]="'field-' + element.id"
+                                    [required]="element.required"
+                                  >
+                                }
+                                @case ('dropdown') {
+                                  <select 
+                                    [id]="'field-' + i"
+                                    [(ngModel)]="formData()[element.id]"
+                                    [name]="'field-' + element.id"
+                                    [required]="element.required"
+                                  >
+                                    <option value="">Select an option...</option>
+                                    @for (option of element.options; track option) {
+                                      <option [value]="option">{{ option }}</option>
+                                    }
+                                  </select>
+                                }
+                                @case ('checkbox') {
+                                  <label class="checkbox-label">
+                                    <input 
+                                      type="checkbox" 
+                                      [(ngModel)]="formData()[element.id]"
+                                      [name]="'field-' + element.id"
+                                    >
+                                    {{ element.label }}
+                                  </label>
+                                }
+                                @case ('radio') {
+                                  <div class="radio-group">
+                                    @for (option of element.options; track option) {
+                                      <label class="radio-label">
+                                        <input 
+                                          type="radio" 
+                                          [name]="'field-' + element.id"
+                                          [value]="option"
+                                          [(ngModel)]="formData()[element.id]"
+                                        >
+                                        {{ option }}
+                                      </label>
+                                    }
+                                  </div>
+                                }
+                                @default {
+                                  <input 
+                                    type="text" 
+                                    [id]="'field-' + i"
+                                    [(ngModel)]="formData()[element.id]"
+                                    [name]="'field-' + element.id"
+                                    [placeholder]="element.placeholder || ''"
+                                    [required]="element.required"
+                                  >
+                                }
+                              }
+                            </div>
+                          }
+                        </div>
+                        <div class="form-actions">
+                          <button 
+                            class="btn btn-primary" 
+                            (click)="submitFormAndAdvance()"
+                            [disabled]="formSubmitting()"
+                          >
+                            {{ formSubmitting() ? 'Submitting...' : 'Submit Form' }}
+                          </button>
+                        </div>
+                      } @else {
+                        <p>Loading form...</p>
+                      }
                     </div>
                   }
 
@@ -637,12 +768,16 @@ export class WorkflowPlayerComponent implements OnInit {
   scriptResult = signal<string | null>(null);
   lastSetValue = signal<string | null>(null);
   transformResult = signal<string | null>(null);
+  currentForm = signal<Form | null>(null);
+  formData = signal<Record<string, any>>({});
+  formSubmitting = signal(false);
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private workflowService: WorkflowService,
     private auth: AuthService,
+    private formService: FormService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
   ) {}
@@ -671,6 +806,13 @@ export class WorkflowPlayerComponent implements OnInit {
             if (existing) {
               console.log('[DEBUG] Found existing instance:', JSON.stringify(existing));
               this.instance.set(existing);
+              this.formData.set(existing.formData || {});
+              // Check if current node is a form node and load the form
+              const currentNode = workflow.nodes.find((n: any) => n.id === existing.currentNodeId);
+              const formId = currentNode?.data?.['formId'];
+              if (currentNode?.type === 'form' && typeof formId === 'string' && formId) {
+                this.loadForm(formId);
+              }
             } else {
               // Create local pending instance
               const pendingInstance = {
@@ -745,6 +887,7 @@ export class WorkflowPlayerComponent implements OnInit {
     const labels: Record<string, string> = {
       'start': 'Start',
       'end': 'End',
+      'form': 'Form',
       'task': 'Task',
       'condition': 'Condition',
       'approval': 'Approval',
@@ -762,6 +905,7 @@ export class WorkflowPlayerComponent implements OnInit {
     const colors: Record<string, string> = {
       'start': '#10b981',
       'end': '#ef4444',
+      'form': '#3b82f6',
       'task': '#6366f1',
       'condition': '#f59e0b',
       'approval': '#8b5cf6',
@@ -825,6 +969,16 @@ export class WorkflowPlayerComponent implements OnInit {
       next: (startedInst: any) => {
         console.log('[DEBUG] startInstance API success, inst:', JSON.stringify(startedInst));
         this.instance.set(startedInst);
+        this.formData.set(startedInst.formData || {});
+        // Check if current node is a form node and load the form
+        const wf2 = this.workflow();
+        if (wf2 && startedInst.currentNodeId) {
+          const currentNode = wf2.nodes.find((n: any) => n.id === startedInst.currentNodeId);
+          const formId = currentNode?.data?.['formId'];
+          if (currentNode?.type === 'form' && typeof formId === 'string' && formId) {
+            this.loadForm(formId);
+          }
+        }
         this.cdr.markForCheck(); // Force change detection
         console.log('[DEBUG] instance signal now:', JSON.stringify(this.instance()));
       },
@@ -1481,6 +1635,50 @@ export class WorkflowPlayerComponent implements OnInit {
       },
       error: () => {
         this.instance.set({ ...updated });
+      }
+    });
+  }
+
+  // Form handling for form-type nodes
+  loadForm(formId: string) {
+    console.log('[DEBUG] loadForm called, formId:', formId);
+    this.formService.getById(formId).subscribe({
+      next: (form: any) => {
+        console.log('[DEBUG] Form loaded:', form.name, 'elements:', form.elements?.length);
+        this.currentForm.set(form);
+        // Initialize formData with existing data or empty object
+        const inst = this.instance();
+        this.formData.set(inst?.formData || {});
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        console.log('[DEBUG] loadForm error:', err?.message || err);
+        this.currentForm.set(null);
+      }
+    });
+  }
+
+  submitFormAndAdvance() {
+    const inst = this.instance();
+    const form = this.currentForm();
+    if (!inst || !form) return;
+
+    this.formSubmitting.set(true);
+    const formData = this.formData();
+    console.log('[DEBUG] submitFormAndAdvance, formData:', JSON.stringify(formData));
+
+    // Update instance with form data and advance to next node
+    this.workflowService.updateInstance(inst.id, { formData }).subscribe({
+      next: (updated: any) => {
+        console.log('[DEBUG] Form data saved, advancing workflow');
+        this.instance.set(updated);
+        this.formSubmitting.set(false);
+        // Advance to next node after form submission
+        setTimeout(() => this.advanceWorkflow(), 300);
+      },
+      error: (err: any) => {
+        console.log('[DEBUG] submitFormAndAdvance error:', err?.message || err);
+        this.formSubmitting.set(false);
       }
     });
   }
