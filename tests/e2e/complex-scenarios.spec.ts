@@ -500,7 +500,9 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     
     instances = db.getWorkflowInstances({ userId: employee!.id });
     const afterManagerStatus = instances[0]?.status;
-    expect(afterManagerStatus).not.toBe(initialStatus);
+    // Status should remain IN_PROGRESS - workflow continues to parallel approval
+    expect(afterManagerStatus).toBe('IN_PROGRESS');
+    expect(instances[0]?.currentNodeId).toBe('it-parallel');
     
     db.close();
   });
