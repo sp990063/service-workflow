@@ -6,6 +6,7 @@ import { NotificationsGateway } from './notifications.gateway';
 import { EmailService } from './email.service';
 import { PrismaModule } from '../prisma.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ConfigService } from '../config/configuration';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
     }),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationsGateway, EmailService],
+  providers: [NotificationsService, NotificationsGateway, EmailService, ConfigService],
   exports: [NotificationsService, NotificationsGateway, EmailService],
 })
 export class NotificationsModule {}

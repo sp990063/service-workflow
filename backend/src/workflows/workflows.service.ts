@@ -49,13 +49,13 @@ export class WorkflowsService {
     return this.parseJsonFields(workflow);
   }
 
-  async create(data: { name: string; description?: string; nodes: any[]; connections: any[]; userId: string }) {
+  async create(data: { name: string; description?: string; nodes?: any[]; connections?: any[]; userId: string }) {
     return this.prisma.workflow.create({
       data: {
         name: data.name,
-        description: data.description,
-        nodes: JSON.stringify(data.nodes),
-        connections: JSON.stringify(data.connections),
+        description: data.description ?? null,
+        nodes: JSON.stringify(data.nodes ?? []),
+        connections: JSON.stringify(data.connections ?? []),
         userId: data.userId,
       },
     });
@@ -63,8 +63,8 @@ export class WorkflowsService {
 
   async update(id: string, data: { name?: string; nodes?: any[]; connections?: any[] }) {
     const updateData: any = { ...data };
-    if (data.nodes !== undefined) updateData.nodes = JSON.stringify(data.nodes);
-    if (data.connections !== undefined) updateData.connections = JSON.stringify(data.connections);
+    if (data.nodes !== undefined) updateData.nodes = JSON.stringify(data.nodes ?? []);
+    if (data.connections !== undefined) updateData.connections = JSON.stringify(data.connections ?? []);
     return this.prisma.workflow.update({ where: { id }, data: updateData });
   }
 

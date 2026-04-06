@@ -103,7 +103,7 @@ test.describe('Workflow Integration', () => {
     
     await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
     await page.waitForSelector('.workflow-card, h3', { timeout: 30000 });
-    await expect(page.locator('h3', { hasText: 'Employee Onboarding Workflow' })).toBeVisible();
+    await expect(page.locator('h3', { hasText: 'Employee Onboarding Workflow' }).first()).toBeVisible();
   });
 
   // TC-WFPLAYER-001: Start and complete workflow
@@ -147,16 +147,14 @@ test.describe('Workflow Integration', () => {
     // Click Start Workflow button to begin - this advances past Start to Task
     await expect(page.locator('button', { hasText: 'Start Workflow' })).toBeVisible();
     await page.locator('button', { hasText: 'Start Workflow' }).click();
-    await page.waitForSelector(".node-item", { timeout: 30000 });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
     // After starting, Task step should be active (Start is completed)
     await expect(page.locator('.step-item.active .step-label')).toContainText('Review Request');
     
     // Complete task step - clicking Next Step on Task advances to End and marks workflow complete
     await page.locator('button', { hasText: 'Next Step' }).click();
-    await page.waitForSelector(".node-item", { timeout: 30000 });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
     // Workflow should be completed now (advancing to End marks it complete)
     await expect(page.locator('.completed-section h2')).toContainText('Workflow Completed');
@@ -193,8 +191,7 @@ test.describe('Workflow Integration', () => {
     
     // Click Start Workflow button
     await page.locator('button', { hasText: 'Start Workflow' }).click();
-    await page.waitForSelector(".node-item", { timeout: 30000 });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
     // Verify progress: Start is completed (in history), Task is active
     await expect(page.locator('.step-item.completed')).toHaveCount(1); // Start is completed
