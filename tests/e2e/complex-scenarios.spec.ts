@@ -47,6 +47,13 @@ async function startWorkflow(page: any, workflowName: string) {
   const startButton = wfCard.locator('a', { hasText: 'Start Workflow' });
   await startButton.click();
   await page.waitForTimeout(1500);
+  
+  // Click Start Workflow button on the player if present
+  const playerStartBtn = page.locator('button', { hasText: 'Start Workflow' });
+  if (await playerStartBtn.count() > 0) {
+    await playerStartBtn.click();
+    await page.waitForTimeout(2000);
+  }
 }
 
 async function advanceWorkflow(page: any, buttonText: string) {
@@ -89,6 +96,15 @@ test.afterEach(async ({ page }, testInfo) => {
     path: `tests/e2e/reports/${safeName}-${status}.png`,
     fullPage: true 
   });
+  
+  // Clean up workflow instances after each test
+  try {
+    const db = new DbHelper();
+    db.deleteAllInstances();
+    db.close();
+  } catch (e) {
+    console.log('Cleanup error:', e.message);
+  }
 });
 
 // ============================================================================

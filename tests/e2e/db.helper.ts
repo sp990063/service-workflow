@@ -370,6 +370,11 @@ export class DbHelper {
     return result.count;
   }
 
+  deleteAllInstances(): number {
+    const result = this.db.prepare('DELETE FROM WorkflowInstance').run();
+    return result.changes;
+  }
+
   close() {
     this.db.close();
   }
