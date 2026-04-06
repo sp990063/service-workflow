@@ -335,7 +335,7 @@ test.describe('Scenario 2: Expense Reimbursement (Parallel Approval)', () => {
     
     await fillFormField(page, 'Amount', '1000');
     await fillFormField(page, 'Description', 'Client dinner expense');
-    await page.locator('button[type="submit"]').click();
+    await page.locator('button[type="submit"], button', { hasText: 'Submit' }).click();
     await page.waitForTimeout(1500);
     
     await login(page, TEST_USERS.manager);
@@ -363,7 +363,7 @@ test.describe('Scenario 2: Expense Reimbursement (Parallel Approval)', () => {
     
     await fillFormField(page, 'Amount', '2000');
     await fillFormField(page, 'Description', 'Expensive item');
-    await page.locator('button[type="submit"]').click();
+    await page.locator('button[type="submit"], button', { hasText: 'Submit' }).click();
     await page.waitForTimeout(1500);
     
     await login(page, TEST_USERS.manager);
