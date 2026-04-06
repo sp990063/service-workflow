@@ -87,6 +87,24 @@ async function rejectStep(page: any) {
 }
 
 // ============================================================================
+// CLEAN STATE BEFORE EACH TEST
+// ============================================================================
+test.beforeEach(async ({ page }) => {
+  // Clean up any existing workflow instances
+  try {
+    const db = new DbHelper();
+    db.deleteAllInstances();
+    db.close();
+  } catch (e) {
+    console.log('Cleanup error:', e.message);
+  }
+  
+  // Logout first to ensure clean browser state
+  await page.goto(`${BASE_URL}/login`);
+  await page.waitForTimeout(500);
+});
+
+// ============================================================================
 // SCREENSHOT AFTER EACH TEST (per UI Testing Skill)
 // ============================================================================
 test.afterEach(async ({ page }, testInfo) => {
