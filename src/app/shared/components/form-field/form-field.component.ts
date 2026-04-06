@@ -80,7 +80,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
         @case ('dropdown') {
           <select
             [id]="fieldId"
-            [value]="value"
+            [attr.value]="value || ''"
             (change)="onSelectChange($event)"
             [required]="element.required"
           >

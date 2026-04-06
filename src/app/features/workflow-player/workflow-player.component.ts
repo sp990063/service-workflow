@@ -243,26 +243,33 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
         <h4>Form</h4>
         @if (currentForm()) {
           <p class="form-description">{{ currentNode()!.data['description'] || 'Please fill out the form below.' }}</p>
-          <div class="form-fields">
-            @for (element of currentForm()!.elements; track element.id; let i = $index) {
-              <app-form-field
-                [element]="element"
-                [value]="formData()[element.id]"
-                [fieldIndex]="i"
-                (valueChange)="onFormFieldChange(element.id, $event)"
-              ></app-form-field>
-            }
-          </div>
-          <div class="form-actions">
-            <button
-              type="submit"
-              class="btn btn-primary"
-              (click)="submitFormAndAdvance()"
-              [disabled]="formSubmitting()"
-            >
-              {{ formSubmitting() ? 'Submitting...' : 'Submit Form' }}
-            </button>
-          </div>
+          @if (formError()) {
+            <div class="form-error error-message alert-error">
+              <span>{{ formError() }}</span>
+              <button type="button" class="btn-close" (click)="formError.set(null)">×</button>
+            </div>
+          }
+          <form #form="ngForm" (submit)="onFormSubmit($event)">
+            <div class="form-fields">
+              @for (element of currentForm()!.elements; track element.id; let i = $index) {
+                <app-form-field
+                  [element]="element"
+                  [value]="formData()[element.id]"
+                  [fieldIndex]="i"
+                  (valueChange)="onFormFieldChange(element.id, $event)"
+                ></app-form-field>
+              }
+            </div>
+            <div class="form-actions">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="formSubmitting()"
+              >
+                {{ formSubmitting() ? 'Submitting...' : 'Submit Form' }}
+              </button>
+            </div>
+          </form>
         } @else {
           <p>Loading form...</p>
         }
@@ -1455,9 +1462,47 @@ export class WorkflowPlayerComponent implements OnInit {
   }
 
   submitFormAndAdvance(): void {
+    // Legacy method - now uses onFormSubmit via form submit event
+    this.onFormSubmit(new Event('submit'));
+  }
+
+  validateForm(): string | null {
+    const form = this.currentForm();
+    const data = this.formData();
+    if (!form) return null;
+
+    for (const element of form.elements) {
+      const value = data[element.id] as string | null | undefined;
+      
+      if (element.required) {
+        if (!value || value.trim() === '') {
+          return `${element.label} is required`;
+        }
+      }
+      // Email validation
+      if (element.type === 'email' && value) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          return `Invalid email format for ${element.label}`;
+        }
+      }
+    }
+    return null;
+  }
+
+  onFormSubmit(event: Event): void {
+    event.preventDefault();
+    
     const inst = this.instance();
     const form = this.currentForm();
     if (!inst || !form) return;
+
+    // Validate required fields
+    const validationError = this.validateForm();
+    if (validationError) {
+      this.formError.set(validationError);
+      return;
+    }
 
     this.formSubmitting.set(true);
     const data = this.formData();
