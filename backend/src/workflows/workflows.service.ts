@@ -211,13 +211,15 @@ export class WorkflowsService {
     let updatedFormData = instance.formData || {};
 
     // Auto-evaluate condition nodes: loop until we reach a non-condition node
+    console.log(`[DEBUG] Starting advanceInstance: id=${id}, targetNodeId=${nextNodeId}, instanceCurrentNode=${instance.currentNodeId}`);
     while (true) {
       const nextNode = workflow.nodes.find((n: any) => n.id === actualNextNodeId);
+      console.log(`[DEBUG] While loop: processing ${nextNode.id}, type=${nextNode.type}`);
       if (!nextNode) {
         throw new Error(`Next node not found: ${actualNextNodeId}`);
       }
 
-      console.log(`[DEBUG] advanceInstance while loop: processing node ${nextNode.id}, type=${nextNode.type}`);
+      console.log(`[DEBUG] advanceInstance while loop: processing node ${nextNode.id}, type=${nextNode.type}, isCondition=${nextNode.type === 'condition'}`);
 
       // Handle condition nodes by auto-evaluating
       if (nextNode.type === 'condition') {
@@ -287,12 +289,13 @@ export class WorkflowsService {
         updateData.formData = JSON.stringify(updatedFormData);
       }
 
+      console.log(`[DEBUG] Returning: actualNextNodeId=${actualNextNodeId}, currentNodeId in updateData=${updateData.currentNodeId}`);
       const updated = await this.prisma.workflowInstance.update({
         where: { id },
         data: updateData,
       });
 
-      console.log(`[DEBUG] advanceInstance: ${currentNode?.id || 'start'} → ${actualNextNodeId} (${nextNode.type})`);
+      console.log(`[DEBUG] advanceInstance result: ${currentNode?.id || 'start'} → ${actualNextNodeId} (${nextNode.type}), returned currentNodeId=${updated.currentNodeId}`);
       return this.parseInstanceFields(updated);
     }
   }

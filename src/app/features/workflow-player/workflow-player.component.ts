@@ -910,9 +910,13 @@ export class WorkflowPlayerComponent implements OnInit {
         error: () => this.instance.set({ ...inst, status: 'COMPLETED' })
       });
     } else {
-      // Backend now auto-evaluates condition nodes, so just advance
+      // Backend auto-evaluates condition nodes, so just advance
       this.workflowService.advanceInstance(inst.id, nextNode.id, newHistory).subscribe({
-        next: (updated) => this.instance.set(updated),
+        next: (updated) => {
+          // Backend should have already auto-evaluated any condition nodes
+          // Just update the instance with whatever the backend returned
+          this.instance.set(updated);
+        },
         error: () => {
           this.instance.set({
             ...inst,
