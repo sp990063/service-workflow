@@ -881,6 +881,12 @@ export class WorkflowPlayerComponent implements OnInit {
       return;
     }
 
+    // Auto-evaluate condition nodes
+    if (currentNode.type === 'condition') {
+      this.proceedFromCondition();
+      return;
+    }
+
     // At last node
     if (currentIdx >= wf.nodes.length - 1) {
       this.finishWorkflow();
@@ -911,13 +917,21 @@ export class WorkflowPlayerComponent implements OnInit {
       });
     } else {
       this.workflowService.advanceInstance(inst.id, nextNode.id, newHistory).subscribe({
-        next: (updated) => this.instance.set(updated),
-        error: () => this.instance.set({
-          ...inst,
-          currentNodeId: nextNode.id,
-          history: newHistory,
-          status: inst.status
-        })
+        next: (updated) => {
+          this.instance.set(updated);
+          // After advancing, check if we landed on an auto-executable node
+          if (nextNode.type === 'condition') {
+            setTimeout(() => this.proceedFromCondition(), 300);
+          }
+        },
+        error: () => {
+          this.instance.set({
+            ...inst,
+            currentNodeId: nextNode.id,
+            history: newHistory,
+            status: inst.status
+          });
+        }
       });
     }
   }
@@ -987,7 +1001,9 @@ export class WorkflowPlayerComponent implements OnInit {
     const value = currentNode.data['value'] as string;
     const operator = (currentNode.data['operator'] as string) || 'equals';
     const formValue = inst.formData[field];
+    console.log('[DEBUG] proceedFromCondition:', { field, formValue, value, operator });
     const conditionMet = this.evaluateCondition(formValue, value, operator);
+    console.log('[DEBUG] conditionMet:', conditionMet);
 
     const historyEntry = {
       nodeId: currentNode.id,
@@ -995,25 +1011,39 @@ export class WorkflowPlayerComponent implements OnInit {
       timestamp: new Date()
     };
 
-    const trueBranchId = currentNode.data['trueBranch'] as string;
-    const falseBranchId = currentNode.data['falseBranch'] as string;
-    let nextNodeId = inst.currentNodeId;
-
-    if (conditionMet && trueBranchId) {
-      nextNodeId = trueBranchId;
-    } else if (!conditionMet && falseBranchId) {
-      nextNodeId = falseBranchId;
-    }
+    const trueBranchId = currentNode.data['trueBranch'] as string | undefined;
+    const falseBranchId = currentNode.data['falseBranch'] as string | undefined;
+    const nextNodeId = (conditionMet && trueBranchId) ? trueBranchId : (!conditionMet && falseBranchId) ? falseBranchId : (inst.currentNodeId || '');
 
     const nextNode = wf.nodes.find(n => n.id === nextNodeId);
-    const newStatus = nextNode?.type === 'end' ? 'COMPLETED' : inst.status;
+    const newHistory = [...inst.history, historyEntry];
 
-    this.instance.set({
-      ...inst,
-      currentNodeId: nextNodeId,
-      history: [...inst.history, historyEntry],
-      status: newStatus
-    });
+    // Call backend to persist the advancement
+    if (nextNode?.type === 'end') {
+      this.workflowService.completeInstance(inst.id).subscribe({
+        next: (updated) => this.instance.set(updated),
+        error: () => {
+          this.instance.set({
+            ...inst,
+            currentNodeId: nextNodeId,
+            history: newHistory,
+            status: 'COMPLETED'
+          });
+        }
+      });
+    } else {
+      this.workflowService.advanceInstance(inst.id, nextNodeId, newHistory).subscribe({
+        next: (updated) => this.instance.set(updated),
+        error: () => {
+          this.instance.set({
+            ...inst,
+            currentNodeId: nextNodeId,
+            history: newHistory,
+            status: inst.status
+          });
+        }
+      });
+    }
   }
 
   private evaluateCondition(formValue: unknown, targetValue: string, operator: string): boolean {

@@ -404,13 +404,9 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     
     await fillFormField(page, 'Employee Name', 'Employee User');
     await fillFormField(page, 'Email', 'employee@example.com');
-    
-    const select = page.locator('select').first();
-    if (await select.isVisible()) {
-      await select.selectOption('Laptop');
-    }
-    
+    await fillFormField(page, 'Equipment Type', 'Laptop');
     await fillFormField(page, 'Justification', 'Need for remote work');
+    await fillFormField(page, 'Budget', '5000');
     await page.locator('button[type="submit"]').click();
     await page.waitForTimeout(1500);
     
@@ -472,13 +468,9 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     
     await fillFormField(page, 'Employee Name', 'Employee User');
     await fillFormField(page, 'Email', 'employee@example.com');
-    
-    const select = page.locator('select').first();
-    if (await select.isVisible()) {
-      await select.selectOption('Monitor');
-    }
-    
+    await fillFormField(page, 'Equipment Type', 'Monitor');
     await fillFormField(page, 'Justification', 'Additional monitor');
+    await fillFormField(page, 'Budget', '3000');
     await page.locator('button[type="submit"]').click();
     await page.waitForTimeout(1500);
     
@@ -509,13 +501,9 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     
     await fillFormField(page, 'Employee Name', 'Employee User');
     await fillFormField(page, 'Email', 'employee@example.com');
-    
-    const select = page.locator('select').first();
-    if (await select.isVisible()) {
-      await select.selectOption('Laptop');
-    }
-    
+    await fillFormField(page, 'Equipment Type', 'Laptop');
     await fillFormField(page, 'Justification', 'Unjustified expense');
+    await fillFormField(page, 'Budget', '3000');
     await page.locator('button[type="submit"]').click();
     await page.waitForTimeout(1500);
     
