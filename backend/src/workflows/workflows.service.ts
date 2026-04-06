@@ -79,18 +79,36 @@ export class WorkflowsService {
       throw new Error('Workflow not found');
     }
 
-    const startNode = workflow.nodes.find((n: any) => n.type === 'start');
+    const nodes = workflow.nodes as any[];
+    const startNode = nodes.find((n: any) => n.type === 'start');
+    const startIdx = nodes.findIndex((n: any) => n.type === 'start');
+    
+    // Determine the first actionable node after start
+    const firstActionableNode = nodes[startIdx + 1];
+    const history = startNode ? [{
+      nodeId: startNode.id,
+      action: `Started: ${startNode.data?.label || startNode.type}`,
+      timestamp: new Date()
+    }] : [];
 
-    return this.prisma.workflowInstance.create({
+    const instance = await this.prisma.workflowInstance.create({
       data: {
         workflowId,
         userId,
-        currentNodeId: startNode?.id || null,
-        status: 'PENDING',
+        currentNodeId: firstActionableNode?.id || startNode?.id || null,
+        status: 'IN_PROGRESS',
         formData: JSON.stringify({}),
-        history: JSON.stringify([]),
+        history: JSON.stringify(history),
       },
     });
+    
+    // Parse the created instance before returning
+    const parsed = this.parseInstanceFields(instance);
+    // Ensure history is a proper array for frontend consumption
+    if (typeof parsed.history === 'string') {
+      parsed.history = JSON.parse(parsed.history);
+    }
+    return parsed;
   }
 
   async getInstance(id: string) {
@@ -174,6 +192,14 @@ export class WorkflowsService {
       throw new Error('Instance not found');
     }
 
+    // Parse history if it's still a string (from Prisma raw return)
+    let existingHistory: any[] = [];
+    if (typeof instance.history === 'string') {
+      try { existingHistory = JSON.parse(instance.history); } catch { existingHistory = []; }
+    } else if (Array.isArray(instance.history)) {
+      existingHistory = instance.history;
+    }
+
     const workflow = await this.findById(instance.workflowId);
     if (!workflow) {
       throw new Error('Workflow not found');
@@ -182,7 +208,7 @@ export class WorkflowsService {
     const currentNode = workflow.nodes.find((n: any) => n.id === instance.currentNodeId);
     const nextNode = workflow.nodes.find((n: any) => n.id === nextNodeId);
 
-    const history = [...instance.history, ...addToHistory];
+    const history = [...existingHistory, ...addToHistory];
 
     let newStatus = instance.status;
     if (nextNode?.type === 'end') {
@@ -191,7 +217,7 @@ export class WorkflowsService {
       newStatus = 'WAITING_FOR_CHILD';
     }
 
-    return this.prisma.workflowInstance.update({
+    const updated = await this.prisma.workflowInstance.update({
       where: { id },
       data: {
         currentNodeId: nextNodeId,
@@ -199,16 +225,20 @@ export class WorkflowsService {
         history: JSON.stringify(history),
       },
     });
+    const parsed = this.parseInstanceFields(updated);
+    console.log('[DEBUG] advanceInstance returning:', JSON.stringify(parsed).substring(0, 200));
+    return parsed;
   }
 
   async completeInstance(id: string) {
-    return this.prisma.workflowInstance.update({
+    const updated = await this.prisma.workflowInstance.update({
       where: { id },
       data: {
         status: 'COMPLETED',
         currentNodeId: null,
       },
     });
+    return this.parseInstanceFields(updated);
   }
 
   async createChildInstance(parentId: string, childWorkflowId: string, userId: string, formData: any) {

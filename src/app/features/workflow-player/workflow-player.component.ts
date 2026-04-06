@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -11,7 +11,7 @@ interface WorkflowInstance {
   workflowId: string;
   workflowName: string;
   currentNodeId: string | null;
-  status: 'pending' | 'in-progress' | 'waiting-for-child' | 'completed';
+  status: 'PENDING' | 'IN_PROGRESS' | 'WAITING_FOR_CHILD' | 'COMPLETED';
   formData: Record<string, any>;
   history: Array<{ nodeId: string; action: string; timestamp: Date }>;
   childInstanceId?: string;  // Child workflow instance if waiting
@@ -23,7 +23,7 @@ interface ParallelApprovalState {
   parallelNodeId: string;
   requiredApprovers: string[];
   approvals: string[]; // List of approvers who have approved
-  status: 'pending' | 'all-approved' | 'rejected';
+  status: 'PENDING' | 'ALL_APPROVED' | 'REJECTED';
 }
 
 @Component({
@@ -48,14 +48,14 @@ interface ParallelApprovalState {
           </div>
           <a routerLink="/workflows" class="btn btn-secondary">Back to Workflows</a>
         </header>
-        
+
         <div class="player-body">
           <!-- Progress Steps -->
           <div class="progress-steps">
             <h3>Workflow Progress</h3>
             <div class="steps-list">
               @for (node of workflow()!.nodes; track node.id; let i = $index) {
-                <div 
+                <div
                   class="step-item"
                   [class.active]="isCurrentStep(node.id)"
                   [class.completed]="isStepCompleted(node.id)"
@@ -76,10 +76,10 @@ interface ParallelApprovalState {
               }
             </div>
           </div>
-          
+
           <!-- Current Step Content -->
           <div class="step-content">
-            @if (instance()?.status === 'completed') {
+            @if (instance()?.status === 'COMPLETED') {
               <!-- Workflow Completed -->
               <div class="completed-section">
                 <div class="completed-icon">✓</div>
@@ -115,11 +115,11 @@ interface ParallelApprovalState {
                     </span>
                     <h2>{{ currentNode()!.data['label'] || currentNode()!.type }}</h2>
                   </div>
-                  
+
                   @if (currentNode()!.data['description']) {
                     <p class="step-description">{{ currentNode()!.data['description'] }}</p>
                   }
-                  
+
                   <!-- Task: Show associated form if available -->
                   @if (currentNode()!.type === 'task') {
                     <div class="task-form">
@@ -135,7 +135,7 @@ interface ParallelApprovalState {
                       }
                     </div>
                   }
-                  
+
                   <!-- Approval: Show approval options -->
                   @if (currentNode()!.type === 'approval') {
                     <div class="approval-section">
@@ -152,7 +152,7 @@ interface ParallelApprovalState {
                       </div>
                     </div>
                   }
-                  
+
                   <!-- Condition: Show path options -->
                   @if (currentNode()!.type === 'condition') {
                     <div class="condition-section">
@@ -167,7 +167,7 @@ interface ParallelApprovalState {
                       <button class="btn btn-primary" (click)="proceedFromCondition()">Evaluate Condition</button>
                     </div>
                   }
-                  
+
                   <!-- Parallel: Multiple tasks -->
                   @if (currentNode()!.type === 'parallel') {
                     <div class="parallel-section">
@@ -184,7 +184,7 @@ interface ParallelApprovalState {
                       </div>
                     </div>
                   }
-                  
+
                   <!-- Join: Synchronize parallel paths -->
                   @if (currentNode()!.type === 'join') {
                     <div class="join-section">
@@ -193,13 +193,13 @@ interface ParallelApprovalState {
                       <button class="btn btn-primary" (click)="advanceWorkflow()">Continue</button>
                     </div>
                   }
-                  
+
                   <!-- Sub-Workflow: Trigger child workflow -->
                   @if (currentNode()!.type === 'sub-workflow') {
                     <div class="sub-workflow-section">
                       <h4>Sub-Workflow</h4>
                       <p>{{ currentNode()!.data['description'] || 'This step triggers a child workflow' }}</p>
-                      
+
                       @if (!instance()?.childInstanceId) {
                         <p class="child-workflow-name">Child: {{ getChildWorkflowName() }}</p>
                         <button class="btn btn-primary" (click)="startSubWorkflow()">
@@ -216,7 +216,7 @@ interface ParallelApprovalState {
                       }
                     </div>
                   }
-                  
+
                   <!-- Script: Execute JavaScript expression -->
                   @if (currentNode()!.type === 'script') {
                     <div class="script-section">
@@ -241,7 +241,7 @@ interface ParallelApprovalState {
                       <button class="btn btn-primary" (click)="executeScript()">Execute Script</button>
                     </div>
                   }
-                  
+
                   <!-- Set Value: Set form field values -->
                   @if (currentNode()!.type === 'setvalue') {
                     <div class="setvalue-section">
@@ -264,7 +264,7 @@ interface ParallelApprovalState {
                       <button class="btn btn-primary" (click)="executeSetValue()">Set Value</button>
                     </div>
                   }
-                  
+
                   <!-- Transform: Transform/concatenate values -->
                   @if (currentNode()!.type === 'transform') {
                     <div class="transform-section">
@@ -287,7 +287,7 @@ interface ParallelApprovalState {
                       <button class="btn btn-primary" (click)="executeTransform()">Transform</button>
                     </div>
                   }
-                  
+
                   <!-- End node -->
                   @if (currentNode()!.type === 'end') {
                     <div class="end-section">
@@ -295,7 +295,7 @@ interface ParallelApprovalState {
                       <button class="btn btn-primary" (click)="finishWorkflow()">Finish</button>
                     </div>
                   }
-                  
+
                   <!-- Generic next button for simple nodes -->
                   @if (currentNode()!.type === 'start' || currentNode()!.type === 'join' || currentNode()!.type === 'task') {
                     <button class="btn btn-primary" (click)="advanceWorkflow()">Next Step</button>
@@ -347,7 +347,7 @@ interface ParallelApprovalState {
       grid-template-columns: 280px 1fr;
       gap: 2rem;
     }
-    
+
     /* Progress Steps */
     .progress-steps {
       background: var(--color-surface);
@@ -410,7 +410,7 @@ interface ParallelApprovalState {
       font-size: 0.875rem;
       font-weight: 500;
     }
-    
+
     /* Step Content */
     .step-content {
       background: var(--color-surface);
@@ -465,7 +465,7 @@ interface ParallelApprovalState {
       color: var(--color-text-muted);
       padding-left: 1.25rem;
     }
-    
+
     /* Active Step */
     .active-step {
       padding: 1rem 0;
@@ -490,7 +490,7 @@ interface ParallelApprovalState {
       color: var(--color-text-muted);
       margin-bottom: 1.5rem;
     }
-    
+
     /* Task Form */
     .task-form, .approval-section, .parallel-section, .condition-section, .end-section, .sub-workflow-section, .join-section {
       background: var(--color-background);
@@ -637,41 +637,75 @@ export class WorkflowPlayerComponent implements OnInit {
   scriptResult = signal<string | null>(null);
   lastSetValue = signal<string | null>(null);
   transformResult = signal<string | null>(null);
-  
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private workflowService: WorkflowService,
-    private auth: AuthService
+    private auth: AuthService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {}
-  
+
   ngOnInit() {
     const workflowId = this.route.snapshot.paramMap.get('id');
     if (workflowId) {
-      this.loadWorkflow(workflowId);
-      this.loadOrCreateInstance(workflowId);
+      this.loadWorkflowAndInstance(workflowId);
     } else {
       this.loading.set(false);
     }
   }
-  
-  loadWorkflow(workflowId: string) {
+
+  loadWorkflowAndInstance(workflowId: string) {
+    console.log('[DEBUG] loadWorkflowAndInstance called, workflowId:', workflowId);
+    // Load both workflow and instances in parallel
     this.workflowService.getById(workflowId).subscribe({
       next: (workflow) => {
+        console.log('[DEBUG] getById returned workflow:', !!workflow, 'nodes:', workflow?.nodes?.length);
         this.workflow.set(workflow);
-        this.loading.set(false);
+        // Also load instances
+        this.workflowService.getAllInstances().subscribe({
+          next: (instances) => {
+            console.log('[DEBUG] getAllInstances returned', instances?.length, 'instances');
+            const existing = instances.find((i: any) => i.workflowId === workflowId && i.status !== 'COMPLETED');
+            if (existing) {
+              console.log('[DEBUG] Found existing instance:', JSON.stringify(existing));
+              this.instance.set(existing);
+            } else {
+              // Create local pending instance
+              const pendingInstance = {
+                id: '',
+                workflowId,
+                workflowName: workflow.name,
+                currentNodeId: null,
+                status: 'PENDING' as const,
+                formData: {},
+                history: []
+              };
+              console.log('[DEBUG] Creating pending instance:', JSON.stringify(pendingInstance));
+              this.instance.set(pendingInstance);
+            }
+            console.log('[DEBUG] instance signal set, now:', JSON.stringify(this.instance()));
+            this.loading.set(false);
+          },
+          error: (err) => {
+            console.log('[DEBUG] getAllInstances error:', err);
+            this.loading.set(false);
+          }
+        });
       },
-      error: () => {
+      error: (err) => {
+        console.log('[DEBUG] getById error:', err);
         this.workflow.set(null);
         this.loading.set(false);
       }
     });
   }
-  
+
   loadOrCreateInstance(workflowId: string) {
     this.workflowService.getAllInstances().subscribe({
       next: (instances) => {
-        let instance = instances.find((i: any) => i.workflowId === workflowId && i.status !== 'completed');
+        let instance = instances.find((i: any) => i.workflowId === workflowId && i.status !== 'COMPLETED');
         if (!instance) {
           const workflow = this.workflow();
           if (workflow) {
@@ -681,12 +715,17 @@ export class WorkflowPlayerComponent implements OnInit {
               workflowId,
               workflowName: workflow.name,
               currentNodeId: null,
-              status: 'pending' as const,
+              status: 'PENDING' as const,
               formData: {},
               history: []
             };
+          } else {
+            // No workflow yet, can't create instance
+            this.instance.set(null);
+            return;
           }
         }
+        console.log('[DEBUG] loadOrCreateInstance setting instance:', JSON.stringify(instance));
         this.instance.set(instance || null);
       },
       error: () => {
@@ -694,14 +733,14 @@ export class WorkflowPlayerComponent implements OnInit {
       }
     });
   }
-  
+
   currentNode(): WorkflowNode | null {
     const inst = this.instance();
     const wf = this.workflow();
     if (!inst || !wf || !inst.currentNodeId) return null;
     return wf.nodes.find(n => n.id === inst.currentNodeId) || null;
   }
-  
+
   getNodeTypeLabel(type: string): string {
     const labels: Record<string, string> = {
       'start': 'Start',
@@ -718,7 +757,7 @@ export class WorkflowPlayerComponent implements OnInit {
     };
     return labels[type] || type;
   }
-  
+
   getNodeColor(type: string): string {
     const colors: Record<string, string> = {
       'start': '#10b981',
@@ -735,84 +774,94 @@ export class WorkflowPlayerComponent implements OnInit {
     };
     return colors[type] || '#64748b';
   }
-  
+
   isCurrentStep(nodeId: string): boolean {
     return this.instance()?.currentNodeId === nodeId;
   }
-  
+
   isStepCompleted(nodeId: string): boolean {
     const inst = this.instance();
     if (!inst) return false;
     const wf = this.workflow();
     if (!wf) return false;
-    
+
     const node = wf.nodes.find(n => n.id === nodeId);
     const historyNode = inst.history.find(h => h.nodeId === nodeId);
-    
+
     // If in history, it's completed
     if (historyNode !== undefined) return true;
-    
+
     // For start node: completed if workflow is in-progress (we've started and moved past it)
     if (node?.type === 'start') {
-      return inst.status === 'in-progress' || inst.status === 'completed';
+      return inst.status === 'IN_PROGRESS' || inst.status === 'COMPLETED';
     }
-    
+
     // For other nodes: find indices to compare
     const currentIdx = wf.nodes.findIndex(n => n.id === inst.currentNodeId);
     const nodeIdx = wf.nodes.findIndex(n => n.id === nodeId);
-    
+
     return nodeIdx < currentIdx;
   }
-  
+
   isStepPending(nodeId: string): boolean {
     return !this.isCurrentStep(nodeId) && !this.isStepCompleted(nodeId);
   }
-  
+
   startWorkflow() {
     const inst = this.instance();
     const wf = this.workflow();
-    if (inst && wf) {
-      const startNode = wf.nodes.find(n => n.type === 'start');
-      const startIdx = wf.nodes.findIndex(n => n.type === 'start');
-      
-      if (startNode) {
-        // Add start node to history as completed
-        inst.history.push({
-          nodeId: startNode.id,
-          action: `Started: ${startNode.data['label'] || startNode.type}`,
-          timestamp: new Date()
-        });
-        
-        // Find the next node after start (typically the task node)
-        if (startIdx >= 0 && startIdx < wf.nodes.length - 1) {
-          const nextNode = wf.nodes[startIdx + 1];
-          inst.currentNodeId = nextNode.id;
-        } else {
-          inst.currentNodeId = startNode.id;
-        }
-        
-        inst.status = 'in-progress';
-        this.updateInstance(inst);
+    console.log('[DEBUG] startWorkflow inst:', !!inst, 'inst.id:', inst?.id, 'wf:', !!wf);
+    if (!inst || !wf) return;
+    const startNode = wf.nodes.find(n => n.type === 'start');
+    if (!startNode) return;
+    
+    const nextNodeIdx = wf.nodes.findIndex(n => n.type === 'start') + 1;
+    const nextNode = wf.nodes[nextNodeIdx];
+    const nextNodeId = nextNode ? nextNode.id : startNode.id;
+    
+    // Use backend API to start instance (persists to DB)
+    console.log('[DEBUG] Calling startInstance API, wf.id:', wf.id);
+    this.workflowService.startInstance(wf.id, 'admin').subscribe({
+      next: (startedInst: any) => {
+        console.log('[DEBUG] startInstance API success, inst:', JSON.stringify(startedInst));
+        this.instance.set(startedInst);
+        this.cdr.markForCheck(); // Force change detection
+        console.log('[DEBUG] instance signal now:', JSON.stringify(this.instance()));
+      },
+      error: (err: any) => {
+        console.log('[DEBUG] startInstance API error:', err?.message || err);
+        const updated = { 
+          ...inst, 
+          history: [...inst.history, {
+            nodeId: startNode.id,
+            action: `Started: ${startNode.data['label'] || startNode.type}`,
+            timestamp: new Date()
+          }],
+          currentNodeId: nextNodeId,
+          status: 'IN_PROGRESS' as const
+        };
+        this.instance.set(updated);
+        this.cdr.markForCheck();
       }
-    }
+    });
   }
-  
+
   advanceWorkflow() {
     const inst = this.instance();
     const wf = this.workflow();
     if (!inst || !wf) return;
-    
+
     // If waiting for child workflow, don't advance
-    if (inst.status === 'waiting-for-child') {
+    if (inst.status === 'WAITING_FOR_CHILD') {
       return;
     }
-    
+
     // Find current node index
     const currentIdx = wf.nodes.findIndex(n => n.id === inst.currentNodeId);
     if (currentIdx < 0) return;
-    
+
     const currentNode = wf.nodes[currentIdx];
-    
+
     // For script/setvalue/transform nodes, execute them before advancing
     if (currentNode.type === 'script') {
       this.executeScriptNoAdvance();
@@ -827,13 +876,13 @@ export class WorkflowPlayerComponent implements OnInit {
       this.executeTransformNoAdvance();
       return;
     }
-    
+
     // If at last node, finish workflow
     if (currentIdx >= wf.nodes.length - 1) {
       this.finishWorkflow();
       return;
     }
-    
+
     // Add to history (skip if already there - happens when we already added via startWorkflow)
     const alreadyInHistory = inst.history.some(h => h.nodeId === currentNode.id);
     if (!alreadyInHistory) {
@@ -843,54 +892,79 @@ export class WorkflowPlayerComponent implements OnInit {
         timestamp: new Date()
       });
     }
-    
+
     // Move to next node
     const nextNode = wf.nodes[currentIdx + 1];
-    inst.currentNodeId = nextNode.id;
-    
+    const addToHistory = [...inst.history, {
+      nodeId: currentNode.id,
+      action: `Completed: ${currentNode.data['label'] || currentNode.type}`,
+      timestamp: new Date()
+    }];
+    const newStatus = nextNode.type === 'end' ? 'completed' : inst.status;
+
     if (nextNode.type === 'end') {
-      inst.status = 'completed';
+      // Use finish workflow API
+      this.workflowService.completeInstance(inst.id).subscribe({
+        next: (updated: any) => { 
+          console.log('[DEBUG] completeInstance returned:', JSON.stringify(updated));
+          this.instance.set(updated); 
+          this.cdr.markForCheck(); 
+        },
+        error: (err) => { 
+          console.log('[DEBUG] completeInstance error:', err);
+          this.instance.set({ ...inst, status: 'COMPLETED' }); 
+          this.cdr.markForCheck(); 
+        }
+      });
+    } else {
+      // Use advance instance API
+      this.workflowService.advanceInstance(inst.id, nextNode.id, addToHistory).subscribe({
+        next: (updated: any) => { this.ngZone.run(() => { this.instance.set(updated); this.cdr.markForCheck(); }); },
+        error: () => {
+          // Fallback: update locally
+          this.instance.set({ ...inst, currentNodeId: nextNode.id, history: addToHistory, status: inst.status });
+          this.cdr.markForCheck();
+        }
+      });
     }
-    
-    this.updateInstance(inst);
   }
-  
+
   approve() {
     const inst = this.instance();
     if (!inst) return;
-    
+
     const currentNode = this.currentNode();
     const currentUser = this.auth.user();
-    
+
     // If in parallel mode, use parallel completion logic
     if (currentNode?.type === 'parallel') {
       this.completeParallel();
       return;
     }
-    
+
     inst.history.push({
       nodeId: currentNode?.id || '',
       action: `Approved by ${currentUser?.name || 'User'}`,
       timestamp: new Date()
     });
-    
+
     this.advanceWorkflow();
   }
-  
+
   reject() {
     const inst = this.instance();
     if (!inst) return;
-    
+
     const currentNode = this.currentNode();
     inst.history.push({
       nodeId: currentNode?.id || '',
       action: 'Rejected',
       timestamp: new Date()
     });
-    
+
     // Rejection ends workflow
-    inst.status = 'completed';
-    
+    inst.status = 'COMPLETED';
+
     this.workflowService.completeInstance(inst.id).subscribe({
       next: (updated) => {
         this.instance.set({ ...updated });
@@ -915,23 +989,23 @@ export class WorkflowPlayerComponent implements OnInit {
     const inst = this.instance();
     const wf = this.workflow();
     const currentNode = this.currentNode();
-    
+
     if (!inst || !wf || !currentNode || currentNode.type !== 'condition') {
       this.advanceWorkflow();
       return;
     }
-    
+
     // Get condition criteria from node data
     const field = currentNode.data['field'] as string;
     const value = currentNode.data['value'] as string;
     const operator = currentNode.data['operator'] as string || 'equals';
-    
+
     // Get form field value
     const formValue = inst.formData[field];
-    
+
     // Evaluate condition
     let conditionMet = false;
-    
+
     if (formValue === undefined || formValue === null) {
       conditionMet = false;
     } else if (operator === 'equals') {
@@ -945,19 +1019,19 @@ export class WorkflowPlayerComponent implements OnInit {
     } else if (operator === 'contains') {
       conditionMet = String(formValue).toLowerCase().includes(String(value).toLowerCase());
     }
-    
+
     // Add to history
     inst.history.push({
       nodeId: currentNode.id,
       action: `Condition evaluated: ${field} ${operator} ${value} → ${conditionMet ? 'TRUE' : 'FALSE'}`,
       timestamp: new Date()
     });
-    
+
     // Find the next node based on condition result
     // Look for connections from this condition node
     const trueBranchId = currentNode.data['trueBranch'] as string;
     const falseBranchId = currentNode.data['falseBranch'] as string;
-    
+
     if (conditionMet && trueBranchId) {
       inst.currentNodeId = trueBranchId;
     } else if (!conditionMet && falseBranchId) {
@@ -967,67 +1041,67 @@ export class WorkflowPlayerComponent implements OnInit {
       this.advanceWorkflow();
       return;
     }
-    
+
     if (inst.currentNodeId) {
       const nextNode = wf.nodes.find(n => n.id === inst.currentNodeId);
       if (nextNode?.type === 'end') {
-        inst.status = 'completed';
+        inst.status = 'COMPLETED';
       }
     }
-    
+
     this.updateInstance(inst);
   }
-  
+
   completeParallel() {
     const inst = this.instance();
     const wf = this.workflow();
     const currentNode = this.currentNode();
-    
+
     if (!inst || !wf || !currentNode || currentNode.type !== 'parallel') {
       this.advanceWorkflow();
       return;
     }
-    
+
     // Get parallel approvers from node data
     const approvers = (currentNode.data['approvers'] as string[]) || [];
     const currentUser = this.auth.user();
-    
+
     // Initialize or update parallel approval state
     if (!inst.parallelApprovals || inst.parallelApprovals.parallelNodeId !== currentNode.id) {
       inst.parallelApprovals = {
         parallelNodeId: currentNode.id,
         requiredApprovers: approvers,
         approvals: [],
-        status: 'pending'
+        status: 'PENDING'
       };
     }
-    
+
     // Add current user's approval
     if (currentUser && !inst.parallelApprovals.approvals.includes(currentUser.id)) {
       inst.parallelApprovals.approvals.push(currentUser.id);
     }
-    
+
     // Check if ALL required approvers have approved (AND logic)
     const allApproved = inst.parallelApprovals.requiredApprovers.length === 0 ||
-      inst.parallelApprovals.requiredApprovers.every(approver => 
+      inst.parallelApprovals.requiredApprovers.every(approver =>
         inst.parallelApprovals!.approvals.includes(approver)
       );
-    
+
     inst.history.push({
       nodeId: currentNode.id,
       action: `Parallel task approved: ${inst.parallelApprovals.approvals.length}/${inst.parallelApprovals.requiredApprovers.length || '?'} approvers`,
       timestamp: new Date()
     });
-    
+
     if (allApproved) {
-      inst.parallelApprovals.status = 'all-approved';
-      
+      inst.parallelApprovals.status = 'ALL_APPROVED';
+
       // Find the join node after this parallel section
       // In a proper implementation, we'd look at connections
       // For now, find the join node by looking for nodes after parallel
       const currentIdx = wf.nodes.findIndex(n => n.id === currentNode.id);
       const joinNode = wf.nodes.find((n, idx) => idx > currentIdx && n.type === 'join');
-      
+
       if (joinNode) {
         inst.currentNodeId = joinNode.id;
         // Clear parallel state
@@ -1038,34 +1112,34 @@ export class WorkflowPlayerComponent implements OnInit {
         this.advanceWorkflow();
         return;
       }
-      
+
       if (joinNode?.type === 'end') {
-        inst.status = 'completed';
+        inst.status = 'COMPLETED';
       }
-      
+
       this.updateInstance(inst);
     } else {
       // Still waiting for more approvals
       this.instance.set({ ...inst });
     }
   }
-  
+
   startSubWorkflow() {
     const inst = this.instance();
     const currentNode = this.currentNode();
     const user = this.auth.user();
     if (!inst || !currentNode || currentNode.type !== 'sub-workflow' || !user) return;
-    
+
     const childWorkflowId = currentNode.data['childWorkflowId'] as string;
     if (!childWorkflowId) {
       alert('Please select a child workflow in the designer');
       return;
     }
-    
+
     this.workflowService.createChildInstance(inst.id, childWorkflowId, user.id, inst.formData).subscribe({
       next: (childInstance) => {
         inst.childInstanceId = childInstance.id;
-        inst.status = 'waiting-for-child';
+        inst.status = 'WAITING_FOR_CHILD';
         inst.history.push({
           nodeId: currentNode.id,
           action: `Started sub-workflow: ${currentNode.data['label'] || 'Sub-workflow'}`,
@@ -1078,37 +1152,37 @@ export class WorkflowPlayerComponent implements OnInit {
       }
     });
   }
-  
+
   checkSubWorkflowStatus() {
     const inst = this.instance();
     if (!inst?.childInstanceId) return;
-    
+
     this.workflowService.getInstance(inst.childInstanceId).subscribe({
       next: (childInstance: any) => {
-        if (childInstance?.status === 'completed') {
+        if (childInstance?.status === 'COMPLETED') {
           this.resumeFromSubWorkflow();
         }
       },
       error: () => {}
     });
   }
-  
+
   getChildWorkflowName(): string {
     const currentNode = this.currentNode();
     if (!currentNode || currentNode.type !== 'sub-workflow') return '';
-    
+
     const childWorkflowId = currentNode.data['childWorkflowId'] as string;
     if (!childWorkflowId) return 'Not selected';
-    
+
     return 'Sub-workflow';
   }
-  
+
   resumeFromSubWorkflow() {
     const inst = this.instance();
     const currentNode = this.currentNode();
     const wf = this.workflow();
     if (!inst || !currentNode || !wf) return;
-    
+
     // Find current node index and advance to next
     const currentIdx = wf.nodes.findIndex(n => n.id === inst.currentNodeId);
     if (currentIdx >= 0 && currentIdx < wf.nodes.length - 1) {
@@ -1118,24 +1192,24 @@ export class WorkflowPlayerComponent implements OnInit {
         action: `Completed: ${currentNode.data['label'] || currentNode.type}`,
         timestamp: new Date()
       });
-      
+
       const nextNode = wf.nodes[currentIdx + 1];
       inst.currentNodeId = nextNode.id;
       inst.childInstanceId = undefined;
-      inst.status = 'in-progress';
-      
+      inst.status = 'IN_PROGRESS';
+
       if (nextNode.type === 'end') {
-        inst.status = 'completed';
+        inst.status = 'COMPLETED';
       }
-      
+
       this.updateInstance(inst);
     }
   }
-  
+
   finishWorkflow() {
     const inst = this.instance();
     if (!inst) return;
-    
+
     const currentNode = this.currentNode();
     if (currentNode) {
       inst.history.push({
@@ -1144,50 +1218,50 @@ export class WorkflowPlayerComponent implements OnInit {
         timestamp: new Date()
       });
     }
-    
-    inst.status = 'completed';
+
+    inst.status = 'COMPLETED';
     inst.currentNodeId = null;
     this.updateInstance(inst);
   }
-  
+
   executeScript() {
     const inst = this.instance();
     const currentNode = this.currentNode();
     if (!inst || !currentNode || currentNode.type !== 'script') return;
-    
+
     const expression = currentNode.data['expression'] as string;
     const outputField = (currentNode.data['outputField'] as string) || '_scriptResult';
-    
+
     if (!expression) {
       this.scriptResult.set('Error: No expression defined');
       return;
     }
-    
+
     try {
       // Create a safe context with formData
       const formData = inst.formData || {};
       // Evaluate the expression
       const result = new Function('formData', `with(formData) { return ${expression}; }`)(formData);
-      
+
       // Store result in formData
       inst.formData[outputField] = result;
       this.scriptResult.set(String(result));
-      
+
       inst.history.push({
         nodeId: currentNode.id,
         action: `Script executed: ${expression} → ${result}`,
         timestamp: new Date()
       });
-      
+
       this.instance.set({ ...inst });
-      
+
       // Auto-advance after execution
       setTimeout(() => this.advanceWorkflow(), 500);
     } catch (err: any) {
       this.scriptResult.set(`Error: ${err.message}`);
     }
   }
-  
+
   executeScriptNoAdvance() {
     const inst = this.instance();
     const currentNode = this.currentNode();
@@ -1195,30 +1269,30 @@ export class WorkflowPlayerComponent implements OnInit {
       this.advanceWorkflow();
       return;
     }
-    
+
     const expression = currentNode.data['expression'] as string;
     const outputField = (currentNode.data['outputField'] as string) || '_scriptResult';
-    
+
     if (!expression) {
       this.scriptResult.set('Error: No expression defined');
       this.advanceWorkflow();
       return;
     }
-    
+
     try {
       const formData = inst.formData || {};
       const result = new Function('formData', `with(formData) { return ${expression}; }`)(formData);
       inst.formData[outputField] = result;
       this.scriptResult.set(String(result));
-      
+
       inst.history.push({
         nodeId: currentNode.id,
         action: `Script executed: ${expression} → ${result}`,
         timestamp: new Date()
       });
-      
+
       this.instance.set({ ...inst });
-      
+
       // Auto-advance after execution
       setTimeout(() => this.advanceWorkflow(), 500);
     } catch (err: any) {
@@ -1226,20 +1300,20 @@ export class WorkflowPlayerComponent implements OnInit {
       setTimeout(() => this.advanceWorkflow(), 500);
     }
   }
-  
+
   executeSetValue() {
     const inst = this.instance();
     const currentNode = this.currentNode();
     if (!inst || !currentNode || currentNode.type !== 'setvalue') return;
-    
+
     const field = currentNode.data['field'] as string;
     let value = currentNode.data['value'] as string;
-    
+
     if (!field) {
       this.lastSetValue.set('Error: No field defined');
       return;
     }
-    
+
     try {
       // Check if value references formData (e.g., currentUser.name)
       if (value && value.includes('.')) {
@@ -1255,22 +1329,22 @@ export class WorkflowPlayerComponent implements OnInit {
         inst.formData[field] = value;
         this.lastSetValue.set(`${field} = ${value}`);
       }
-      
+
       inst.history.push({
         nodeId: currentNode.id,
         action: `Set value: ${field} = ${value}`,
         timestamp: new Date()
       });
-      
+
       this.instance.set({ ...inst });
-      
+
       // Auto-advance after execution
       setTimeout(() => this.advanceWorkflow(), 500);
     } catch (err: any) {
       this.lastSetValue.set(`Error: ${err.message}`);
     }
   }
-  
+
   executeSetValueNoAdvance() {
     const inst = this.instance();
     const currentNode = this.currentNode();
@@ -1278,16 +1352,16 @@ export class WorkflowPlayerComponent implements OnInit {
       this.advanceWorkflow();
       return;
     }
-    
+
     const field = currentNode.data['field'] as string;
     let value = currentNode.data['value'] as string;
-    
+
     if (!field) {
       this.lastSetValue.set('Error: No field defined');
       setTimeout(() => this.advanceWorkflow(), 500);
       return;
     }
-    
+
     try {
       if (value && value.includes('.')) {
         const parts = value.split('.');
@@ -1301,60 +1375,60 @@ export class WorkflowPlayerComponent implements OnInit {
         inst.formData[field] = value;
         this.lastSetValue.set(`${field} = ${value}`);
       }
-      
+
       inst.history.push({
         nodeId: currentNode.id,
         action: `Set value: ${field} = ${value}`,
         timestamp: new Date()
       });
-      
+
       this.instance.set({ ...inst });
-      
+
       setTimeout(() => this.advanceWorkflow(), 500);
     } catch (err: any) {
       this.lastSetValue.set(`Error: ${err.message}`);
       setTimeout(() => this.advanceWorkflow(), 500);
     }
   }
-  
+
   executeTransform() {
     const inst = this.instance();
     const currentNode = this.currentNode();
     if (!inst || !currentNode || currentNode.type !== 'transform') return;
-    
+
     const expression = currentNode.data['expression'] as string;
     const outputField = currentNode.data['outputField'] as string;
-    
+
     if (!expression || !outputField) {
       this.transformResult.set('Error: Missing expression or output field');
       return;
     }
-    
+
     try {
       // Create a safe context with formData
       const formData = inst.formData || {};
       // Evaluate the expression
       const result = new Function('formData', `with(formData) { return ${expression}; }`)(formData);
-      
+
       // Store result in formData
       inst.formData[outputField] = result;
       this.transformResult.set(String(result));
-      
+
       inst.history.push({
         nodeId: currentNode.id,
         action: `Transformed: ${outputField} = ${result}`,
         timestamp: new Date()
       });
-      
+
       this.instance.set({ ...inst });
-      
+
       // Auto-advance after execution
       setTimeout(() => this.advanceWorkflow(), 500);
     } catch (err: any) {
       this.transformResult.set(`Error: ${err.message}`);
     }
   }
-  
+
   executeTransformNoAdvance() {
     const inst = this.instance();
     const currentNode = this.currentNode();
@@ -1362,38 +1436,45 @@ export class WorkflowPlayerComponent implements OnInit {
       this.advanceWorkflow();
       return;
     }
-    
+
     const expression = currentNode.data['expression'] as string;
     const outputField = currentNode.data['outputField'] as string;
-    
+
     if (!expression || !outputField) {
       this.transformResult.set('Error: Missing expression or output field');
       setTimeout(() => this.advanceWorkflow(), 500);
       return;
     }
-    
+
     try {
       const formData = inst.formData || {};
       const result = new Function('formData', `with(formData) { return ${expression}; }`)(formData);
       inst.formData[outputField] = result;
       this.transformResult.set(String(result));
-      
+
       inst.history.push({
         nodeId: currentNode.id,
         action: `Transformed: ${outputField} = ${result}`,
         timestamp: new Date()
       });
-      
+
       this.instance.set({ ...inst });
-      
+
       setTimeout(() => this.advanceWorkflow(), 500);
     } catch (err: any) {
       this.transformResult.set(`Error: ${err.message}`);
       setTimeout(() => this.advanceWorkflow(), 500);
     }
   }
-  
+
   updateInstance(updated: WorkflowInstance) {
+    console.log('[DEBUG] updateInstance called, id:', updated.id);
+    if (!updated.id) {
+      // Instance not yet persisted - just update locally
+      console.log('[DEBUG] No ID, setting instance locally');
+      this.instance.set({ ...updated });
+      return;
+    }
     this.workflowService.getInstance(updated.id).subscribe({
       next: (inst: any) => {
         this.instance.set({ ...inst, ...updated });
