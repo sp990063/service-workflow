@@ -268,4 +268,155 @@ export class WorkflowsService {
     });
     return instances.map(i => this.parseInstanceFields(i));
   }
+
+  // Parallel Approval Management
+  async initParallelApproval(id: string, nodeId: string, requiredApprovers: string[]) {
+    const instance = await this.getInstanceById(id);
+    if (!instance) {
+      throw new Error('Instance not found');
+    }
+
+    const formData = instance.formData || {};
+    const parallelApprovals = {
+      [nodeId]: {
+        nodeId,
+        requiredApprovers,
+        approvals: [],
+        status: 'PENDING' as 'PENDING' | 'ALL_APPROVED' | 'REJECTED',
+      },
+    };
+
+    const updated = await this.prisma.workflowInstance.update({
+      where: { id },
+      data: {
+        formData: JSON.stringify({ ...formData, parallelApprovals }),
+      },
+    });
+
+    return this.parseInstanceFields(updated);
+  }
+
+  async approveParallel(id: string, nodeId: string, approverId: string) {
+    const instance = await this.getInstanceById(id);
+    if (!instance) {
+      throw new Error('Instance not found');
+    }
+
+    const workflow = await this.findById(instance.workflowId);
+    if (!workflow) {
+      throw new Error('Workflow not found');
+    }
+
+    const formData = instance.formData || {};
+    const allParallelApprovals = formData.parallelApprovals || {};
+    const nodeApproval = allParallelApprovals[nodeId];
+
+    if (!nodeApproval) {
+      throw new Error('Parallel approval not initialized for this node');
+    }
+
+    // Add approver if not already in approvals
+    if (!nodeApproval.approvals.includes(approverId)) {
+      nodeApproval.approvals.push(approverId);
+    }
+
+    // Check if all required approvers have approved
+    const allApproved = nodeApproval.requiredApprovers.every(
+      (a: string) => nodeApproval.approvals.includes(a)
+    );
+
+    if (allApproved) {
+      nodeApproval.status = 'ALL_APPROVED';
+
+      // Find next node after parallel (skip join node if present)
+      const currentIdx = workflow.nodes.findIndex((n: any) => n.id === nodeId);
+      const nextNodeIdx = currentIdx + 1;
+      const nextNode = workflow.nodes[nextNodeIdx];
+
+      let nextNodeId = nextNode?.id;
+      let newStatus = instance.status;
+
+      if (nextNode?.type === 'end') {
+        newStatus = 'COMPLETED';
+      }
+
+      // Parse history
+      let existingHistory: any[] = [];
+      if (typeof instance.history === 'string') {
+        try { existingHistory = JSON.parse(instance.history); } catch { existingHistory = []; }
+      } else if (Array.isArray(instance.history)) {
+        existingHistory = instance.history;
+      }
+
+      const historyEntry = {
+        nodeId,
+        action: `Parallel approved: all ${nodeApproval.approvals.length} approvers approved`,
+        timestamp: new Date(),
+      };
+
+      const updated = await this.prisma.workflowInstance.update({
+        where: { id },
+        data: {
+          currentNodeId: nextNodeId,
+          status: newStatus,
+          formData: JSON.stringify({ ...formData, parallelApprovals: allParallelApprovals }),
+          history: JSON.stringify([...existingHistory, historyEntry]),
+        },
+      });
+
+      return { instance: this.parseInstanceFields(updated), allApproved: true };
+    }
+
+    // Not all approved yet - just update approvals
+    const updated = await this.prisma.workflowInstance.update({
+      where: { id },
+      data: {
+        formData: JSON.stringify({ ...formData, parallelApprovals: allParallelApprovals }),
+      },
+    });
+
+    return { instance: this.parseInstanceFields(updated), allApproved: false };
+  }
+
+  async rejectParallel(id: string, nodeId: string, approverId: string) {
+    const instance = await this.getInstanceById(id);
+    if (!instance) {
+      throw new Error('Instance not found');
+    }
+
+    const formData = instance.formData || {};
+    const allParallelApprovals = formData.parallelApprovals || {};
+    const nodeApproval = allParallelApprovals[nodeId];
+
+    if (!nodeApproval) {
+      throw new Error('Parallel approval not initialized for this node');
+    }
+
+    nodeApproval.status = 'REJECTED';
+
+    // Parse history
+    let existingHistory: any[] = [];
+    if (typeof instance.history === 'string') {
+      try { existingHistory = JSON.parse(instance.history); } catch { existingHistory = []; }
+    } else if (Array.isArray(instance.history)) {
+      existingHistory = instance.history;
+    }
+
+    const historyEntry = {
+      nodeId,
+      action: `Parallel rejected by approver: ${approverId}`,
+      timestamp: new Date(),
+    };
+
+    const updated = await this.prisma.workflowInstance.update({
+      where: { id },
+      data: {
+        status: 'COMPLETED', // Mark as completed (rejected flow ends workflow)
+        formData: JSON.stringify({ ...formData, parallelApprovals: allParallelApprovals }),
+        history: JSON.stringify([...existingHistory, historyEntry]),
+      },
+    });
+
+    return { instance: this.parseInstanceFields(updated), rejected: true };
+  }
 }

@@ -30,6 +30,15 @@ interface ParallelApprovalState {
   status: 'PENDING' | 'ALL_APPROVED' | 'REJECTED';
 }
 
+interface ParallelApprovalData {
+  [nodeId: string]: ParallelApprovalState;
+}
+
+interface FormDataType {
+  [key: string]: unknown;
+  parallelApprovals?: ParallelApprovalData;
+}
+
 interface NodeTypeConfig {
   label: string;
   color: string;
@@ -265,13 +274,38 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
         <h4>Parallel Approval</h4>
         <p>All approvers must approve for the workflow to continue (AND logic).</p>
         @if (currentNode()!.data['approvers']) {
-          <p>Required Approvers: {{ currentNode()!.data['approvers'] }}</p>
+          <div class="approvers-list">
+            <h5>Required Approvers:</h5>
+            @for (approver of $any(currentNode()!.data['approvers']); track approver) {
+              <div class="approver-item" [class.approved]="isApproverApproved(approver)">
+                <span class="approver-status">
+                  @if (isApproverApproved(approver)) {
+                    ✓
+                  } @else {
+                    ○
+                  }
+                </span>
+                <span class="approver-name">{{ approver }}</span>
+                <span class="approver-badge" [class.badge-approved]="isApproverApproved(approver)" [class.badge-pending]="!isApproverApproved(approver)">
+                  @if (isApproverApproved(approver)) {
+                    Approved
+                  } @else {
+                    Pending
+                  }
+                </span>
+              </div>
+            }
+          </div>
         }
-        @if (instance()?.parallelApprovals?.approvals?.length) {
-          <p class="approval-progress">Approvals: {{ instance()?.parallelApprovals?.approvals?.length }} / {{ instance()?.parallelApprovals?.requiredApprovers?.length || '?' }}</p>
+        @if (getParallelApprovalProgress()) {
+          <p class="approval-progress">{{ getParallelApprovalProgress() }}</p>
         }
         <div class="parallel-actions">
-          <button class="btn btn-success" (click)="completeParallel()">✓ Approve (You)</button>
+          @if (canCurrentUserApprove()) {
+            <button class="btn btn-success" (click)="completeParallel()">✓ Approve</button>
+          } @else {
+            <p class="already-approved">You have already approved this step</p>
+          }
         </div>
       </div>
     </ng-template>
@@ -624,6 +658,28 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
       line-height: 1;
     }
     .btn-close:hover { opacity: 0.7; }
+    .approvers-list { margin: 1rem 0; }
+    .approvers-list h5 { font-size: 0.875rem; margin-bottom: 0.5rem; color: var(--color-text-muted); }
+    .approver-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      margin-bottom: 0.5rem;
+    }
+    .approver-item.approved { background: #ecfdf5; }
+    .approver-status { font-size: 1rem; }
+    .approver-name { flex: 1; font-weight: 500; }
+    .approver-badge {
+      font-size: 0.75rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: var(--radius-sm);
+    }
+    .badge-approved { background: var(--color-success); color: white; }
+    .badge-pending { background: #e5e7eb; color: #6b7280; }
+    .already-approved { font-size: 0.875rem; color: var(--color-text-muted); font-style: italic; }
   `]
 })
 export class WorkflowPlayerComponent implements OnInit {
@@ -983,6 +1039,7 @@ export class WorkflowPlayerComponent implements OnInit {
     const inst = this.instance();
     const wf = this.workflow();
     const currentNode = this.currentNode();
+    const currentUser = this.auth.user();
 
     if (!inst || !wf || !currentNode || currentNode.type !== 'parallel') {
       this.advanceWorkflow();
@@ -990,7 +1047,54 @@ export class WorkflowPlayerComponent implements OnInit {
     }
 
     const approvers = (currentNode.data['approvers'] as string[]) || [];
-    const currentUser = this.auth.user();
+
+    // Initialize parallel approval if not already done
+    const existingParallel = this.getParallelApprovalState(currentNode.id);
+    if (!existingParallel) {
+      this.workflowService.initParallelApproval(inst.id, currentNode.id, approvers).subscribe({
+        next: (updated) => {
+          this.instance.set(updated);
+          // Now approve as current user
+          if (currentUser) {
+            this.doParallelApprove(updated, currentNode.id, currentUser.id);
+          }
+        },
+        error: () => {
+          // Fall back to local-only handling
+          this.handleParallelApprovalLocally(currentUser, approvers);
+        }
+      });
+    } else if (currentUser && !existingParallel.approvals.includes(currentUser.id)) {
+      // Already initialized, just record this approval
+      this.doParallelApprove(inst, currentNode.id, currentUser.id);
+    }
+  }
+
+  private doParallelApprove(inst: any, nodeId: string, approverId: string): void {
+    const wf = this.workflow();
+    if (!wf) return;
+
+    this.workflowService.approveParallel(inst.id, nodeId, approverId).subscribe({
+      next: (result) => {
+        this.instance.set(result.instance);
+        if (result.allApproved) {
+          // All approved - advance to next node
+          setTimeout(() => this.advanceWorkflow(), 300);
+        }
+      },
+      error: () => {
+        // Fall back to local handling
+        this.handleParallelApprovalLocally({ id: approverId } as any, inst.formData?.parallelApprovals?.[nodeId]?.requiredApprovers || []);
+      }
+    });
+  }
+
+  private handleParallelApprovalLocally(currentUser: { id: string; name?: string } | null, approvers: string[]): void {
+    const inst = this.instance();
+    const wf = this.workflow();
+    const currentNode = this.currentNode();
+
+    if (!inst || !wf || !currentNode) return;
 
     let parallelState = inst.parallelApprovals;
     if (!parallelState || parallelState.parallelNodeId !== currentNode.id) {
@@ -1038,6 +1142,54 @@ export class WorkflowPlayerComponent implements OnInit {
         history: [...inst.history, historyEntry]
       });
     }
+  }
+
+  private getParallelApprovalState(nodeId: string): ParallelApprovalState | undefined {
+    const inst = this.instance();
+    if (!inst) return undefined;
+
+    const formData = inst.formData as FormDataType;
+    const parallelApprovals = formData?.parallelApprovals;
+    return parallelApprovals?.[nodeId];
+  }
+
+  isApproverApproved(approverName: string): boolean {
+    const currentNode = this.currentNode();
+    if (!currentNode || currentNode.type !== 'parallel') return false;
+
+    const parallelState = this.getParallelApprovalState(currentNode.id);
+    if (parallelState?.approvals?.length) {
+      return parallelState.approvals.includes(approverName);
+    }
+
+    // Fall back to local parallelApprovals
+    const inst = this.instance();
+    const localApprovals = inst?.parallelApprovals?.approvals || [];
+    return localApprovals.includes(approverName);
+  }
+
+  getParallelApprovalProgress(): string {
+    const currentNode = this.currentNode();
+    if (!currentNode || currentNode.type !== 'parallel') return '';
+
+    const parallelState = this.getParallelApprovalState(currentNode.id);
+    const approvals = parallelState?.approvals || [];
+    const required = parallelState?.requiredApprovers ||
+      (currentNode.data['approvers'] as string[]) || [];
+
+    return `${approvals.length} of ${required.length} approvers have approved`;
+  }
+
+  canCurrentUserApprove(): boolean {
+    const currentNode = this.currentNode();
+    const currentUser = this.auth.user();
+    if (!currentNode || !currentUser || currentNode.type !== 'parallel') return false;
+
+    const parallelState = this.getParallelApprovalState(currentNode.id);
+    const approvals = parallelState?.approvals || [];
+
+    // Check if current user (by name/id) has already approved
+    return !approvals.includes(currentUser.id) && !approvals.includes(currentUser.name || '');
   }
 
   startSubWorkflow(): void {

@@ -63,6 +63,18 @@ export class WorkflowService {
     return this.api.get<any[]>(`/workflow-instances/${id}/children`);
   }
 
+  initParallelApproval(id: string, nodeId: string, requiredApprovers: string[]): Observable<any> {
+    return this.api.post<any>(`/workflow-instances/${id}/parallel-init`, { nodeId, requiredApprovers });
+  }
+
+  approveParallel(id: string, nodeId: string, approverId: string): Observable<{ instance: any; allApproved: boolean }> {
+    return this.api.post<{ instance: any; allApproved: boolean }>(`/workflow-instances/${id}/parallel-approve`, { nodeId, approverId });
+  }
+
+  rejectParallel(id: string, nodeId: string, approverId: string): Observable<{ instance: any; rejected: boolean }> {
+    return this.api.post<{ instance: any; rejected: boolean }>(`/workflow-instances/${id}/parallel-reject`, { nodeId, approverId });
+  }
+
   /**
    * Get step status from workflow instance history
    * Returns: COMPLETED, IN_PROGRESS, or PENDING

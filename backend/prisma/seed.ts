@@ -180,7 +180,28 @@ async function main() {
     });
   }
 
-  console.log(`✅ Created users: admin@example.com, manager@example.com, employee@example.com`);
+  // Create Director user
+  const director = await prisma.user.create({
+    data: {
+      email: 'director@example.com',
+      password: hashedPassword,
+      name: 'Director User',
+      role: 'MANAGER',
+    },
+  });
+
+  // Assign Manager role to director user
+  if (managerRole) {
+    await prisma.member.create({
+      data: {
+        userId: director.id,
+        roleId: managerRole.id,
+        scopeType: 'GLOBAL',
+      },
+    });
+  }
+
+  console.log(`✅ Created users: admin@example.com, manager@example.com, employee@example.com, director@example.com`);
 
   // ============ Create Sample Form ============
   const sampleForm = await prisma.form.create({
@@ -288,17 +309,68 @@ async function main() {
     },
   });
 
+  // Leave Request Form
+  const leaveRequestForm = await prisma.form.create({
+    data: {
+      name: 'Leave Request',
+      description: 'Request form for employee leave',
+      elements: JSON.stringify([
+        { id: 'lr-1', type: 'text', label: 'Employee Name', placeholder: 'Enter your name', required: true },
+        { id: 'lr-2', type: 'date', label: 'Start Date', required: true },
+        { id: 'lr-3', type: 'date', label: 'End Date', required: true },
+        { id: 'lr-4', type: 'number', label: 'Number of Days', placeholder: 'Enter number of days', required: true, validation: { min: 1, max: 30 } },
+        { id: 'lr-5', type: 'select', label: 'Leave Type', options: ['Annual', 'Sick', 'Personal', 'Other'], required: true },
+        { id: 'lr-6', type: 'textarea', label: 'Reason', placeholder: 'Reason for leave', required: true },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created form: ${leaveRequestForm.name}`);
+
+  // Leave Request Workflow with Parallel Approval
+  // Structure: start → form → condition(days > 3) → parallel(Manager,Director) → end
+  //                                    ↓ false
+  //                              approval(Manager) → end
+  const leaveRequestWorkflow = await prisma.workflow.create({
+    data: {
+      name: 'Leave Request',
+      description: 'Employee leave request workflow with conditional parallel approval',
+      category: 'HR',
+      nodes: JSON.stringify([
+        { id: 'lr-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start', description: 'Start of leave request' } },
+        { id: 'lr-form', type: 'form', position: { x: 250, y: 200 }, data: { label: 'Leave Request Form', formId: leaveRequestForm.id } },
+        { id: 'lr-condition', type: 'condition', position: { x: 400, y: 200 }, data: { label: 'Check Days', field: 'lr-4', operator: 'greater_than', value: '3', trueBranch: 'lr-parallel', falseBranch: 'lr-manager' } },
+        { id: 'lr-manager', type: 'approval', position: { x: 400, y: 350 }, data: { label: 'Manager Approval', approverRole: 'MANAGER' } },
+        { id: 'lr-parallel', type: 'parallel', position: { x: 550, y: 200 }, data: { label: 'Parallel Approval (Manager + Director)', approvers: ['Manager User', 'Director User'] } },
+        { id: 'lr-end', type: 'end', position: { x: 700, y: 200 }, data: { label: 'End', description: 'Leave request completed' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'lr-start', to: 'lr-form' },
+        { from: 'lr-form', to: 'lr-condition' },
+        { from: 'lr-condition', to: 'lr-manager', condition: { field: 'lr-4', operator: 'less_than_or_equals', value: '3' } },
+        { from: 'lr-condition', to: 'lr-parallel', condition: { field: 'lr-4', operator: 'greater_than', value: '3' } },
+        { from: 'lr-manager', to: 'lr-end' },
+        { from: 'lr-parallel', to: 'lr-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created workflow: ${leaveRequestWorkflow.name} (with parallel approval for days > 3)`);
+
   console.log('✅ Created additional sample data');
 
   // ============ Summary ============
   console.log('\n📊 Seed Summary:');
-  console.log(`   Users: 3 (admin, manager, employee)`);
+  console.log(`   Users: 4 (admin, manager, employee, director)`);
   console.log(`   Roles: ${ROLES.length} (Admin, Manager, User, Viewer)`);
   console.log(`   Permissions: ${PERMISSIONS.length}`);
   console.log('\n🔑 Test Credentials:');
   console.log('   admin@example.com / password123 (ADMIN role)');
   console.log('   manager@example.com / password123 (MANAGER role)');
   console.log('   employee@example.com / password123 (USER role)');
+  console.log('   director@example.com / password123 (MANAGER role)');
   console.log('\n✅ Seed completed successfully!');
 }
 

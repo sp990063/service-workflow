@@ -122,8 +122,8 @@ export class WorkflowInstancesController {
     const instance = await this.workflowsService.getInstance(id);
     if (!instance) throw new Error('Instance not found');
     
-    const workflow = await this.workflowsService.findById(instance.workflowId);
-    if (role === Role.USER && workflow?.userId !== userId) {
+    // Allow users to update their own instances regardless of who created the workflow
+    if (instance.userId !== userId) {
       throw new Error('Access denied');
     }
     return this.workflowsService.updateInstance(id, body);
@@ -151,5 +151,29 @@ export class WorkflowInstancesController {
   @Get(':id/children')
   async getChildInstances(@Param('id') id: string) {
     return this.workflowsService.getChildInstances(id);
+  }
+
+  @Post(':id/parallel-init')
+  async initParallelApproval(
+    @Param('id') id: string,
+    @Body() body: { nodeId: string; requiredApprovers: string[] },
+  ) {
+    return this.workflowsService.initParallelApproval(id, body.nodeId, body.requiredApprovers);
+  }
+
+  @Post(':id/parallel-approve')
+  async approveParallel(
+    @Param('id') id: string,
+    @Body() body: { nodeId: string; approverId: string },
+  ) {
+    return this.workflowsService.approveParallel(id, body.nodeId, body.approverId);
+  }
+
+  @Post(':id/parallel-reject')
+  async rejectParallel(
+    @Param('id') id: string,
+    @Body() body: { nodeId: string; approverId: string },
+  ) {
+    return this.workflowsService.rejectParallel(id, body.nodeId, body.approverId);
   }
 }
