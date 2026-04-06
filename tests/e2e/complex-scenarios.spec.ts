@@ -621,10 +621,10 @@ test.describe('Scenario 4: Customer Onboarding (Sub-workflow)', () => {
     const startSubBtn = page.locator('button', { hasText: 'Start Sub-Workflow' });
     if (await startSubBtn.isVisible()) {
       await startSubBtn.click();
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(2000);
     }
     
-    const waitingMsg = page.locator('.waiting-message, text=/waiting for/i');
+    const waitingMsg = page.locator('.waiting-message');
     expect(await waitingMsg.isVisible().catch(() => false)).toBeTruthy();
     
     const manager = db.getUserByEmail(TEST_USERS.manager.email);
@@ -652,6 +652,7 @@ test.describe('Scenario 4: Customer Onboarding (Sub-workflow)', () => {
     
     await fillFormField(page, 'Customer', 'New Customer');
     await fillFormField(page, 'Email', 'new@customer.com');
+    await fillFormField(page, 'Plan', 'Enterprise');
     
     await page.locator('button[type="submit"]').click();
     await page.waitForTimeout(1500);
