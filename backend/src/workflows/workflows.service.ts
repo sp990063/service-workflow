@@ -211,19 +211,43 @@ export class WorkflowsService {
     const history = [...existingHistory, ...addToHistory];
 
     let newStatus = instance.status;
+    let updatedFormData = instance.formData || {};
+
     if (nextNode?.type === 'end') {
       newStatus = 'COMPLETED';
     } else if (nextNode?.type === 'sub-workflow' && nextNode.data?.waitForCompletion) {
       newStatus = 'WAITING_FOR_CHILD';
+    } else if (nextNode?.type === 'parallel') {
+      // Initialize parallel approval state
+      const requiredApprovers = nextNode.data?.requiredApprovers || [];
+      if (requiredApprovers.length > 0) {
+        const parallelApprovals = {
+          ...(updatedFormData.parallelApprovals || {}),
+          [nextNode.id]: {
+            nodeId: nextNode.id,
+            requiredApprovers,
+            approvals: [],
+            status: 'PENDING' as 'PENDING' | 'ALL_APPROVED' | 'REJECTED',
+          },
+        };
+        updatedFormData = { ...updatedFormData, parallelApprovals };
+      }
+    }
+
+    const updateData: any = {
+      currentNodeId: nextNodeId,
+      status: newStatus,
+      history: JSON.stringify(history),
+    };
+
+    // Include formData update if we initialized parallel approval
+    if (nextNode?.type === 'parallel' && nextNode.data?.requiredApprovers?.length > 0) {
+      updateData.formData = JSON.stringify(updatedFormData);
     }
 
     const updated = await this.prisma.workflowInstance.update({
       where: { id },
-      data: {
-        currentNodeId: nextNodeId,
-        status: newStatus,
-        history: JSON.stringify(history),
-      },
+      data: updateData,
     });
     const parsed = this.parseInstanceFields(updated);
     console.log('[DEBUG] advanceInstance returning:', JSON.stringify(parsed).substring(0, 200));

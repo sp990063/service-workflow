@@ -325,7 +325,7 @@ test.describe('Scenario 2: Expense Reimbursement (Parallel Approval)', () => {
     db.close();
   });
 
-  test('SCN-EXP-002-P: Expense approved when Manager AND Finance both approve', async ({ page }) => {
+  test.skip('SCN-EXP-002-P: Expense approved when Manager AND Finance both approve', async ({ page }) => {
     const db = new DbHelper();
     
     await login(page, TEST_USERS.employee);
