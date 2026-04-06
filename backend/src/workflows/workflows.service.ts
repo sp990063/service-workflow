@@ -274,7 +274,8 @@ export class WorkflowsService {
 
     const startNode = childWorkflow.nodes.find((n: any) => n.type === 'start');
 
-    return this.prisma.workflowInstance.create({
+    // Create the child instance
+    const childInstance = await this.prisma.workflowInstance.create({
       data: {
         workflowId: childWorkflowId,
         userId,
@@ -285,6 +286,27 @@ export class WorkflowsService {
         parentInstanceId: parentId,
       },
     });
+
+    // Update the parent instance to reference the child and set status to WAITING_FOR_CHILD
+    const parentInstance = await this.getInstanceById(parentId);
+    if (parentInstance) {
+      const updatedHistory = [...parentInstance.history, {
+        nodeId: parentInstance.currentNodeId,
+        action: `Started sub-workflow: ${childInstance.id}`,
+        timestamp: new Date()
+      }];
+      
+      await this.prisma.workflowInstance.update({
+        where: { id: parentId },
+        data: {
+          childInstanceId: childInstance.id,
+          status: 'WAITING_FOR_CHILD',
+          history: JSON.stringify(updatedHistory)
+        }
+      });
+    }
+
+    return childInstance;
   }
 
   async getChildInstances(parentId: string) {

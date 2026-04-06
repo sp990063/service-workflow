@@ -467,7 +467,7 @@ export class WorkflowInstanceDetailComponent implements OnInit {
     if (!step || !inst || step.node.type !== 'parallel') return '';
 
     const formData = inst.formData as Record<string, any>;
-    const parallelApprovals = formData?.parallelApprovals;
+    const parallelApprovals = formData?.['parallelApprovals'];
     const nodeState = parallelApprovals?.[step.node.id];
 
     const required = (step.node.data['approvers'] as string[]) || [];
@@ -483,7 +483,7 @@ export class WorkflowInstanceDetailComponent implements OnInit {
     if (!step || !inst || !currentUser || step.node.type !== 'parallel') return false;
 
     const formData = inst.formData as Record<string, any>;
-    const parallelApprovals = formData?.parallelApprovals;
+    const parallelApprovals = formData?.['parallelApprovals'];
     const nodeState = parallelApprovals?.[step.node.id];
 
     const approvals = nodeState?.approvals || [];
@@ -536,7 +536,7 @@ export class WorkflowInstanceDetailComponent implements OnInit {
 
     // Get current parallel approval state from formData
     const formData = inst.formData as Record<string, any>;
-    const parallelApprovals = formData?.parallelApprovals;
+    const parallelApprovals = formData?.['parallelApprovals'];
     const existingState = parallelApprovals?.[currentNodeId];
 
     if (!existingState) {
@@ -582,7 +582,7 @@ export class WorkflowInstanceDetailComponent implements OnInit {
   private handleParallelApprovalLocally(inst: WorkflowInstance, node: WorkflowNode, currentUser: { id: string; name?: string } | null, requiredApprovers: string[]) {
     const currentNodeId = node.id;
     const formData = inst.formData || {};
-    const parallelApprovals = formData.parallelApprovals || {};
+    const parallelApprovals = formData['parallelApprovals'] || {};
     
     let nodeApproval = parallelApprovals[currentNodeId];
     if (!nodeApproval) {
@@ -623,7 +623,7 @@ export class WorkflowInstanceDetailComponent implements OnInit {
             ...inst,
             currentNodeId: nextNode.id,
             status: newStatus,
-            formData: { ...formData, parallelApprovals: { ...parallelApprovals, [currentNodeId]: nodeApproval } },
+            formData: { ...formData, parallelApprovals: { ...(formData?.['parallelApprovals'] || {}), [currentNodeId]: nodeApproval } },
             history: [...inst.history, historyEntry]
           });
           return;
@@ -634,7 +634,7 @@ export class WorkflowInstanceDetailComponent implements OnInit {
     // Not all approved - stay at parallel node
     this.instance.set({
       ...inst,
-      formData: { ...formData, parallelApprovals: { ...parallelApprovals, [currentNodeId]: nodeApproval } },
+      formData: { ...formData, parallelApprovals: { ...(formData?.['parallelApprovals'] || {}), [currentNodeId]: nodeApproval } },
       history: [...inst.history, historyEntry]
     });
   }

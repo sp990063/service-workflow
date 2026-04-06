@@ -27,8 +27,8 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
             (input)="onInputChange($event)"
             [placeholder]="element.placeholder || ''"
             [required]="element.required"
-            [minlength]="element.validation?.min"
-            [maxlength]="element.validation?.max"
+            [attr.minlength]="element.validation?.min"
+            [attr.maxlength]="element.validation?.max"
           >
         }
 

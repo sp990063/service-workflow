@@ -65,7 +65,12 @@ async function advanceWorkflow(page: any, buttonText: string) {
 async function fillFormField(page: any, label: string, value: string) {
   const field = page.locator('.form-field', { hasText: label }).locator('input, textarea, select').first();
   if (await field.isVisible()) {
-    await field.fill(value);
+    const tagName = await field.evaluate(el => el.tagName);
+    if (tagName === 'SELECT') {
+      await field.selectOption(value);
+    } else {
+      await field.fill(value);
+    }
     await page.waitForTimeout(200);
   }
 }

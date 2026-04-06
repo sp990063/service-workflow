@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, ViewChildren, QueryList } from '@angular/core';
+import { Component, OnInit, signal, computed, ViewChildren, QueryList, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -255,6 +255,7 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
           </div>
           <div class="form-actions">
             <button
+              type="submit"
               class="btn btn-primary"
               (click)="submitFormAndAdvance()"
               [disabled]="formSubmitting()"
@@ -719,7 +720,8 @@ export class WorkflowPlayerComponent implements OnInit {
     private router: Router,
     private workflowService: WorkflowService,
     private auth: AuthService,
-    private formService: FormService
+    private formService: FormService,
+    private ngZone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -1196,6 +1198,7 @@ export class WorkflowPlayerComponent implements OnInit {
     const inst = this.instance();
     const currentNode = this.currentNode();
     const user = this.auth.user();
+    console.log('startSubWorkflow called:', { instId: inst?.id, currentNodeType: currentNode?.type, hasUser: !!user });
     if (!inst || !currentNode || currentNode.type !== 'sub-workflow' || !user) return;
 
     const childWorkflowId = currentNode.data['childWorkflowId'] as string;
@@ -1206,18 +1209,35 @@ export class WorkflowPlayerComponent implements OnInit {
 
     this.workflowService.createChildInstance(inst.id, childWorkflowId, user.id, inst.formData).subscribe({
       next: (childInstance) => {
-        this.instance.set({
-          ...inst,
-          childInstanceId: childInstance.id,
-          status: 'WAITING_FOR_CHILD',
-          history: [...inst.history, {
-            nodeId: currentNode.id,
-            action: `Started sub-workflow: ${currentNode.data['label'] || 'Sub-workflow'}`,
-            timestamp: new Date()
-          }]
+        console.log('createChildInstance success:', childInstance);
+        // Reload the instance from backend to get updated state
+        this.ngZone.run(() => {
+          this.workflowService.getInstance(inst.id).subscribe({
+            next: (updatedInstance) => {
+              console.log('getInstance success, childInstanceId:', updatedInstance.childInstanceId, 'status:', updatedInstance.status);
+              this.instance.set(updatedInstance);
+            },
+            error: (err) => {
+              console.log('getInstance error:', err);
+              // Fallback: manually update if reload fails
+              this.instance.set({
+                ...inst,
+                childInstanceId: childInstance.id,
+                status: 'WAITING_FOR_CHILD',
+                history: [...inst.history, {
+                  nodeId: currentNode.id,
+                  action: `Started sub-workflow: ${currentNode.data['label'] || 'Sub-workflow'}`,
+                  timestamp: new Date()
+                }]
+              });
+            }
+          });
         });
       },
-      error: () => this.formError.set('Failed to start sub-workflow. Please try again.')
+      error: (err) => {
+        console.log('createChildInstance error:', err);
+        this.ngZone.run(() => this.formError.set('Failed to start sub-workflow. Please try again.'));
+      }
     });
   }
 
@@ -1332,7 +1352,7 @@ export class WorkflowPlayerComponent implements OnInit {
     }
 
     try {
-      let resolved = value;
+      let resolved: unknown = value;
       if (value?.includes('.')) {
         const parts = value.split('.');
         resolved = this.resolvePath(inst.formData, parts);

@@ -193,7 +193,8 @@ export class DbHelper {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const stmt = this.db.prepare(`SELECT * FROM WorkflowInstance ${where} ORDER BY createdAt DESC`);
+    // Order by ASC so parent instances come before child instances (child is created after parent)
+    const stmt = this.db.prepare(`SELECT * FROM WorkflowInstance ${where} ORDER BY createdAt ASC`);
     return stmt.all(...params) as DbWorkflowInstance[];
   }
 
