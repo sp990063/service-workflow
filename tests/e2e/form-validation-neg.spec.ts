@@ -5,7 +5,7 @@ const BASE_URL = 'http://localhost:4200';
 test.describe('Form Validation - Negative Cases', () => {
 
   async function login(page: Page) {
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
     const overlay = page.locator('vite-error-overlay');
     if (await overlay.isVisible()) {
       await overlay.click({ position: { x: 10, y: 10 } }).catch(() => {});
@@ -14,12 +14,13 @@ test.describe('Form Validation - Negative Cases', () => {
     await page.fill('input[type="email"]', 'admin@example.com');
     await page.fill('input[type="password"]', 'password123');
     await page.click('button[type="submit"]');
-    await page.waitForURL(`${BASE_URL}/**`, { timeout: 10000 });
+    await page.waitForSelector('nav, .dashboard, [href="/dashboard"]', { timeout: 10000 });
+    await page.waitForTimeout(500);
   }
 
   async function createFormWithFields(page: Page) {
-    await page.goto(`${BASE_URL}/form-builder`);
-    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.goto(`${BASE_URL}/form-builder`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.element-item, .node-item', { timeout: 30000 });
     await page.waitForTimeout(1000);
 
     await page.locator('.form-name-input').fill('Validation Test Form');
@@ -53,10 +54,11 @@ test.describe('Form Validation - Negative Cases', () => {
   test('TC-FORM-NEG-001: Email rejects invalid format', async ({ page }) => {
     await login(page);
     await createFormWithFields(page);
-    await page.goto(`${BASE_URL}/forms`);
-    await page.waitForSelector(".node-item", { timeout: 30000 });
-    await page.waitForTimeout(1000);
-    await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+    await page.goto(`${BASE_URL}/forms`, { waitUntil: 'networkidle' });
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('a[href*="form-fill"]', { timeout: 30000 });
+    await page.waitForTimeout(500);
+    await page.locator('a[href*="form-fill"]').first().click();
     await page.waitForTimeout(1000);
     await page.fill('input[type="email"]', 'notanemail');
     await page.locator('button[type="submit"]').click();
@@ -66,10 +68,11 @@ test.describe('Form Validation - Negative Cases', () => {
   test('TC-FORM-NEG-002: Required field blocks empty submission', async ({ page }) => {
     await login(page);
     await createFormWithFields(page);
-    await page.goto(`${BASE_URL}/forms`);
-    await page.waitForSelector(".node-item", { timeout: 30000 });
-    await page.waitForTimeout(1000);
-    await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+    await page.goto(`${BASE_URL}/forms`, { waitUntil: 'networkidle' });
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('a[href*="form-fill"]', { timeout: 30000 });
+    await page.waitForTimeout(500);
+    await page.locator('a[href*="form-fill"]').first().click();
     await page.waitForTimeout(1000);
     // Try to submit without filling required fields
     await page.locator('button[type="submit"]').click();
@@ -79,10 +82,11 @@ test.describe('Form Validation - Negative Cases', () => {
   test('TC-FORM-NEG-003: Number rejects out-of-range', async ({ page }) => {
     await login(page);
     await createFormWithFields(page);
-    await page.goto(`${BASE_URL}/forms`);
-    await page.waitForSelector(".node-item", { timeout: 30000 });
-    await page.waitForTimeout(1000);
-    await page.locator('.form-card .btn-primary', { hasText: 'Fill Form' }).click();
+    await page.goto(`${BASE_URL}/forms`, { waitUntil: 'networkidle' });
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('a[href*="form-fill"]', { timeout: 30000 });
+    await page.waitForTimeout(500);
+    await page.locator('a[href*="form-fill"]').first().click();
     await page.waitForTimeout(1000);
     const numInput = page.locator('input[type="number"]').first();
     if (await numInput.isVisible()) {

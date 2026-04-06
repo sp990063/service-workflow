@@ -21,11 +21,13 @@ const BASE_URL = 'http://localhost:4200';
  */
 
 async function login(page: Page) {
-  await page.goto(`${BASE_URL}/login`);
+  await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
   await page.fill('input[type="email"]', 'admin@example.com');
   await page.fill('input[type="password"]', 'password123');
   await page.click('button[type="submit"]');
-  await page.waitForURL(`${BASE_URL}/**`, { timeout: 10000 });
+  // Wait for nav element to appear (proves login succeeded, not still on login page)
+  await page.waitForSelector('nav, .dashboard, [href="/dashboard"]', { timeout: 10000 });
+  await page.waitForTimeout(500);
 }
 
 test.describe('Form Element Tests', () => {
@@ -41,8 +43,9 @@ test.describe('Form Element Tests', () => {
 
   test.beforeEach(async ({ page }) => {
     await login(page);
-    await page.goto(`${BASE_URL}/form-builder`);
-    await page.waitForTimeout(2000);
+    await page.goto(`${BASE_URL}/form-builder`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.element-item, .node-item', { timeout: 30000 });
+    await page.waitForTimeout(1000);
   });
 
   // Helper function to get element on canvas by label

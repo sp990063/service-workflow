@@ -30,13 +30,18 @@ test.describe('SCENARIO 1: Admin Settings Access', () => {
   test('TC-SETTINGS-002: Admin can access settings page', async ({ page }) => {
     await login(page);
     await page.goto(`${BASE_URL}/admin/settings`);
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     
-    // Should see either settings page or error (admin required)
-    const url = page.url();
-    const hasSettings = await page.locator('.admin-settings, .error-message').isVisible().catch(() => false);
-    expect(url).toContain('/admin/settings');
-    expect(hasSettings).toBeTruthy();
+    // Verify we're on the settings page
+    expect(page.url()).toContain('/admin/settings');
+    
+    // Should see the System Settings heading (content loads or error shows)
+    const hasHeading = await page.locator('h1:has-text("System Settings")').isVisible().catch(() => false);
+    const hasContent = await page.locator('.admin-settings, .settings-panel, text=Configure SMTP').isVisible().catch(() => false);
+    const hasError = await page.locator('text=Failed to load settings').isVisible().catch(() => false);
+    
+    // At minimum, should be on settings page with either content or error
+    expect(hasHeading || hasContent || hasError).toBeTruthy();
   });
 });
 

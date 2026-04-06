@@ -102,7 +102,8 @@ test.describe('Workflow Integration', () => {
     await page.waitForTimeout(1000);
     
     await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
-    await expect(page.locator('h3')).toContainText('Employee Onboarding Workflow');
+    await page.waitForSelector('.workflow-card, h3', { timeout: 30000 });
+    await expect(page.locator('h3', { hasText: 'Employee Onboarding Workflow' })).toBeVisible();
   });
 
   // TC-WFPLAYER-001: Start and complete workflow
@@ -135,7 +136,7 @@ test.describe('Workflow Integration', () => {
     
     // Go to workflows list and start
     await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
-    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForSelector('.workflow-card, h3', { timeout: 30000 });
     await page.waitForTimeout(1000);
     await page.locator('a', { hasText: 'Start Workflow' }).first().click();
     await page.waitForTimeout(1000);
@@ -185,7 +186,7 @@ test.describe('Workflow Integration', () => {
     
     // Start workflow
     await page.goto(`${BASE_URL}/workflows`, { waitUntil: 'networkidle' });
-    await page.waitForSelector(".node-item", { timeout: 30000 });
+    await page.waitForSelector('.workflow-card, h3', { timeout: 30000 });
     await page.waitForTimeout(1000);
     await page.locator('a', { hasText: 'Start Workflow' }).first().click();
     await page.waitForTimeout(1000);
