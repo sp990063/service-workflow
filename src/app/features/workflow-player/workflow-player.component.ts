@@ -318,7 +318,7 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
       </div>
     </ng-template>
 
-    <!-- Condition Template -->
+    <!-- Condition Template - Auto-evaluated by backend -->
     <ng-template #conditionTemplate>
       <div class="condition-section">
         <h4>Condition Check</h4>
@@ -328,8 +328,7 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
         @if (getConditionFieldValue()) {
           <p class="form-value">Current Value: <code>{{ getConditionFieldValue() }}</code></p>
         }
-        <p class="condition-note">Based on the form data, the workflow will proceed to the appropriate path.</p>
-        <button class="btn btn-primary" (click)="proceedFromCondition()">Evaluate Condition</button>
+        <p class="condition-note">Condition is being evaluated automatically...</p>
       </div>
     </ng-template>
 
@@ -881,12 +880,6 @@ export class WorkflowPlayerComponent implements OnInit {
       return;
     }
 
-    // Auto-evaluate condition nodes
-    if (currentNode.type === 'condition') {
-      this.proceedFromCondition();
-      return;
-    }
-
     // At last node
     if (currentIdx >= wf.nodes.length - 1) {
       this.finishWorkflow();
@@ -917,14 +910,9 @@ export class WorkflowPlayerComponent implements OnInit {
         error: () => this.instance.set({ ...inst, status: 'COMPLETED' })
       });
     } else {
+      // Backend now auto-evaluates condition nodes, so just advance
       this.workflowService.advanceInstance(inst.id, nextNode.id, newHistory).subscribe({
-        next: (updated) => {
-          this.instance.set(updated);
-          // After advancing, check if we landed on an auto-executable node
-          if (nextNode.type === 'condition') {
-            setTimeout(() => this.proceedFromCondition(), 300);
-          }
-        },
+        next: (updated) => this.instance.set(updated),
         error: () => {
           this.instance.set({
             ...inst,
@@ -986,85 +974,6 @@ export class WorkflowPlayerComponent implements OnInit {
         }]
       })
     });
-  }
-
-  proceedFromCondition(): void {
-    const inst = this.instance();
-    const wf = this.workflow();
-    const currentNode = this.currentNode();
-
-    if (!inst || !wf || !currentNode || currentNode.type !== 'condition') {
-      console.log('[DEBUG] proceedFromCondition: invalid state, calling advanceWorkflow');
-      this.advanceWorkflow();
-      return;
-    }
-
-    const field = currentNode.data['field'] as string;
-    const value = currentNode.data['value'] as string;
-    const operator = (currentNode.data['operator'] as string) || 'equals';
-    const formValue = inst.formData[field];
-    console.log('[DEBUG] proceedFromCondition:', { field, formValue, value, operator, formData: inst.formData });
-    const conditionMet = this.evaluateCondition(formValue, value, operator);
-    console.log('[DEBUG] conditionMet:', conditionMet, '→ routing to', conditionMet ? currentNode.data['trueBranch'] : currentNode.data['falseBranch']);
-
-    const historyEntry = {
-      nodeId: currentNode.id,
-      action: `Condition evaluated: ${field} ${operator} ${value} → ${conditionMet ? 'TRUE' : 'FALSE'}`,
-      timestamp: new Date()
-    };
-
-    const trueBranchId = currentNode.data['trueBranch'] as string | undefined;
-    const falseBranchId = currentNode.data['falseBranch'] as string | undefined;
-    const nextNodeId = (conditionMet && trueBranchId) ? trueBranchId : (!conditionMet && falseBranchId) ? falseBranchId : (inst.currentNodeId || '');
-
-    const nextNode = wf.nodes.find(n => n.id === nextNodeId);
-    const newHistory = [...inst.history, historyEntry];
-
-    // Call backend to persist the advancement
-    if (nextNode?.type === 'end') {
-      this.workflowService.completeInstance(inst.id).subscribe({
-        next: (updated) => this.instance.set(updated),
-        error: () => {
-          this.instance.set({
-            ...inst,
-            currentNodeId: nextNodeId,
-            history: newHistory,
-            status: 'COMPLETED'
-          });
-        }
-      });
-    } else {
-      this.workflowService.advanceInstance(inst.id, nextNodeId, newHistory).subscribe({
-        next: (updated) => this.instance.set(updated),
-        error: () => {
-          this.instance.set({
-            ...inst,
-            currentNodeId: nextNodeId,
-            history: newHistory,
-            status: inst.status
-          });
-        }
-      });
-    }
-  }
-
-  private evaluateCondition(formValue: unknown, targetValue: string, operator: string): boolean {
-    if (formValue === undefined || formValue === null) return false;
-
-    switch (operator) {
-      case 'equals':
-        return String(formValue).toLowerCase() === String(targetValue).toLowerCase();
-      case 'not_equals':
-        return String(formValue).toLowerCase() !== String(targetValue).toLowerCase();
-      case 'greater_than':
-        return Number(formValue) > Number(targetValue);
-      case 'less_than':
-        return Number(formValue) < Number(targetValue);
-      case 'contains':
-        return String(formValue).toLowerCase().includes(String(targetValue).toLowerCase());
-      default:
-        return false;
-    }
   }
 
   getConditionFieldValue(): string | null {

@@ -504,28 +504,47 @@ export class WorkflowInstanceDetailComponent implements OnInit {
       return;
     }
 
-    // Regular approval - advance directly
+    // Regular approval - advance to next node after this approval
     inst.history.push({
       nodeId: step.node.id,
       action: `Approved by ${currentUser?.name || 'User'}`,
       timestamp: new Date()
     });
 
-    // Advance to next step
+    // For approval nodes, advance to the next node in sequence
+    // Backend will auto-evaluate any conditions in between
     const wf = this.workflow();
     if (wf) {
-      const currentIdx = wf.nodes.findIndex(n => n.id === inst.currentNodeId);
-      if (currentIdx >= 0 && currentIdx < wf.nodes.length - 1) {
-        const nextNode = wf.nodes[currentIdx + 1];
-        inst.currentNodeId = nextNode.id;
-        if (nextNode.type === 'end') {
-          inst.status = 'completed';
-        }
+      const currentIdx = wf.nodes.findIndex(n => n.id === step.node.id);
+      const nextNode = wf.nodes[currentIdx + 1];
+      console.log(`[DEBUG approve] currentIdx=${currentIdx}, step.node.id=${step.node.id}, nextNode=${nextNode?.id}`);
+      if (nextNode) {
+        console.log(`[DEBUG approve] Calling advanceInstance with ${nextNode.id}`);
+        this.workflowService.advanceInstance(inst.id, nextNode.id, inst.history).subscribe({
+          next: (updated: any) => {
+            console.log(`[DEBUG approve] advanceInstance returned, currentNodeId=${updated.currentNodeId}`);
+            this.instance.set({ ...updated });
+          },
+          error: (err) => {
+            console.log(`[DEBUG approve] advanceInstance error:`, err);
+            this.instance.set({ ...inst });
+          }
+        });
+        return;
+      } else {
+        console.log(`[DEBUG approve] No nextNode found, using fallback`);
       }
+    } else {
+      console.log(`[DEBUG approve] No workflow loaded, using fallback`);
     }
 
-    this.workflowService.advanceInstance(inst.id, inst.currentNodeId!, inst.history).subscribe({
-      next: (updated: any) => this.instance.set({ ...updated }),
+    // Fallback: just pass current node ID
+    console.log(`[DEBUG approve] Fallback: Calling advanceInstance with ${step.node.id}`);
+    this.workflowService.advanceInstance(inst.id, step.node.id, inst.history).subscribe({
+      next: (updated: any) => {
+        console.log(`[DEBUG approve] Fallback advanceInstance returned, currentNodeId=${updated.currentNodeId}`);
+        this.instance.set({ ...updated });
+      },
       error: () => this.instance.set({ ...inst })
     });
   }

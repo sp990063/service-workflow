@@ -206,53 +206,118 @@ export class WorkflowsService {
     }
 
     const currentNode = workflow.nodes.find((n: any) => n.id === instance.currentNodeId);
-    const nextNode = workflow.nodes.find((n: any) => n.id === nextNodeId);
-
-    const history = [...existingHistory, ...addToHistory];
-
-    let newStatus = instance.status;
+    let actualNextNodeId = nextNodeId;
+    let history = [...existingHistory, ...addToHistory];
     let updatedFormData = instance.formData || {};
 
-    if (nextNode?.type === 'end') {
-      newStatus = 'COMPLETED';
-    } else if (nextNode?.type === 'sub-workflow' && nextNode.data?.waitForCompletion) {
-      newStatus = 'WAITING_FOR_CHILD';
-    } else if (nextNode?.type === 'parallel') {
-      // Initialize parallel approval state
-      const requiredApprovers = nextNode.data?.requiredApprovers || nextNode.data?.approvers || [];
-      if (requiredApprovers.length > 0) {
-        const parallelApprovals = {
-          ...(updatedFormData.parallelApprovals || {}),
-          [nextNode.id]: {
-            nodeId: nextNode.id,
-            requiredApprovers,
-            approvals: [],
-            status: 'PENDING' as 'PENDING' | 'ALL_APPROVED' | 'REJECTED',
-          },
-        };
-        updatedFormData = { ...updatedFormData, parallelApprovals };
+    // Auto-evaluate condition nodes: loop until we reach a non-condition node
+    while (true) {
+      const nextNode = workflow.nodes.find((n: any) => n.id === actualNextNodeId);
+      if (!nextNode) {
+        throw new Error(`Next node not found: ${actualNextNodeId}`);
       }
+
+      console.log(`[DEBUG] advanceInstance while loop: processing node ${nextNode.id}, type=${nextNode.type}`);
+
+      // Handle condition nodes by auto-evaluating
+      if (nextNode.type === 'condition') {
+        const field = nextNode.data?.field;
+        const value = nextNode.data?.value;
+        const operator = nextNode.data?.operator || 'equals';
+        const formData = typeof updatedFormData === 'string' ? JSON.parse(updatedFormData) : updatedFormData;
+        const formValue = field ? formData[field] : undefined;
+
+        console.log(`[DEBUG] Condition evaluation: field=${field}, formValue=${formValue}, value=${value}, operator=${operator}`);
+
+        const conditionMet = this.evaluateCondition(formValue, value, operator);
+        const branchNodeId = conditionMet ? nextNode.data?.trueBranch : nextNode.data?.falseBranch;
+        console.log(`[DEBUG] Condition result: ${conditionMet}, routing to ${branchNodeId}`);
+
+        // Add condition evaluation to history
+        history = [...history, {
+          nodeId: nextNode.id,
+          action: `Condition evaluated: ${field} ${operator} ${value} → ${conditionMet ? 'TRUE' : 'FALSE'}`,
+          timestamp: new Date()
+        }];
+
+        if (!branchNodeId) {
+          throw new Error(`No branch defined for condition node: ${nextNode.id}`);
+        }
+
+        console.log(`[DEBUG] Condition ${nextNode.id}: ${field} ${operator} ${value} → ${conditionMet ? 'TRUE' : 'FALSE'}, routing to ${branchNodeId}`);
+        actualNextNodeId = branchNodeId;
+        continue; // Continue to process the branch node
+      }
+
+      // For non-condition nodes, process normally and break
+      let newStatus = instance.status;
+
+      if (nextNode.type === 'end') {
+        newStatus = 'COMPLETED';
+      } else if (nextNode.type === 'sub-workflow' && nextNode.data?.waitForCompletion) {
+        newStatus = 'WAITING_FOR_CHILD';
+      } else if (nextNode.type === 'parallel') {
+        // Initialize parallel approval state
+        const requiredApprovers = nextNode.data?.requiredApprovers || nextNode.data?.approvers || [];
+        if (requiredApprovers.length > 0) {
+          const currentFormData = typeof updatedFormData === 'string' ? JSON.parse(updatedFormData) : updatedFormData;
+          const parallelApprovals = {
+            ...(currentFormData.parallelApprovals || {}),
+            [nextNode.id]: {
+              nodeId: nextNode.id,
+              requiredApprovers,
+              approvals: [],
+              status: 'PENDING' as 'PENDING' | 'ALL_APPROVED' | 'REJECTED',
+            },
+          };
+          updatedFormData = { ...currentFormData, parallelApprovals };
+        }
+      }
+
+      // Build update data
+      const updateData: any = {
+        currentNodeId: actualNextNodeId,
+        status: newStatus,
+        history: JSON.stringify(history),
+      };
+
+      // Include formData update if we initialized parallel approval
+      const parallelRequired = nextNode.data?.requiredApprovers?.length > 0 || nextNode.data?.approvers?.length > 0;
+      if (nextNode.type === 'parallel' && parallelRequired) {
+        updateData.formData = JSON.stringify(updatedFormData);
+      }
+
+      const updated = await this.prisma.workflowInstance.update({
+        where: { id },
+        data: updateData,
+      });
+
+      console.log(`[DEBUG] advanceInstance: ${currentNode?.id || 'start'} → ${actualNextNodeId} (${nextNode.type})`);
+      return this.parseInstanceFields(updated);
     }
+  }
 
-    const updateData: any = {
-      currentNodeId: nextNodeId,
-      status: newStatus,
-      history: JSON.stringify(history),
-    };
+  private evaluateCondition(formValue: unknown, targetValue: string, operator: string): boolean {
+    if (formValue === undefined || formValue === null) return false;
 
-    // Include formData update if we initialized parallel approval
-    const parallelRequired = nextNode?.data?.requiredApprovers?.length > 0 || nextNode?.data?.approvers?.length > 0;
-    if (nextNode?.type === 'parallel' && parallelRequired) {
-      updateData.formData = JSON.stringify(updatedFormData);
+    switch (operator) {
+      case 'equals':
+        return String(formValue).toLowerCase() === String(targetValue).toLowerCase();
+      case 'not_equals':
+        return String(formValue).toLowerCase() !== String(targetValue).toLowerCase();
+      case 'greater_than':
+        return Number(formValue) > Number(targetValue);
+      case 'less_than':
+        return Number(formValue) < Number(targetValue);
+      case 'greater_than_or_equals':
+        return Number(formValue) >= Number(targetValue);
+      case 'less_than_or_equals':
+        return Number(formValue) <= Number(targetValue);
+      case 'contains':
+        return String(formValue).toLowerCase().includes(String(targetValue).toLowerCase());
+      default:
+        return false;
     }
-
-    const updated = await this.prisma.workflowInstance.update({
-      where: { id },
-      data: updateData,
-    });
-    const parsed = this.parseInstanceFields(updated);
-    console.log('[DEBUG] advanceInstance returning:', JSON.stringify(parsed).substring(0, 200));
-    return parsed;
   }
 
   async completeInstance(id: string) {
