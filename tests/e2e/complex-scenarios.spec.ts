@@ -411,17 +411,25 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     await page.waitForTimeout(1500);
     
     const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    expect(employee).toBeDefined();
+    
+    // Get workflow instance created by employee
     const instances = db.getWorkflowInstances({ userId: employee!.id });
     expect(instances.length).toBeGreaterThanOrEqual(0);
+    const instanceId = instances[0]?.id;
     
     await login(page, TEST_USERS.manager);
-    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1000);
+    if (instanceId) {
+      await page.goto(`${BASE_URL}/workflow-instance/${instanceId}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+    }
     await approveStep(page);
     
     const parallelSection = page.locator('.parallel-section');
     const hasParallel = await parallelSection.isVisible().catch(() => false);
-    expect(hasParallel || await page.locator('.step-content').isVisible()).toBeTruthy();
+    // Check for parallel section or step content (use .first() to avoid strict mode violation)
+    const stepContentCount = await page.locator('.step-content').count();
+    expect(hasParallel || stepContentCount > 0).toBeTruthy();
     
     db.close();
   });

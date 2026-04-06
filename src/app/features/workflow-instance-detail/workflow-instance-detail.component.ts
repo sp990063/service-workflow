@@ -116,7 +116,7 @@ interface WorkflowStep {
         </section>
 
         <!-- Action Buttons (if in-progress and current step is approval or parallel) -->
-        @if (instance()!.status === 'in-progress' && currentStep() && (currentStep()!.node.type === 'approval' || currentStep()!.node.type === 'parallel')) {
+        @if (isInProgress() && currentStep() && (currentStep()!.node.type === 'approval' || currentStep()!.node.type === 'parallel')) {
           <section class="action-buttons">
             @if (currentStep()!.node.type === 'parallel') {
               <!-- Parallel approval: show progress and button -->
@@ -368,6 +368,10 @@ export class WorkflowInstanceDetailComponent implements OnInit {
     const inst = this.instance();
     return this.steps().find(s => s.status === 'IN_PROGRESS') || null;
   });
+
+  isInProgress(): boolean {
+    return this.instance()?.status === 'IN_PROGRESS';
+  }
 
   constructor(
     private route: ActivatedRoute,
