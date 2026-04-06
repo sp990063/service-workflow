@@ -115,12 +115,24 @@ interface WorkflowStep {
           </div>
         </section>
 
-        <!-- Action Buttons (if in-progress and current step is approval) -->
-        @if (instance()!.status === 'in-progress' && currentStep() && currentStep()!.node.type === 'approval') {
+        <!-- Action Buttons (if in-progress and current step is approval or parallel) -->
+        @if (instance()!.status === 'in-progress' && currentStep() && (currentStep()!.node.type === 'approval' || currentStep()!.node.type === 'parallel')) {
           <section class="action-buttons">
-            <button class="btn btn-success" (click)="approve()">✓ Approve</button>
-            <button class="btn btn-danger" (click)="reject()">✗ Reject</button>
-            <button class="btn btn-secondary" (click)="requestInfo()">? Request Info</button>
+            @if (currentStep()!.node.type === 'parallel') {
+              <!-- Parallel approval: show progress and button -->
+              <div class="parallel-progress">
+                <span>{{ getParallelProgress() }}</span>
+              </div>
+              @if (canApproveParallel()) {
+                <button class="btn btn-success" (click)="approve()">✓ Approve</button>
+              } @else {
+                <span class="already-approved">You have already approved</span>
+              }
+            } @else {
+              <button class="btn btn-success" (click)="approve()">✓ Approve</button>
+              <button class="btn btn-danger" (click)="reject()">✗ Reject</button>
+              <button class="btn btn-secondary" (click)="requestInfo()">? Request Info</button>
+            }
           </section>
         }
       }
@@ -306,9 +318,19 @@ interface WorkflowStep {
       display: flex;
       gap: 1rem;
       justify-content: center;
+      align-items: center;
       padding: 1rem;
       background: var(--color-surface);
       border-radius: var(--radius-lg);
+    }
+    .action-buttons .parallel-progress {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    .action-buttons .already-approved {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      font-style: italic;
     }
     .btn-success {
       background: var(--color-success);
@@ -439,14 +461,53 @@ export class WorkflowInstanceDetailComponent implements OnInit {
     return status.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
+  getParallelProgress(): string {
+    const step = this.currentStep();
+    const inst = this.instance();
+    if (!step || !inst || step.node.type !== 'parallel') return '';
+
+    const formData = inst.formData as Record<string, any>;
+    const parallelApprovals = formData?.parallelApprovals;
+    const nodeState = parallelApprovals?.[step.node.id];
+
+    const required = (step.node.data['approvers'] as string[]) || [];
+    const approvals = nodeState?.approvals || [];
+
+    return `${approvals.length} of ${required.length} approvers have approved`;
+  }
+
+  canApproveParallel(): boolean {
+    const step = this.currentStep();
+    const inst = this.instance();
+    const currentUser = this.auth.user();
+    if (!step || !inst || !currentUser || step.node.type !== 'parallel') return false;
+
+    const formData = inst.formData as Record<string, any>;
+    const parallelApprovals = formData?.parallelApprovals;
+    const nodeState = parallelApprovals?.[step.node.id];
+
+    const approvals = nodeState?.approvals || [];
+    return !approvals.includes(currentUser.id) && !approvals.includes(currentUser.name || '');
+  }
+
   approve() {
     const inst = this.instance();
     const step = this.currentStep();
     if (!inst || !step) return;
 
+    const currentUser = this.auth.user();
+    const node = step.node;
+
+    // Check if this is a parallel node - use parallel approval API
+    if (node.type === 'parallel') {
+      this.handleParallelApproval(inst, node, currentUser);
+      return;
+    }
+
+    // Regular approval - advance directly
     inst.history.push({
       nodeId: step.node.id,
-      action: `Approved by ${this.auth.user()?.name || 'User'}`,
+      action: `Approved by ${currentUser?.name || 'User'}`,
       timestamp: new Date()
     });
 
@@ -466,6 +527,115 @@ export class WorkflowInstanceDetailComponent implements OnInit {
     this.workflowService.advanceInstance(inst.id, inst.currentNodeId!, inst.history).subscribe({
       next: (updated: any) => this.instance.set({ ...updated }),
       error: () => this.instance.set({ ...inst })
+    });
+  }
+
+  private handleParallelApproval(inst: WorkflowInstance, node: WorkflowNode, currentUser: { id: string; name?: string } | null) {
+    const approvers = (node.data['approvers'] as string[]) || [];
+    const currentNodeId = node.id;
+
+    // Get current parallel approval state from formData
+    const formData = inst.formData as Record<string, any>;
+    const parallelApprovals = formData?.parallelApprovals;
+    const existingState = parallelApprovals?.[currentNodeId];
+
+    if (!existingState) {
+      // Initialize parallel approval first
+      this.workflowService.initParallelApproval(inst.id, currentNodeId, approvers).subscribe({
+        next: (updated) => {
+          this.instance.set(updated);
+          // Now record this user's approval
+          if (currentUser) {
+            this.doParallelApprove(updated, currentNodeId, currentUser.id);
+          }
+        },
+        error: () => {
+          // Fallback to local handling
+          this.handleParallelApprovalLocally(inst, node, currentUser, approvers);
+        }
+      });
+    } else if (currentUser && !existingState.approvals.includes(currentUser.id)) {
+      // Already initialized, record this approval
+      this.doParallelApprove(inst, currentNodeId, currentUser.id);
+    }
+  }
+
+  private doParallelApprove(inst: WorkflowInstance, nodeId: string, approverId: string) {
+    this.workflowService.approveParallel(inst.id, nodeId, approverId).subscribe({
+      next: (result) => {
+        this.instance.set(result.instance);
+        // Note: allApproved is handled by the backend - when true, workflow advances automatically
+        // If not all approved, the instance stays at the parallel node
+      },
+      error: () => {
+        // Fallback to local handling
+        const wf = this.workflow();
+        if (wf) {
+          const node = wf.nodes.find(n => n.id === nodeId);
+          const approvers = (node?.data['approvers'] as string[]) || [];
+          this.handleParallelApprovalLocally(inst, node!, { id: approverId } as any, approvers);
+        }
+      }
+    });
+  }
+
+  private handleParallelApprovalLocally(inst: WorkflowInstance, node: WorkflowNode, currentUser: { id: string; name?: string } | null, requiredApprovers: string[]) {
+    const currentNodeId = node.id;
+    const formData = inst.formData || {};
+    const parallelApprovals = formData.parallelApprovals || {};
+    
+    let nodeApproval = parallelApprovals[currentNodeId];
+    if (!nodeApproval) {
+      nodeApproval = {
+        nodeId: currentNodeId,
+        requiredApprovers,
+        approvals: [],
+        status: 'PENDING' as 'PENDING' | 'ALL_APPROVED' | 'REJECTED'
+      };
+    }
+
+    // Record this approval
+    if (currentUser && !nodeApproval.approvals.includes(currentUser.id)) {
+      nodeApproval.approvals.push(currentUser.id);
+    }
+
+    // Check if all have approved
+    const allApproved = requiredApprovers.length === 0 ||
+      requiredApprovers.every(a => nodeApproval!.approvals.includes(a));
+
+    const historyEntry = {
+      nodeId: currentNodeId,
+      action: `Parallel approval: ${nodeApproval.approvals.length}/${requiredApprovers.length} approved`,
+      timestamp: new Date()
+    };
+
+    if (allApproved) {
+      nodeApproval.status = 'ALL_APPROVED';
+      // Find next node and advance
+      const wf = this.workflow();
+      if (wf) {
+        const currentIdx = wf.nodes.findIndex(n => n.id === currentNodeId);
+        if (currentIdx >= 0 && currentIdx < wf.nodes.length - 1) {
+          const nextNode = wf.nodes[currentIdx + 1];
+          const newStatus = nextNode.type === 'end' ? 'completed' : inst.status;
+          
+          this.instance.set({
+            ...inst,
+            currentNodeId: nextNode.id,
+            status: newStatus,
+            formData: { ...formData, parallelApprovals: { ...parallelApprovals, [currentNodeId]: nodeApproval } },
+            history: [...inst.history, historyEntry]
+          });
+          return;
+        }
+      }
+    }
+
+    // Not all approved - stay at parallel node
+    this.instance.set({
+      ...inst,
+      formData: { ...formData, parallelApprovals: { ...parallelApprovals, [currentNodeId]: nodeApproval } },
+      history: [...inst.history, historyEntry]
     });
   }
 

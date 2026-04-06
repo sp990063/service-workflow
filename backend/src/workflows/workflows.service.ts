@@ -219,7 +219,7 @@ export class WorkflowsService {
       newStatus = 'WAITING_FOR_CHILD';
     } else if (nextNode?.type === 'parallel') {
       // Initialize parallel approval state
-      const requiredApprovers = nextNode.data?.requiredApprovers || [];
+      const requiredApprovers = nextNode.data?.requiredApprovers || nextNode.data?.approvers || [];
       if (requiredApprovers.length > 0) {
         const parallelApprovals = {
           ...(updatedFormData.parallelApprovals || {}),
@@ -241,7 +241,8 @@ export class WorkflowsService {
     };
 
     // Include formData update if we initialized parallel approval
-    if (nextNode?.type === 'parallel' && nextNode.data?.requiredApprovers?.length > 0) {
+    const parallelRequired = nextNode?.data?.requiredApprovers?.length > 0 || nextNode?.data?.approvers?.length > 0;
+    if (nextNode?.type === 'parallel' && parallelRequired) {
       updateData.formData = JSON.stringify(updatedFormData);
     }
 
