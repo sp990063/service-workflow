@@ -901,6 +901,7 @@ export class WorkflowPlayerComponent implements OnInit {
     if (!inst) return;
 
     const nextNode = wf.nodes[currentIdx + 1];
+    console.log('[DEBUG] moveToNextNode:', { currentNodeId: currentNode.id, nextNodeId: nextNode?.id, nextNodeType: nextNode?.type });
     const historyEntry = {
       nodeId: currentNode.id,
       action: `Completed: ${currentNode.data['label'] || currentNode.type}`,
@@ -993,6 +994,7 @@ export class WorkflowPlayerComponent implements OnInit {
     const currentNode = this.currentNode();
 
     if (!inst || !wf || !currentNode || currentNode.type !== 'condition') {
+      console.log('[DEBUG] proceedFromCondition: invalid state, calling advanceWorkflow');
       this.advanceWorkflow();
       return;
     }
@@ -1001,9 +1003,9 @@ export class WorkflowPlayerComponent implements OnInit {
     const value = currentNode.data['value'] as string;
     const operator = (currentNode.data['operator'] as string) || 'equals';
     const formValue = inst.formData[field];
-    console.log('[DEBUG] proceedFromCondition:', { field, formValue, value, operator });
+    console.log('[DEBUG] proceedFromCondition:', { field, formValue, value, operator, formData: inst.formData });
     const conditionMet = this.evaluateCondition(formValue, value, operator);
-    console.log('[DEBUG] conditionMet:', conditionMet);
+    console.log('[DEBUG] conditionMet:', conditionMet, '→ routing to', conditionMet ? currentNode.data['trueBranch'] : currentNode.data['falseBranch']);
 
     const historyEntry = {
       nodeId: currentNode.id,
