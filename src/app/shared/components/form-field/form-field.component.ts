@@ -23,6 +23,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
           <input
             type="text"
             [id]="fieldId"
+            [name]="element.label"
             [value]="value"
             (input)="onInputChange($event)"
             [placeholder]="element.placeholder || ''"
@@ -36,6 +37,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
           <input
             type="number"
             [id]="fieldId"
+            [name]="element.label"
             [value]="value"
             (input)="onInputChange($event)"
             [placeholder]="element.placeholder || ''"
@@ -48,6 +50,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
         @case ('textarea') {
           <textarea
             [id]="fieldId"
+            [name]="element.label"
             [value]="value"
             (input)="onInputChange($event)"
             [placeholder]="element.placeholder || ''"
@@ -60,6 +63,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
           <input
             type="email"
             [id]="fieldId"
+            [name]="element.label"
             [value]="value"
             (input)="onInputChange($event)"
             placeholder="email@example.com"
@@ -71,6 +75,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
           <input
             type="date"
             [id]="fieldId"
+            [name]="element.label"
             [value]="value"
             (dateChange)="onInputChange($event)"
             [required]="element.required"
@@ -80,6 +85,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
         @case ('dropdown') {
           <select
             [id]="fieldId"
+            [name]="element.label"
             [attr.value]="value || ''"
             (change)="onSelectChange($event)"
             [required]="element.required"
@@ -95,6 +101,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
           <label class="checkbox-label">
             <input
               type="checkbox"
+              [name]="element.label"
               [checked]="value"
               (change)="onCheckboxChange($event)"
             >
@@ -108,7 +115,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
               <label class="radio-label">
                 <input
                   type="radio"
-                  [name]="fieldId"
+                  [name]="element.label"
                   [value]="option"
                   [checked]="value === option"
                   (change)="onRadioChange(option)"
@@ -123,6 +130,7 @@ export type FormFieldType = 'text' | 'number' | 'textarea' | 'email' | 'date' | 
           <input
             type="text"
             [id]="fieldId"
+            [name]="element.label"
             [value]="value"
             (input)="onInputChange($event)"
             [placeholder]="element.placeholder || ''"

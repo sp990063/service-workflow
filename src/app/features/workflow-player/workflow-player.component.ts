@@ -254,9 +254,9 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
               @for (element of currentForm()!.elements; track element.id; let i = $index) {
                 <app-form-field
                   [element]="element"
-                  [value]="formData()[element.id]"
+                  [value]="formData()[element.label]"
                   [fieldIndex]="i"
-                  (valueChange)="onFormFieldChange(element.id, $event)"
+                  (valueChange)="onFormFieldChange(element.label, $event)"
                 ></app-form-field>
               }
             </div>
@@ -772,12 +772,9 @@ export class WorkflowPlayerComponent implements OnInit {
     return !this.isCurrentStep(nodeId) && !this.isStepCompleted(nodeId);
   }
 
-  onFormFieldChange(elementId: string, value: unknown): void {
-    // Use a form data key that matches backend condition field names.
-    // For number fields (ratings, amounts, etc.), use element.id (e.g., 'pr-1', 'field-4')
-    // For other fields, use element.name (e.g., 'Employee Name', 'Rating')
-    // This ensures backend condition evaluation finds the correct fields.
-    const fieldKey = elementId;
+  onFormFieldChange(elementLabel: string, value: unknown): void {
+    // Use element.label as the form data key to match backend condition field names.
+    const fieldKey = elementLabel;
     this.formData.update(data => ({ ...data, [fieldKey]: value }));
   }
 
@@ -1424,7 +1421,7 @@ export class WorkflowPlayerComponent implements OnInit {
     if (!form) return null;
 
     for (const element of form.elements) {
-      const value = data[element.id] as string | null | undefined;
+      const value = data[element.label] as string | null | undefined;
       
       if (element.required) {
         if (!value || value.trim() === '') {
@@ -1470,5 +1467,13 @@ export class WorkflowPlayerComponent implements OnInit {
         this.formError.set('Failed to submit form. Please try again.');
       }
     });
+  }
+
+  // Test helper: allow E2E tests to directly set formData and submit
+  __testSetFormData(data: Record<string, unknown>): void {
+    this.formData.set(data);
+  }
+  __testSubmitForm(): void {
+    this.onFormSubmit(new Event('submit'));
   }
 }

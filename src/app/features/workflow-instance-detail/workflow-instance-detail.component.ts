@@ -115,8 +115,8 @@ interface WorkflowStep {
           </div>
         </section>
 
-        <!-- Action Buttons (if in-progress and current step is approval or parallel) -->
-        @if (isInProgress() && currentStep() && (currentStep()!.node.type === 'approval' || currentStep()!.node.type === 'parallel')) {
+        <!-- Action Buttons (if in-progress and current step is approval, parallel, or task) -->
+        @if (isInProgress() && currentStep() && (currentStep()!.node.type === 'approval' || currentStep()!.node.type === 'parallel' || currentStep()!.node.type === 'task')) {
           <section class="action-buttons">
             @if (currentStep()!.node.type === 'parallel') {
               <!-- Parallel approval: show progress and button -->
