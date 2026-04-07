@@ -371,6 +371,36 @@ export class DbHelper {
     return result.count;
   }
 
+  // ─── Create helpers ────────────────────────────────────────────────────────
+
+  createWorkflowInstance(data: {
+    workflowId: string;
+    userId: string;
+    currentNodeId?: string;
+    status?: string;
+    formData?: Record<string, unknown>;
+    history?: Array<{ nodeId: string; action: string; timestamp: number }>;
+  }): DbWorkflowInstance {
+    const id = require('crypto').randomUUID();
+    const now = Date.now();
+    const stmt = this.db.prepare(`
+      INSERT INTO WorkflowInstance (id, workflowId, userId, currentNodeId, status, formData, history, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      id,
+      data.workflowId,
+      data.userId,
+      data.currentNodeId || null,
+      data.status || 'PENDING',
+      JSON.stringify(data.formData || {}),
+      JSON.stringify(data.history || []),
+      now,
+      now
+    );
+    return this.getWorkflowInstance({ id })!;
+  }
+
   deleteAllInstances(): number {
     const result = this.db.prepare('DELETE FROM WorkflowInstance').run();
     return result.changes;
