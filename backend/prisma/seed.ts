@@ -359,6 +359,50 @@ async function main() {
   });
   console.log(`✅ Created workflow: ${leaveRequestWorkflow.name} (with parallel approval for days > 3)`);
 
+  // Performance Review Form
+  const performanceReviewForm = await prisma.form.create({
+    data: {
+      name: 'Performance Review',
+      description: 'Employee performance review self-assessment',
+      elements: JSON.stringify([
+        { id: 'pr-1', type: 'number', label: 'Rating', placeholder: 'Rate your performance (1-5)', required: true, validation: { min: 1, max: 5 } },
+        { id: 'pr-2', type: 'textarea', label: 'Comments', placeholder: 'Describe your performance this quarter', required: false },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created form: ${performanceReviewForm.name}`);
+
+  // Performance Review Workflow
+  // Structure: start → form(rating+comments) → condition(rating < 3?) → parallel(IT+HR) → end
+  //                                                     ↓ false
+  //                                                   end
+  const performanceReviewWorkflow = await prisma.workflow.create({
+    data: {
+      name: 'Performance Review',
+      description: 'Employee performance review workflow with HR intervention for low ratings',
+      category: 'HR',
+      nodes: JSON.stringify([
+        { id: 'pr-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start', description: 'Start performance review' } },
+        { id: 'pr-form', type: 'form', position: { x: 250, y: 200 }, data: { label: 'Self-Assessment', formId: performanceReviewForm.id } },
+        { id: 'pr-condition', type: 'condition', position: { x: 400, y: 200 }, data: { label: 'Check Rating', field: 'pr-1', operator: 'less_than', value: '3', trueBranch: 'pr-parallel', falseBranch: 'pr-end' } },
+        { id: 'pr-parallel', type: 'parallel', position: { x: 550, y: 200 }, data: { label: 'HR Review', approvers: ['Manager User', 'HR User'] } },
+        { id: 'pr-end', type: 'end', position: { x: 700, y: 200 }, data: { label: 'End', description: 'Review completed' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'pr-start', to: 'pr-form' },
+        { from: 'pr-form', to: 'pr-condition' },
+        { from: 'pr-condition', to: 'pr-parallel' },
+        { from: 'pr-condition', to: 'pr-end' },
+        { from: 'pr-parallel', to: 'pr-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created workflow: ${performanceReviewWorkflow.name} (HR intervention for rating < 3)`);
+
   console.log('✅ Created additional sample data');
 
   // ============ Summary ============
