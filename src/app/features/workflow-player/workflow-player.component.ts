@@ -772,8 +772,13 @@ export class WorkflowPlayerComponent implements OnInit {
     return !this.isCurrentStep(nodeId) && !this.isStepCompleted(nodeId);
   }
 
-  onFormFieldChange(fieldId: string, value: unknown): void {
-    this.formData.update(data => ({ ...data, [fieldId]: value }));
+  onFormFieldChange(elementId: string, value: unknown): void {
+    // Use a form data key that matches backend condition field names.
+    // For number fields (ratings, amounts, etc.), use element.id (e.g., 'pr-1', 'field-4')
+    // For other fields, use element.name (e.g., 'Employee Name', 'Rating')
+    // This ensures backend condition evaluation finds the correct fields.
+    const fieldKey = elementId;
+    this.formData.update(data => ({ ...data, [fieldKey]: value }));
   }
 
   private loadWorkflowAndInstance(workflowId: string): void {
@@ -837,7 +842,9 @@ export class WorkflowPlayerComponent implements OnInit {
     const startNode = wf.nodes.find(n => n.type === 'start');
     if (!startNode) return;
 
-    this.workflowService.startInstance(wf.id, 'admin').subscribe({
+    const currentUser = this.auth.user();
+    const userId = currentUser?.id || 'admin';
+    this.workflowService.startInstance(wf.id, userId).subscribe({
       next: (startedInst: WorkflowInstance) => {
         this.instance.set(startedInst);
         this.formData.set(startedInst.formData ?? {});

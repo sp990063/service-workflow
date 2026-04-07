@@ -415,7 +415,7 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     
     // Get workflow instance created by employee
     const instances = db.getWorkflowInstances({ userId: employee!.id });
-    expect(instances.length).toBeGreaterThanOrEqual(0);
+    expect(instances.length).toBeGreaterThan(0);  // Instance MUST be created
     const instanceId = instances[0]?.id;
     
     await login(page, TEST_USERS.manager);
@@ -451,41 +451,33 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     await page.locator('button[type="submit"], button', { hasText: 'Submit' }).click();
     await page.waitForTimeout(2000);
     
-    // Get the most recent IT Equipment workflow instance
-    // Note: workflow player creates instance under 'admin' user, not employee
-    const allInstances = db.getWorkflowInstances({});
-    // Find IT Equipment Approval workflow instance - it may be IN_PROGRESS, REJECTED, or COMPLETED
-    const itInstance = allInstances
-      .filter(i => i.workflowId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .find(i => i.status !== undefined);  // Get most recent
-    const instanceId = itInstance?.id;
+    // Get workflow instance - now correctly created under employee user
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    const instances = db.getWorkflowInstances({ userId: employee!.id });
+    expect(instances.length).toBeGreaterThan(0);  // Instance MUST be created
+    const instanceId = instances[0]?.id;
     
-    // Navigate to workflow player to see result - workflow player shows current node's template
-    await page.goto(`${BASE_URL}/workflows`);
-    await page.waitForTimeout(1500);
-    
-    // Check for rejection/condition message on the workflows page or by going to instance
+    // Navigate to instance detail page to see condition evaluation result
     if (instanceId) {
       await page.goto(`${BASE_URL}/workflow-instance/${instanceId}`, { waitUntil: 'networkidle' });
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(2500);  // Wait for condition evaluation (backend has 300ms delay)
     }
     
-    // Workflow should show condition result or be rejected/blocked
+    // Workflow should show condition evaluation result
     const parallelSection = page.locator('.parallel-section');
     const stepContentCount = await page.locator('.step-content').count();
     const currentStep = page.locator('text=/Current Step:/i');
     const isRejected = page.locator('text=/REJECTED/i');
-    const errorMsg = page.locator('text=/budget.*exceeded|blocked|limit/i');
+    const conditionSection = page.locator('.condition-section');
     
     const hasParallel = await parallelSection.isVisible().catch(() => false);
     const hasStepContent = stepContentCount > 0;
     const hasCurrentStep = await currentStep.isVisible().catch(() => false);
     const hasRejection = await isRejected.isVisible().catch(() => false);
-    const hasError = await errorMsg.isVisible().catch(() => false);
+    const hasCondition = await conditionSection.isVisible().catch(() => false);
     
-    // Budget >= 50000 should show some indication of blocking or rejection
-    expect(hasParallel || hasStepContent || hasCurrentStep || hasRejection || hasError).toBeTruthy();
+    // Budget >= 50000 should trigger condition evaluation and show result
+    expect(hasParallel || hasStepContent || hasCurrentStep || hasRejection || hasCondition).toBeTruthy();
     
     db.close();
   });
@@ -504,12 +496,11 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     await page.locator('button[type="submit"]').click();
     await page.waitForTimeout(2000);
     
-    // Get the most recent workflow instance (created under admin, not employee)
-    const allInstances = db.getWorkflowInstances({});
-    const itInstance = allInstances
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .find(i => i.status === 'IN_PROGRESS');
-    const instanceId = itInstance?.id;
+    // Get workflow instance created under employee user
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    let instances = db.getWorkflowInstances({ userId: employee!.id });
+    expect(instances.length).toBeGreaterThan(0);  // Instance MUST be created
+    const instanceId = instances[0]?.id;
     
     // Manager should approve to advance to parallel
     await login(page, TEST_USERS.manager);
@@ -521,10 +512,8 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     }
     
     // Check workflow advanced to parallel approval stage
-    const updatedInstances = db.getWorkflowInstances({}).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-    const afterInstance = updatedInstances.find(i => i.id === instanceId);
+    instances = db.getWorkflowInstances({ userId: employee!.id });
+    const afterInstance = instances.find(i => i.id === instanceId);
     
     // After manager approval, workflow should be at parallel node (IN_PROGRESS)
     if (afterInstance) {
@@ -548,12 +537,11 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     await page.locator('button[type="submit"]').click();
     await page.waitForTimeout(2000);
     
-    // Get the most recent workflow instance (created under admin, not employee)
-    const allInstances = db.getWorkflowInstances({});
-    const itInstance = allInstances
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .find(i => i.status === 'IN_PROGRESS');
-    const instanceId = itInstance?.id;
+    // Get workflow instance created under employee user
+    const employee = db.getUserByEmail(TEST_USERS.employee.email);
+    const instances = db.getWorkflowInstances({ userId: employee!.id });
+    expect(instances.length).toBeGreaterThan(0);  // Instance MUST be created
+    const instanceId = instances[0]?.id;
     
     await login(page, TEST_USERS.manager);
     if (instanceId) {
@@ -564,9 +552,7 @@ test.describe('Scenario 3: IT Equipment Order (Sequential + Parallel)', () => {
     }
     
     // Refresh instances to get updated status
-    const updatedInstances = db.getWorkflowInstances({}).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    const updatedInstances = db.getWorkflowInstances({ userId: employee!.id });
     const rejectedInstance = updatedInstances.find(i => i.id === instanceId);
     
     if (rejectedInstance) {
@@ -798,7 +784,7 @@ test.describe('Scenario 5: Performance Review (Condition-based)', () => {
     // Either condition section, parallel section, or step content should be visible
     expect(hasCondition || hasParallel || hasStepContent || hasCurrentStep).toBeTruthy();
 
-    expect(instances.length).toBeGreaterThanOrEqual(0);
+    expect(instances.length).toBeGreaterThan(0);  // Instance MUST be created
 
     db.close();
   });
