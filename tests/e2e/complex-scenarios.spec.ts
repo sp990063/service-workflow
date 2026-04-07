@@ -224,15 +224,13 @@ test.describe('Scenario 1: Leave Request (Conditional Approval)', () => {
     await page.locator('button[type="submit"], button', { hasText: 'Submit' }).click();
     await page.waitForTimeout(1500);
     
-    const conditionSection = page.locator('.condition-section');
-    const parallelSection = page.locator('.parallel-section');
-    const approvalSection = page.locator('.approval-section');
+    // Check for workflow progress section or parallel approval text (actual UI uses these)
+    const workflowProgress = page.locator('text=Workflow Progress');
+    const parallelApprovalText = page.locator('text=/Parallel Approval|Parallel Split/i');
+    const hasWorkflowProgress = await workflowProgress.isVisible().catch(() => false);
+    const hasParallelText = await parallelApprovalText.isVisible().catch(() => false);
     
-    const hasCondition = await conditionSection.isVisible().catch(() => false);
-    const hasParallel = await parallelSection.isVisible().catch(() => false);
-    const hasApproval = await approvalSection.isVisible().catch(() => false);
-    
-    expect(hasCondition || hasParallel || hasApproval).toBeTruthy();
+    expect(hasWorkflowProgress || hasParallelText).toBeTruthy();
     
     const employee = db.getUserByEmail(TEST_USERS.employee.email);
     const instances = db.getWorkflowInstances({ userId: employee!.id });
