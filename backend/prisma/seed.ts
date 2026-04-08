@@ -403,6 +403,283 @@ async function main() {
   });
   console.log(`✅ Created workflow: ${performanceReviewWorkflow.name} (HR intervention for rating < 3)`);
 
+  // ============ Customer Onboarding ============
+  const customerOnboardingForm = await prisma.form.create({
+    data: {
+      name: 'Customer Onboarding',
+      description: 'New customer onboarding form',
+      elements: JSON.stringify([
+        { id: 'co-1', type: 'text', label: 'Customer Name', placeholder: 'Enter customer name', required: true },
+        { id: 'co-2', type: 'email', label: 'Email', placeholder: 'customer@email.com', required: true },
+        { id: 'co-3', type: 'text', label: 'Company', placeholder: 'Company name', required: true },
+        { id: 'co-4', type: 'dropdown', label: 'Business Type', options: ['Startup', 'SME', 'Enterprise', 'Government'], required: true },
+        { id: 'co-5', type: 'textarea', label: 'Requirements', placeholder: 'Describe customer requirements', required: false },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created form: ${customerOnboardingForm.name}`);
+
+  // Customer Onboarding Workflow with sub-workflow
+  // Structure: start → form → sub-workflow(customer verification) → approval(Manager) → end
+  await prisma.workflow.create({
+    data: {
+      name: 'Customer Onboarding',
+      description: 'New customer onboarding workflow',
+      category: 'Sales',
+      nodes: JSON.stringify([
+        { id: 'co-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start', description: 'Start customer onboarding' } },
+        { id: 'co-form', type: 'form', position: { x: 250, y: 200 }, data: { label: 'Customer Information', formId: customerOnboardingForm.id } },
+        { id: 'co-subworkflow', type: 'sub-workflow', position: { x: 400, y: 200 }, data: { label: 'Verify Customer Info', subWorkflowName: 'Customer Info Verification' } },
+        { id: 'co-approval', type: 'approval', position: { x: 550, y: 200 }, data: { label: 'Manager Approval', approverRole: 'MANAGER' } },
+        { id: 'co-end', type: 'end', position: { x: 700, y: 200 }, data: { label: 'End', description: 'Onboarding completed' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'co-start', to: 'co-form' },
+        { from: 'co-form', to: 'co-subworkflow' },
+        { from: 'co-subworkflow', to: 'co-approval' },
+        { from: 'co-approval', to: 'co-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created workflow: Customer Onboarding (with sub-workflow)`);
+
+  // Customer Info Verification Sub-workflow
+  const customerVerificationForm = await prisma.form.create({
+    data: {
+      name: 'Customer Info Verification',
+      description: 'Verify customer information for onboarding',
+      elements: JSON.stringify([
+        { id: 'cv-1', type: 'checkbox', label: 'ID Verified', required: true },
+        { id: 'cv-2', type: 'checkbox', label: 'Address Confirmed', required: true },
+        { id: 'cv-3', type: 'textarea', label: 'Verification Notes', required: false },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+
+  await prisma.workflow.create({
+    data: {
+      name: 'Customer Info Verification',
+      description: 'Sub-workflow to verify customer information',
+      category: 'Sales',
+      nodes: JSON.stringify([
+        { id: 'cv-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start' } },
+        { id: 'cv-form', type: 'form', position: { x: 250, y: 200 }, data: { label: 'Verification Form', formId: customerVerificationForm.id } },
+        { id: 'cv-end', type: 'end', position: { x: 400, y: 200 }, data: { label: 'End' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'cv-start', to: 'cv-form' },
+        { from: 'cv-form', to: 'cv-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created sub-workflow: Customer Info Verification`);
+
+  // ============ System Enhancement Request ============
+  const systemEnhancementForm = await prisma.form.create({
+    data: {
+      name: 'System Enhancement Request',
+      description: 'Request for system improvements or new features',
+      elements: JSON.stringify([
+        { id: 'se-1', type: 'text', label: 'Title', placeholder: 'Enhancement title', required: true },
+        { id: 'se-2', type: 'textarea', label: 'Description', placeholder: 'Describe the enhancement', required: true },
+        { id: 'se-3', type: 'dropdown', label: 'Priority', options: ['Low', 'Medium', 'High', 'Critical'], required: true },
+        { id: 'se-4', type: 'number', label: 'Estimated Cost', placeholder: 'Estimated cost in USD', required: true },
+        { id: 'se-5', type: 'dropdown', label: 'Infrastructure Needed', options: ['None', 'Network', 'Database', 'Network,Database'], required: false },
+        { id: 'se-6', type: 'textarea', label: 'Expected Impact', placeholder: 'Expected business impact', required: false },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+
+  await prisma.workflow.create({
+    data: {
+      name: 'System Enhancement Request',
+      description: 'Process system enhancement requests with SDLC stages',
+      category: 'IT',
+      nodes: JSON.stringify([
+        { id: 'se-start', type: 'start', position: { x: 50, y: 200 }, data: { label: 'Start' } },
+        { id: 'se-form', type: 'form', position: { x: 200, y: 200 }, data: { label: 'Request Details', formId: systemEnhancementForm.id } },
+        { id: 'se-req', type: 'task', position: { x: 350, y: 200 }, data: { label: 'Requirements', description: 'Define detailed requirements' } },
+        { id: 'se-des', type: 'task', position: { x: 500, y: 200 }, data: { label: 'Design', description: 'Create technical design document' } },
+        { id: 'se-dev', type: 'task', position: { x: 650, y: 200 }, data: { label: 'Development', description: 'Implement the enhancement' } },
+        { id: 'se-test', type: 'task', position: { x: 800, y: 200 }, data: { label: 'Testing', description: 'Test the implementation' } },
+        { id: 'se-approval', type: 'approval', position: { x: 950, y: 200 }, data: { label: 'Final Approval', approverRole: 'MANAGER' } },
+        { id: 'se-end', type: 'end', position: { x: 1100, y: 200 }, data: { label: 'End' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'se-start', to: 'se-form' },
+        { from: 'se-form', to: 'se-req' },
+        { from: 'se-req', to: 'se-des' },
+        { from: 'se-des', to: 'se-dev' },
+        { from: 'se-dev', to: 'se-test' },
+        { from: 'se-test', to: 'se-approval' },
+        { from: 'se-approval', to: 'se-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created workflow: System Enhancement Request (with SDLC stages)`);
+
+  // ============ Expense Reimbursement ============
+  const expenseForm = await prisma.form.create({
+    data: {
+      name: 'Expense Reimbursement',
+      description: 'Submit expense claims for reimbursement',
+      elements: JSON.stringify([
+        { id: 'er-1', type: 'text', label: 'Employee Name', placeholder: 'Enter your name', required: true },
+        { id: 'er-2', type: 'number', label: 'Amount', placeholder: 'Enter amount', required: true },
+        { id: 'er-3', type: 'textarea', label: 'Description', placeholder: 'Describe the expense', required: true },
+        { id: 'er-4', type: 'dropdown', label: 'Category', options: ['Travel', 'Equipment', 'Meals', 'Software', 'Other'], required: true },
+        { id: 'er-5', type: 'checkbox', label: 'Receipts Attached', required: true },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created form: ${expenseForm.name}`);
+
+  // Expense Reimbursement Workflow with Parallel Approval (Manager + Finance)
+  await prisma.workflow.create({
+    data: {
+      name: 'Expense Reimbursement',
+      description: 'Expense reimbursement with Manager and Finance approval',
+      category: 'Finance',
+      nodes: JSON.stringify([
+        { id: 'er-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start' } },
+        { id: 'er-form', type: 'form', position: { x: 250, y: 200 }, data: { label: 'Expense Form', formId: expenseForm.id } },
+        { id: 'er-parallel', type: 'parallel', position: { x: 400, y: 200 }, data: { label: 'Parallel Approval (Manager + Finance)', approvers: ['Manager User', 'Finance User'] } },
+        { id: 'er-end', type: 'end', position: { x: 550, y: 200 }, data: { label: 'End' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'er-start', to: 'er-form' },
+        { from: 'er-form', to: 'er-parallel' },
+        { from: 'er-parallel', to: 'er-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created workflow: Expense Reimbursement (parallel approval)`);
+
+  // Budget Check Workflow
+  const budgetCheckForm = await prisma.form.create({
+    data: {
+      name: 'Budget Check',
+      description: 'Check budget availability for expenses',
+      elements: JSON.stringify([
+        { id: 'bc-1', type: 'number', label: 'Budget Amount', placeholder: 'Enter budget amount', required: true },
+        { id: 'bc-2', type: 'textarea', label: 'Justification', placeholder: 'Budget justification', required: true },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+
+  await prisma.workflow.create({
+    data: {
+      name: 'Budget Check Workflow',
+      description: 'Verify budget availability for large expenses',
+      category: 'Finance',
+      nodes: JSON.stringify([
+        { id: 'bc-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start' } },
+        { id: 'bc-form', type: 'form', position: { x: 250, y: 200 }, data: { label: 'Budget Check Form', formId: budgetCheckForm.id } },
+        { id: 'bc-review', type: 'approval', position: { x: 400, y: 200 }, data: { label: 'Finance Review', approverRole: 'MANAGER' } },
+        { id: 'bc-end', type: 'end', position: { x: 550, y: 200 }, data: { label: 'End' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'bc-start', to: 'bc-form' },
+        { from: 'bc-form', to: 'bc-review' },
+        { from: 'bc-review', to: 'bc-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created workflow: Budget Check Workflow`);
+
+  // SDLC Sub-workflows for System Enhancement
+  const networkForm = await prisma.form.create({
+    data: {
+      name: 'Network Setup',
+      description: 'Network infrastructure setup request',
+      elements: JSON.stringify([
+        { id: 'ns-1', type: 'text', label: 'Location', placeholder: 'Office location', required: true },
+        { id: 'ns-2', type: 'dropdown', label: 'Network Type', options: ['Wired', 'Wireless', 'Both'], required: true },
+        { id: 'ns-3', type: 'textarea', label: 'Requirements', placeholder: 'Network requirements', required: false },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+
+  const networkWorkflow = await prisma.workflow.create({
+    data: {
+      name: 'Network Infrastructure Setup',
+      description: 'Network infrastructure setup sub-workflow',
+      category: 'IT',
+      nodes: JSON.stringify([
+        { id: 'ni-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start' } },
+        { id: 'ni-form', type: 'form', position: { x: 250, y: 200 }, data: { label: 'Network Request Form', formId: networkForm.id } },
+        { id: 'ni-review', type: 'approval', position: { x: 400, y: 200 }, data: { label: 'IT Approval', approverRole: 'MANAGER' } },
+        { id: 'ni-end', type: 'end', position: { x: 550, y: 200 }, data: { label: 'End' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'ni-start', to: 'ni-form' },
+        { from: 'ni-form', to: 'ni-review' },
+        { from: 'ni-review', to: 'ni-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created sub-workflow: Network Infrastructure Setup`);
+
+  const databaseForm = await prisma.form.create({
+    data: {
+      name: 'Database Request',
+      description: 'Database setup or modification request',
+      elements: JSON.stringify([
+        { id: 'db-1', type: 'text', label: 'Database Name', placeholder: 'Enter database name', required: true },
+        { id: 'db-2', type: 'dropdown', label: 'Database Type', options: ['MySQL', 'PostgreSQL', 'MongoDB', 'Other'], required: true },
+        { id: 'db-3', type: 'textarea', label: 'Schema Requirements', placeholder: 'Schema details', required: false },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+
+  const databaseWorkflow = await prisma.workflow.create({
+    data: {
+      name: 'Database Setup',
+      description: 'Database setup sub-workflow',
+      category: 'IT',
+      nodes: JSON.stringify([
+        { id: 'ds-start', type: 'start', position: { x: 100, y: 200 }, data: { label: 'Start' } },
+        { id: 'ds-form', type: 'form', position: { x: 250, y: 200 }, data: { label: 'Database Request Form', formId: databaseForm.id } },
+        { id: 'ds-review', type: 'approval', position: { x: 400, y: 200 }, data: { label: 'DBA Approval', approverRole: 'MANAGER' } },
+        { id: 'ds-end', type: 'end', position: { x: 550, y: 200 }, data: { label: 'End' } },
+      ]),
+      connections: JSON.stringify([
+        { from: 'ds-start', to: 'ds-form' },
+        { from: 'ds-form', to: 'ds-review' },
+        { from: 'ds-review', to: 'ds-end' },
+      ]),
+      isActive: true,
+      userId: admin.id,
+    },
+  });
+  console.log(`✅ Created sub-workflow: Database Setup`);
+
   console.log('✅ Created additional sample data');
 
   // ============ Summary ============
