@@ -1,59 +1,40 @@
-version: '3.8'
-
 services:
-  # PostgreSQL Database
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-serviceflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-serviceflow_password}
-      POSTGRES_DB: ${POSTGRES_DB:-serviceflow}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-serviceflow}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   # Backend API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-serviceflow}:${POSTGRES_PASSWORD:-serviceflow_password}@db:5432/${POSTGRES_DB:-serviceflow}
+      DATABASE_URL: file:/app/data/serviceflow.db
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
-      # SMTP Configuration
-      SMTP_ENABLED: ${SMTP_ENABLED:-false}
-      SMTP_HOST: ${SMTP_HOST:-smtp.example.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_ENABLED: ${SMTP_ENABLED:-true}
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
-      # LDAP Configuration
-      LDAP_ENABLED: ${LDAP_ENABLED:-false}
-      LDAP_URL: ${LDAP_URL:-ldap://ldap.example.com}
-      LDAP_BIND_DN: ${LDAP_BIND_DN:-}
-      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-}
+      LDAP_ENABLED: ${LDAP_ENABLED:-true}
+      LDAP_URL: ${LDAP_URL:-ldap://ldap:389}
+      LDAP_BIND_DN: ${LDAP_BIND_DN:-cn=admin,dc=example,dc=com}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-admin}
       LDAP_SEARCH_BASE: ${LDAP_SEARCH_BASE:-dc=example,dc=com}
       LDAP_SEARCH_FILTER: ${LDAP_SEARCH_FILTER:-uid={{username}}}
     ports:
       - "3000:3000"
+    volumes:
+      - sqlite_data:/app/data
     depends_on:
-      db:
-        condition: service_healthy
+      - mailhog
+      - ldap
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 10s
 
   # Frontend Angular App
   frontend:
@@ -67,5 +48,27 @@ services:
     depends_on:
       - backend
 
+  # MailHog - SMTP server for testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"   # SMTP server
+      - "8025:8025"   # Web UI
+
+  # OpenLDAP for testing
+  ldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: Example Inc.
+      LDAP_DOMAIN: example.com
+      LDAP_ADMIN_PASSWORD: admin
+    ports:
+      - "389:389"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+
 volumes:
-  postgres_data:
+  sqlite_data:
+  ldap_data:
+  ldap_config:
