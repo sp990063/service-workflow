@@ -156,6 +156,15 @@ async function main() {
     },
   });
 
+  const finance = await prisma.user.create({
+    data: {
+      email: 'finance@example.com',
+      password: hashedPassword,
+      name: 'Finance User',
+      role: 'MANAGER',
+    },
+  });
+
   // Assign global Admin role to admin user
   const adminRole = await prisma.role.findUnique({ where: { name: 'Admin' } });
   if (adminRole) {
@@ -174,6 +183,17 @@ async function main() {
     await prisma.member.create({
       data: {
         userId: manager.id,
+        roleId: managerRole.id,
+        scopeType: 'GLOBAL',
+      },
+    });
+  }
+
+  // Assign Manager role to finance user
+  if (managerRole) {
+    await prisma.member.create({
+      data: {
+        userId: finance.id,
         roleId: managerRole.id,
         scopeType: 'GLOBAL',
       },
