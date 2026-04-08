@@ -23,7 +23,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Stage 2: Backend Production
-FROM node:20-alpine AS backend-production
+FROM node:20-bookworm AS backend-production
 
 WORKDIR /app/backend
 
@@ -34,11 +34,11 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy Prisma schema and migrations
 COPY backend/prisma ./prisma
 
-# Generate Prisma client (needed for migrations)
-RUN npx prisma generate
-
 # Copy built application
 COPY --from=backend-builder /app/backend/dist ./dist
+
+# Generate Prisma client for current platform (Debian/bookworm)
+RUN rm -rf node_modules/.prisma && npx prisma generate
 
 # Set production environment
 ENV NODE_ENV=production
@@ -49,7 +49,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:3000/health || exit 1
 
 # Run migrations and start server
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
