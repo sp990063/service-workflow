@@ -77,6 +77,14 @@ export class WorkflowEngineService {
   }
 
   /**
+   * Get workflow by name
+   */
+  async getWorkflowByName(workflowName: string) {
+    const workflow = await this.prisma.workflow.findFirst({ where: { name: workflowName, isActive: true } });
+    return this.parseJsonFields(workflow);
+  }
+
+  /**
    * Get instance by ID
    */
   async getInstance(instanceId: string) {
@@ -388,11 +396,25 @@ export class WorkflowEngineService {
    */
   async executeSubWorkflow(instance: any, node: WorkflowNode): Promise<ExecutionResult> {
     const subWorkflowId = node.data?.subWorkflowId;
+    const subWorkflowName = node.data?.subWorkflowName;
     const inputMapping = node.data?.inputMapping || {};
     const waitForCompletion = node.data?.waitForCompletion !== false;
 
-    if (!subWorkflowId) {
-      return { success: false, nextNodeId: null, error: 'Sub-workflow ID not specified' };
+    // Resolve sub-workflow: use ID directly or look up by name
+    let subWorkflow;
+    let resolvedSubWorkflowId = subWorkflowId;
+
+    if (subWorkflowId) {
+      subWorkflow = await this.getWorkflow(subWorkflowId);
+    } else if (subWorkflowName) {
+      subWorkflow = await this.getWorkflowByName(subWorkflowName);
+      if (subWorkflow) {
+        resolvedSubWorkflowId = subWorkflow.id;
+      }
+    }
+
+    if (!subWorkflow) {
+      return { success: false, nextNodeId: null, error: subWorkflowId ? 'Sub-workflow not found' : 'Sub-workflow not found (by ID or name)' };
     }
 
     // Create input data from parent instance
@@ -403,17 +425,11 @@ export class WorkflowEngineService {
       childInputData[childField] = parentData[parentField as string];
     }
 
-    // Get sub-workflow and create instance
-    const subWorkflow = await this.getWorkflow(subWorkflowId);
-    if (!subWorkflow) {
-      return { success: false, nextNodeId: null, error: 'Sub-workflow not found' };
-    }
-
     const startNode = subWorkflow.nodes.find((n: any) => n.type === 'start');
 
     const childInstance = await this.prisma.workflowInstance.create({
       data: {
-        workflowId: subWorkflowId,
+        workflowId: resolvedSubWorkflowId,
         userId: instance.userId,
         currentNodeId: startNode?.id || null,
         status: waitForCompletion ? 'WAITING_FOR_CHILD' : 'IN_PROGRESS',
