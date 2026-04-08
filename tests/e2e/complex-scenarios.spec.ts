@@ -74,6 +74,8 @@ async function startWorkflow(page: any, workflowName: string) {
   } catch (e) {
     // Player start button not visible - continue anyway
   }
+  
+  return true;
 }
 
 async function advanceWorkflow(page: any, buttonText: string) {
