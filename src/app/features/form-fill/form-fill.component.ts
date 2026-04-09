@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormService } from '../../core/services/form.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Form, FormElement } from '../../core/models';
+import { Form, FormElement, FormSection } from '../../core/models';
 
 @Component({
   selector: 'app-form-fill',
@@ -27,155 +27,176 @@ import { Form, FormElement } from '../../core/models';
         </header>
         
         <form class="form-content" (ngSubmit)="submitForm()">
-          @for (element of form()!.elements; track element.id; let i = $index) {
-            <div class="form-field" [class.has-error]="fieldErrors()[element.id]">
-              <label [for]="'field-' + i">
-                {{ element.label }}
-                @if (element.required) {
-                  <span class="required">*</span>
-                }
-              </label>
-              
-              @switch (element.type) {
-                @case ('text') {
-                  <input 
-                    type="text" 
-                    [id]="'field-' + i"
-                    [(ngModel)]="formData[element.id]"
-                    [name]="'field-' + element.id"
-                    [placeholder]="element.placeholder"
-                    [required]="element.required"
-                  >
-                }
-                @case ('textarea') {
-                  <textarea 
-                    [id]="'field-' + i"
-                    [(ngModel)]="formData[element.id]"
-                    [name]="'field-' + element.id"
-                    [placeholder]="element.placeholder"
-                    [required]="element.required"
-                    rows="4"
-                  ></textarea>
-                }
-                @case ('number') {
-                  <input 
-                    type="number" 
-                    [id]="'field-' + i"
-                    [(ngModel)]="formData[element.id]"
-                    [name]="'field-' + element.id"
-                    [placeholder]="element.placeholder"
-                    [required]="element.required"
-                  >
-                }
-                @case ('email') {
-                  <input 
-                    type="email" 
-                    [id]="'field-' + i"
-                    [(ngModel)]="formData[element.id]"
-                    [name]="'field-' + element.id"
-                    [placeholder]="element.placeholder || 'email@example.com'"
-                    [required]="element.required"
-                  >
-                }
-                @case ('phone') {
-                  <input 
-                    type="tel" 
-                    [id]="'field-' + i"
-                    [(ngModel)]="formData[element.id]"
-                    [name]="'field-' + element.id"
-                    [placeholder]="element.placeholder || '(555) 555-5555'"
-                    [required]="element.required"
-                  >
-                }
-                @case ('date') {
-                  <input 
-                    type="date" 
-                    [id]="'field-' + i"
-                    [(ngModel)]="formData[element.id]"
-                    [name]="'field-' + element.id"
-                    [required]="element.required"
-                  >
-                }
-                @case ('dropdown') {
-                  <select 
-                    [id]="'field-' + i"
-                    [(ngModel)]="formData[element.id]"
-                    [name]="'field-' + element.id"
-                    [required]="element.required"
-                  >
-                    <option value="">Select an option...</option>
-                    @for (option of element.options; track option) {
-                      <option [value]="option">{{ option }}</option>
-                    }
-                  </select>
-                }
-                @case ('radio') {
-                  <div class="radio-group">
-                    @for (option of element.options; track option) {
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          [name]="'field-' + element.id"
-                          [value]="option"
-                          [(ngModel)]="formData[element.id]"
-                        >
-                        {{ option }}
+          @if (hasSections()) {
+            <!-- Render sections with column layout -->
+            @for (section of getSections(); track section.id) {
+              <div class="form-section">
+                <div class="section-header">
+                  <h3>{{ section.title }}</h3>
+                  @if (section.description) {
+                    <p>{{ section.description }}</p>
+                  }
+                </div>
+                <div class="section-body" [class]="'cols-' + section.columns">
+                  @for (element of getElementsForSection(section.id); track element.id; let i = $index) {
+                    <div class="form-field" [class.has-error]="fieldErrors()[element.id]">
+                      <label [for]="'field-' + section.id + '-' + i">
+                        {{ element.label }}
+                        @if (element.required) {
+                          <span class="required">*</span>
+                        }
                       </label>
-                    }
-                  </div>
+                      
+                      @switch (element.type) {
+                        @case ('text') {
+                          <input type="text" [id]="'field-' + section.id + '-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required">
+                        }
+                        @case ('textarea') {
+                          <textarea [id]="'field-' + section.id + '-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required" rows="4"></textarea>
+                        }
+                        @case ('number') {
+                          <input type="number" [id]="'field-' + section.id + '-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required">
+                        }
+                        @case ('email') {
+                          <input type="email" [id]="'field-' + section.id + '-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder || 'email@example.com'" [required]="element.required">
+                        }
+                        @case ('phone') {
+                          <input type="tel" [id]="'field-' + section.id + '-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder || '(555) 555-5555'" [required]="element.required">
+                        }
+                        @case ('date') {
+                          <input type="date" [id]="'field-' + section.id + '-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [required]="element.required">
+                        }
+                        @case ('dropdown') {
+                          <select [id]="'field-' + section.id + '-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [required]="element.required">
+                            <option value="">Select an option...</option>
+                            @for (option of element.options; track option) {
+                              <option [value]="option">{{ option }}</option>
+                            }
+                          </select>
+                        }
+                        @case ('radio') {
+                          <div class="radio-group">
+                            @for (option of element.options; track option) {
+                              <label class="radio-label">
+                                <input type="radio" [name]="'field-' + element.id" [value]="option" [(ngModel)]="formData[element.id]">
+                                {{ option }}
+                              </label>
+                            }
+                          </div>
+                        }
+                        @case ('checkbox') {
+                          <div class="checkbox-group">
+                            @for (option of element.options; track option) {
+                              <label class="checkbox-label">
+                                <input type="checkbox" [value]="option" (change)="toggleCheckbox(element.id, option, $event)">
+                                {{ option }}
+                              </label>
+                            }
+                          </div>
+                        }
+                        @case ('yesno') {
+                          <div class="yesno-group">
+                            <label class="radio-label"><input type="radio" [name]="'field-' + element.id" value="Yes" [(ngModel)]="formData[element.id]"> Yes</label>
+                            <label class="radio-label"><input type="radio" [name]="'field-' + element.id" value="No" [(ngModel)]="formData[element.id]"> No</label>
+                          </div>
+                        }
+                        @default {
+                          <input type="text" [id]="'field-' + section.id + '-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required">
+                        }
+                      }
+                      
+                      @if (fieldErrors()[element.id]) {
+                        <span class="error-message">{{ fieldErrors()[element.id] }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            
+            <!-- Elements without section (backward compatibility) -->
+            @if (getElementsForSection(null).length > 0) {
+              <div class="form-section default-section">
+                <div class="section-body cols-1">
+                  @for (element of getElementsForSection(null); track element.id; let i = $index) {
+                    <div class="form-field" [class.has-error]="fieldErrors()[element.id]">
+                      <label [for]="'field-none-' + i">{{ element.label }} @if (element.required) { <span class="required">*</span> }</label>
+                      @switch (element.type) {
+                        @case ('text') {
+                          <input type="text" [id]="'field-none-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required">
+                        }
+                        @case ('textarea') {
+                          <textarea [id]="'field-none-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required" rows="4"></textarea>
+                        }
+                        @case ('number') {
+                          <input type="number" [id]="'field-none-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required">
+                        }
+                        @case ('email') {
+                          <input type="email" [id]="'field-none-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder || 'email@example.com'" [required]="element.required">
+                        }
+                        @case ('dropdown') {
+                          <select [id]="'field-none-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [required]="element.required">
+                            <option value="">Select an option...</option>
+                            @for (option of element.options; track option) {
+                              <option [value]="option">{{ option }}</option>
+                            }
+                          </select>
+                        }
+                        @default {
+                          <input type="text" [id]="'field-none-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required">
+                        }
+                      }
+                      @if (fieldErrors()[element.id]) {
+                        <span class="error-message">{{ fieldErrors()[element.id] }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          } @else {
+            <!-- Original rendering without sections -->
+            @for (element of form()!.elements; track element.id; let i = $index) {
+              <div class="form-field" [class.has-error]="fieldErrors()[element.id]">
+                <label [for]="'field-' + i">{{ element.label }} @if (element.required) { <span class="required">*</span> }</label>
+                @switch (element.type) {
+                  @case ('text') { <input type="text" [id]="'field-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required"> }
+                  @case ('textarea') { <textarea [id]="'field-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required" rows="4"></textarea> }
+                  @case ('number') { <input type="number" [id]="'field-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required"> }
+                  @case ('email') { <input type="email" [id]="'field-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder || 'email@example.com'" [required]="element.required"> }
+                  @case ('phone') { <input type="tel" [id]="'field-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder || '(555) 555-5555'" [required]="element.required"> }
+                  @case ('date') { <input type="date" [id]="'field-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [required]="element.required"> }
+                  @case ('dropdown') {
+                    <select [id]="'field-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [required]="element.required">
+                      <option value="">Select an option...</option>
+                      @for (option of element.options; track option) { <option [value]="option">{{ option }}</option> }
+                    </select>
+                  }
+                  @case ('radio') {
+                    <div class="radio-group">
+                      @for (option of element.options; track option) {
+                        <label class="radio-label"><input type="radio" [name]="'field-' + element.id" [value]="option" [(ngModel)]="formData[element.id]"> {{ option }}</label>
+                      }
+                    </div>
+                  }
+                  @case ('checkbox') {
+                    <div class="checkbox-group">
+                      @for (option of element.options; track option) {
+                        <label class="checkbox-label"><input type="checkbox" [value]="option" (change)="toggleCheckbox(element.id, option, $event)"> {{ option }}</label>
+                      }
+                    </div>
+                  }
+                  @case ('yesno') {
+                    <div class="yesno-group">
+                      <label class="radio-label"><input type="radio" [name]="'field-' + element.id" value="Yes" [(ngModel)]="formData[element.id]"> Yes</label>
+                      <label class="radio-label"><input type="radio" [name]="'field-' + element.id" value="No" [(ngModel)]="formData[element.id]"> No</label>
+                    </div>
+                  }
+                  @default { <input type="text" [id]="'field-' + i" [(ngModel)]="formData[element.id]" [name]="'field-' + element.id" [placeholder]="element.placeholder" [required]="element.required"> }
                 }
-                @case ('checkbox') {
-                  <div class="checkbox-group">
-                    @for (option of element.options; track option) {
-                      <label class="checkbox-label">
-                        <input 
-                          type="checkbox" 
-                          [value]="option"
-                          (change)="toggleCheckbox(element.id, option, $event)"
-                        >
-                        {{ option }}
-                      </label>
-                    }
-                  </div>
-                }
-                @case ('yesno') {
-                  <div class="yesno-group">
-                    <label class="radio-label">
-                      <input 
-                        type="radio" 
-                        [name]="'field-' + element.id"
-                        value="Yes"
-                        [(ngModel)]="formData[element.id]"
-                      >
-                      Yes
-                    </label>
-                    <label class="radio-label">
-                      <input 
-                        type="radio" 
-                        [name]="'field-' + element.id"
-                        value="No"
-                        [(ngModel)]="formData[element.id]"
-                      >
-                      No
-                    </label>
-                  </div>
-                }
-                @default {
-                  <input 
-                    type="text" 
-                    [id]="'field-' + i"
-                    [(ngModel)]="formData[element.id]"
-                    [name]="'field-' + element.id"
-                    [placeholder]="element.placeholder"
-                    [required]="element.required"
-                  >
-                }
-              }
-              
-              @if (fieldErrors()[element.id]) {
-                <span class="error-message">{{ fieldErrors()[element.id] }}</span>
-              }
-            </div>
+                @if (fieldErrors()[element.id]) { <span class="error-message">{{ fieldErrors()[element.id] }}</span> }
+              </div>
+            }
           }
           
           @if (form()!.elements.length === 0) {
@@ -293,6 +314,36 @@ import { Form, FormElement } from '../../core/models';
       padding: 2rem;
       color: var(--color-text-muted);
     }
+    
+    /* Section layout styles */
+    .form-section {
+      margin-bottom: 2rem;
+    }
+    .section-header {
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .section-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .section-header p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    .section-body {
+      display: grid;
+      gap: 1rem;
+    }
+    .section-body.cols-1 { grid-template-columns: 1fr; }
+    .section-body.cols-2 { grid-template-columns: 1fr 1fr; }
+    .section-body.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .section-body.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .default-section {
+      margin-top: 1rem;
+    }
     .loading, .not-found {
       text-align: center;
       padding: 4rem 2rem;
@@ -375,6 +426,26 @@ export class FormFillComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+  
+  // Get elements for a specific section
+  getElementsForSection(sectionId: string | null): FormElement[] {
+    const currentForm = this.form();
+    if (!currentForm) return [];
+    return currentForm.elements.filter(e => e.sectionId === sectionId);
+  }
+  
+  // Get all sections sorted by order
+  getSections(): FormSection[] {
+    const currentForm = this.form();
+    if (!currentForm?.sections) return [];
+    return currentForm.sections.sort((a, b) => a.order - b.order);
+  }
+  
+  // Check if form has sections
+  hasSections(): boolean {
+    const currentForm = this.form();
+    return (currentForm?.sections?.length ?? 0) > 0;
   }
   
   toggleCheckbox(elementId: string, option: string, event: Event) {
