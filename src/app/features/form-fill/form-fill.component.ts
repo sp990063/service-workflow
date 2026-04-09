@@ -28,7 +28,7 @@ import { Form, FormElement } from '../../core/models';
         
         <form class="form-content" (ngSubmit)="submitForm()">
           @for (element of form()!.elements; track element.id; let i = $index) {
-            <div class="form-field" [class.has-error]="fieldErrors[element.id]">
+            <div class="form-field" [class.has-error]="fieldErrors()[element.id]">
               <label [for]="'field-' + i">
                 {{ element.label }}
                 @if (element.required) {
@@ -172,8 +172,8 @@ import { Form, FormElement } from '../../core/models';
                 }
               }
               
-              @if (fieldErrors[element.id]) {
-                <span class="error-message">{{ fieldErrors[element.id] }}</span>
+              @if (fieldErrors()[element.id]) {
+                <span class="error-message">{{ fieldErrors()[element.id] }}</span>
               }
             </div>
           }
@@ -337,7 +337,8 @@ export class FormFillComponent implements OnInit {
   submitting = signal(false);
   submitted = signal(false);
   formData: Record<string, any> = {};
-  fieldErrors: Record<string, string> = {};
+  fieldErrors = signal<Record<string, string>>({});
+  
   
   constructor(
     private route: ActivatedRoute,
@@ -389,7 +390,7 @@ export class FormFillComponent implements OnInit {
   }
   
   validateForm(): boolean {
-    this.fieldErrors = {};
+    this.fieldErrors.set({});
     const formData = this.form();
     if (!formData) return false;
     
@@ -397,12 +398,12 @@ export class FormFillComponent implements OnInit {
       if (element.required) {
         const value = this.formData[element.id];
         if (!value || (Array.isArray(value) && value.length === 0)) {
-          this.fieldErrors[element.id] = 'This field is required';
+          this.fieldErrors.update(errors => ({ ...errors, [element.id]: 'This field is required' }));
         }
       }
     }
     
-    return Object.keys(this.fieldErrors).length === 0;
+    return Object.keys(this.fieldErrors()).length === 0;
   }
   
   submitForm() {

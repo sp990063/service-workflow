@@ -367,7 +367,7 @@ test.describe('Form Builder - Form Fill Tests', () => {
 
     // Either button is disabled or we see validation error
     const isDisabled = await submitBtn.isDisabled().catch(() => false);
-    const hasValidationError = await page.locator('text=/required|empty|fill|please/i').isVisible().catch(() => false);
+    const hasValidationError = await page.locator('.error-message').isVisible().catch(() => false);
     
     // Form should NOT have submitted successfully
     expect(isDisabled || hasValidationError).toBeTruthy();
@@ -630,7 +630,7 @@ test.describe('Form Builder - Edge Cases', () => {
 
     // Should show validation error or button should be disabled
     const hasError = 
-      await page.locator('text=/required|please fill|must enter/i').isVisible({ timeout: 3000 }).catch(() => false) ||
+      await page.locator('.error-message').isVisible({ timeout: 3000 }).catch(() => false) ||
       (await page.locator('button[type="submit"]').isDisabled().catch(() => false));
     
     expect(hasError).toBeTruthy();
