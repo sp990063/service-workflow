@@ -16,13 +16,15 @@ export interface MockWorkflowInstance {
   workflowId: string;
   workflowName: string;
   currentNodeId: string | null;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'WAITING_FOR_CHILD';
   formData: Record<string, any>;
   history: any[];
   createdAt: Date;
   updatedAt: Date;
   completedAt: Date | null;
   rejectedAt: Date | null;
+  childInstanceId?: string;
+  parentInstanceId?: string;
 }
 
 export function createMockWorkflow(overrides: Partial<MockWorkflow> = {}): MockWorkflow {
