@@ -98,7 +98,7 @@ const ELEMENT_TYPES = [
                   <p>{{ section.description }}</p>
                 }
               </div>
-              <div class="section-body" [class]="'cols-' + section.columns">
+              <div class="section-body" [class.cols-1]="section.columns === 1" [class.cols-2]="section.columns === 2" [class.cols-3]="section.columns === 3" [class.cols-4]="section.columns === 4">
                 @for (el of getElementsForSection(section.id); track el.id) {
                   <div 
                     class="form-element" 

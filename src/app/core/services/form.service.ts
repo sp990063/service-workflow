@@ -15,11 +15,11 @@ export class FormService {
     return this.api.get<Form>(`/forms/${id}`);
   }
 
-  create(data: { name: string; description?: string; elements: any[] }): Observable<Form> {
+  create(data: { name: string; description?: string; elements: any[]; sections?: any[] }): Observable<Form> {
     return this.api.post<Form>('/forms', data);
   }
 
-  update(id: string, data: { name?: string; description?: string; elements?: any[] }): Observable<Form> {
+  update(id: string, data: { name?: string; description?: string; elements?: any[]; sections?: any[] }): Observable<Form> {
     return this.api.put<Form>(`/forms/${id}`, data);
   }
 
