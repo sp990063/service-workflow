@@ -1048,7 +1048,8 @@ export class FormBuilderComponent implements OnInit {
         label,
         required: false,
         placeholder: '',
-        validation: {}
+        validation: {},
+        sectionId: this.selectedSectionId() || undefined
       };
       this.elements.update(els => [...els, newElement]);
     }
@@ -1095,7 +1096,9 @@ export class FormBuilderComponent implements OnInit {
   
   clearForm() {
     this.elements.set([]);
+    this.sections.set([]);
     this.selectedElementId.set(null);
+    this.selectedSectionId.set(null);
     this.formName = 'Untitled Form';
   }
   
