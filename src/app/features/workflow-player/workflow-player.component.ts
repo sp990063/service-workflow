@@ -217,6 +217,7 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
             Open Form
           </a>
         }
+        <button class="btn btn-primary" (click)="advanceWorkflow()">Next Step</button>
       </div>
     </ng-template>
 
