@@ -149,6 +149,73 @@ const NODE_TYPES = [
                   </select>
                 </div>
               }
+              @if (selectedNode()!.type === 'approval') {
+                <div class="form-group">
+                  <label>Approver</label>
+                  <select 
+                    [ngModel]="selectedNode()!.data['approver']"
+                    (ngModelChange)="updateNodeData('approver', $event)"
+                  >
+                    <option value="">-- Select approver --</option>
+                    <option value="role:manager">Manager (by role)</option>
+                    <option value="role:director">Director (by role)</option>
+                    <option value="role:admin">Admin (by role)</option>
+                    <option value="role:finance">Finance (by role)</option>
+                    <option value="role:hr">HR (by role)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Approval Action</label>
+                  <select 
+                    [ngModel]="selectedNode()!.data['approvalMode']"
+                    (ngModelChange)="updateNodeData('approvalMode', $event)"
+                  >
+                    <option value="any">Anyone can approve (OR)</option>
+                    <option value="all">All must approve (AND)</option>
+                  </select>
+                </div>
+              }
+              @if (selectedNode()!.type === 'parallel') {
+                <div class="form-group">
+                  <label>Parallel Approvers</label>
+                  <select 
+                    multiple
+                    [ngModel]="selectedNode()!.data['parallelApprovers']"
+                    (ngModelChange)="updateNodeData('parallelApprovers', $event)"
+                    size="5"
+                    class="multi-select"
+                  >
+                    <option value="role:manager">Manager</option>
+                    <option value="role:director">Director</option>
+                    <option value="role:finance">Finance</option>
+                    <option value="role:hr">HR</option>
+                    <option value="role:admin">Admin</option>
+                  </select>
+                  <small>Hold Ctrl/Cmd to select multiple</small>
+                </div>
+                <div class="form-group">
+                  <label>Parallel Mode</label>
+                  <select 
+                    [ngModel]="selectedNode()!.data['parallelMode']"
+                    (ngModelChange)="updateNodeData('parallelMode', $event)"
+                  >
+                    <option value="all">All must approve (AND)</option>
+                    <option value="any">Any can approve (OR)</option>
+                  </select>
+                </div>
+              }
+              @if (selectedNode()!.type === 'join') {
+                <div class="form-group">
+                  <label>Join Mode</label>
+                  <select 
+                    [ngModel]="selectedNode()!.data['joinMode']"
+                    (ngModelChange)="updateNodeData('joinMode', $event)"
+                  >
+                    <option value="all">Wait for ALL branches (AND)</option>
+                    <option value="any">Wait for ANY branch (OR)</option>
+                  </select>
+                </div>
+              }
               @if (selectedNode()!.type === 'condition') {
                 <div class="form-group">
                   <label>Field</label>
@@ -156,7 +223,23 @@ const NODE_TYPES = [
                     type="text" 
                     [ngModel]="selectedNode()!.data['field']"
                     (ngModelChange)="updateNodeData('field', $event)"
+                    placeholder="e.g., formData.amount"
                   >
+                </div>
+                <div class="form-group">
+                  <label>Operator</label>
+                  <select 
+                    [ngModel]="selectedNode()!.data['operator']"
+                    (ngModelChange)="updateNodeData('operator', $event)"
+                  >
+                    <option value="gt">&gt; (greater than)</option>
+                    <option value="gte">&gt;= (greater than or equal)</option>
+                    <option value="lt">&lt; (less than)</option>
+                    <option value="lte">&lt;= (less than or equal)</option>
+                    <option value="eq">= (equals)</option>
+                    <option value="neq">≠ (not equals)</option>
+                    <option value="contains">contains</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label>Value</label>
@@ -164,7 +247,18 @@ const NODE_TYPES = [
                     type="text" 
                     [ngModel]="selectedNode()!.data['value']"
                     (ngModelChange)="updateNodeData('value', $event)"
+                    placeholder="e.g., 5000"
                   >
+                </div>
+                <div class="form-group">
+                  <label>Branch Logic</label>
+                  <select 
+                    [ngModel]="selectedNode()!.data['logic']"
+                    (ngModelChange)="updateNodeData('logic', $event)"
+                  >
+                    <option value="true">True branch (condition met)</option>
+                    <option value="false">False branch (condition not met)</option>
+                  </select>
                 </div>
               }
               @if (selectedNode()!.type === 'sub-workflow') {
@@ -456,6 +550,20 @@ const NODE_TYPES = [
       font-size: 0.75rem;
       font-weight: 500;
       margin-bottom: 0.25rem;
+    }
+    .multi-select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-background);
+      font-size: 0.875rem;
+    }
+    .form-group small {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
     }
     .btn-danger {
       background: var(--color-danger);
