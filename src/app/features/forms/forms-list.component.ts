@@ -44,6 +44,7 @@ import { Form } from '../../core/models';
                 <a [routerLink]="['/form-fill', form.id]" class="btn btn-primary btn-sm">Fill Form</a>
                 @if (authService.isAdmin() || authService.user()?.role === 'manager') {
                   <a [routerLink]="['/form-builder']" [queryParams]="{id: form.id}" class="btn btn-secondary btn-sm">Edit</a>
+                  <button class="btn btn-danger btn-sm" (click)="deleteForm(form.id)">Delete</button>
                 }
               </div>
             </div>
@@ -164,6 +165,18 @@ export class FormsListComponent implements OnInit, OnDestroy {
     this.formService.getAll().subscribe({
       next: (forms) => {
         this.forms.set(forms);
+      }
+    });
+  }
+  
+  deleteForm(id: string) {
+    if (!confirm('Are you sure you want to delete this form? This action cannot be undone.')) return;
+    this.formService.delete(id).subscribe({
+      next: () => {
+        this.loadForms();
+      },
+      error: () => {
+        alert('Failed to delete form.');
       }
     });
   }

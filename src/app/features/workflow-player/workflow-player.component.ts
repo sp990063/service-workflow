@@ -207,34 +207,48 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
     <!-- Task Template -->
     <ng-template #taskTemplate>
       <div class="task-form">
+        @if (isCompletedInstance()) {
+          <div class="completed-banner">
+            <span>✓ This workflow has been completed</span>
+          </div>
+        }
         <h4>Task Details</h4>
         <div class="form-field">
           <label>Task Instructions</label>
           <textarea disabled>{{ currentNode()!.data['description'] || 'Complete this task as described.' }}</textarea>
         </div>
         @if (currentNode()!.data['formId']) {
-          <a [routerLink]="['/form-fill', currentNode()!.data['formId']]" class="btn btn-secondary">
-            Open Form
+          <a [routerLink]="['/form-fill', currentNode()!.data['formId'], instance()?.id]" class="btn btn-secondary">
+            View Submitted Form
           </a>
         }
-        <button class="btn btn-primary" (click)="advanceWorkflow()">Next Step</button>
+        @if (!isCompletedInstance()) {
+          <button class="btn btn-primary" (click)="advanceWorkflow()">Next Step</button>
+        }
       </div>
     </ng-template>
 
     <!-- Approval Template -->
     <ng-template #approvalTemplate>
       <div class="approval-section">
+        @if (isCompletedInstance()) {
+          <div class="completed-banner">
+            <span>✓ This workflow has been completed</span>
+          </div>
+        }
         <h4>Approval Required</h4>
         <p>Please review and approve or reject this request.</p>
         @if (currentNode()!.data['formId']) {
-          <a [routerLink]="['/form-fill', currentNode()!.data['formId']]" class="btn btn-secondary">
-            Review Form
+          <a [routerLink]="['/form-fill', currentNode()!.data['formId'], instance()?.id]" class="btn btn-secondary">
+            View Submitted Form
           </a>
         }
-        <div class="approval-actions">
-          <button class="btn btn-success" (click)="approve()">✓ Approve</button>
-          <button class="btn btn-danger" (click)="reject()">✗ Reject</button>
-        </div>
+        @if (!isCompletedInstance()) {
+          <div class="approval-actions">
+            <button class="btn btn-success" (click)="approve()">✓ Approve</button>
+            <button class="btn btn-danger" (click)="reject()">✗ Reject</button>
+          </div>
+        }
       </div>
     </ng-template>
 
@@ -456,6 +470,14 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
     }
     .not-found h2 { margin-bottom: 0.5rem; }
     .not-found p { color: var(--color-text-muted); margin-bottom: 1rem; }
+    .completed-banner {
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
     .player-header {
       display: flex;
       justify-content: space-between;
@@ -705,6 +727,11 @@ export class WorkflowPlayerComponent implements OnInit {
   formError = signal<string | null>(null);
 
   // Computed properties
+  isCompletedInstance = computed((): boolean => {
+    const inst = this.instance();
+    return inst?.status === 'COMPLETED';
+  });
+  
   currentNode = computed((): WorkflowNode | null => {
     const inst = this.instance();
     const wf = this.workflow();
@@ -733,11 +760,41 @@ export class WorkflowPlayerComponent implements OnInit {
 
   ngOnInit(): void {
     const workflowId = this.route.snapshot.paramMap.get('id');
+    const instanceId = this.route.snapshot.paramMap.get('instanceId');
     if (workflowId) {
-      this.loadWorkflowAndInstance(workflowId);
+      if (instanceId) {
+        this.loadWorkflowAndSpecificInstance(workflowId, instanceId);
+      } else {
+        this.loadWorkflowAndInstance(workflowId);
+      }
     } else {
       this.loading.set(false);
     }
+  }
+  
+  private loadWorkflowAndSpecificInstance(workflowId: string, instanceId: string): void {
+    this.workflowService.getById(workflowId).subscribe({
+      next: (workflow) => {
+        this.workflow.set(workflow);
+        this.workflowService.getInstance(instanceId).subscribe({
+          next: (instance) => {
+            this.instance.set(instance);
+            this.formData.set(instance.formData ?? {});
+            this.loadFormForCurrentNode(workflow);
+            this.loading.set(false);
+          },
+          error: () => {
+            this.formError.set('Failed to load workflow instance.');
+            this.loading.set(false);
+          }
+        });
+      },
+      error: () => {
+        this.workflow.set(null);
+        this.formError.set('Failed to load workflow.');
+        this.loading.set(false);
+      }
+    });
   }
 
   getNodeConfig(type: WorkflowNodeType): NodeTypeConfig {

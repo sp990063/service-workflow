@@ -41,18 +41,19 @@ import { Workflow } from '../../core/models';
               <div class="workflow-card-actions">
                 <a [routerLink]="['/workflow-player', workflow.id]" class="btn btn-primary btn-sm">Start Workflow</a>
                 <a [routerLink]="['/workflow-designer']" [queryParams]="{id: workflow.id}" class="btn btn-secondary btn-sm">Edit</a>
+                <button class="btn btn-danger btn-sm" (click)="deleteWorkflow(workflow.id)">Delete</button>
               </div>
             </div>
           }
         </div>
       }
       
-      <!-- Workflow Instances Section -->
-      @if (instances().length > 0) {
+      <!-- Active Workflow Instances Section -->
+      @if (getActiveInstances().length > 0) {
         <div class="instances-section">
           <h2>Active Workflow Instances</h2>
           <div class="instances-list">
-            @for (instance of instances(); track instance.id) {
+            @for (instance of getActiveInstances(); track instance.id) {
               <div class="instance-card">
                 <div class="instance-info">
                   <h4>{{ instance.workflowName || 'Workflow' }}</h4>
@@ -60,7 +61,28 @@ import { Workflow } from '../../core/models';
                   <p>Status: <span class="status-badge" [class]="instance.status?.toLowerCase()">{{ instance.status }}</span></p>
                 </div>
                 <div class="instance-actions">
-                  <a [routerLink]="['/workflow-player', instance.workflowId]" class="btn btn-sm btn-secondary">Continue</a>
+                  <a [routerLink]="['/workflow-player', instance.workflowId, instance.id]" class="btn btn-sm btn-secondary">Continue</a>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      
+      <!-- Completed Workflow Instances Section -->
+      @if (getCompletedInstances().length > 0) {
+        <div class="instances-section completed-section">
+          <h2>Completed Workflow History</h2>
+          <div class="instances-list">
+            @for (instance of getCompletedInstances(); track instance.id) {
+              <div class="instance-card completed">
+                <div class="instance-info">
+                  <h4>{{ instance.workflowName || 'Workflow' }}</h4>
+                  <p>Completed: {{ instance.updatedAt | date:'mediumDate' }}</p>
+                  <p>Status: <span class="status-badge completed">{{ instance.status }}</span></p>
+                </div>
+                <div class="instance-actions">
+                  <a [routerLink]="['/workflow-player', instance.workflowId, instance.id]" class="btn btn-sm btn-secondary">View Details</a>
                 </div>
               </div>
             }
@@ -214,5 +236,25 @@ export class WorkflowsListComponent implements OnInit {
       },
       error: () => {}
     });
+  }
+  
+  deleteWorkflow(id: string) {
+    if (!confirm('Are you sure you want to delete this workflow? This action cannot be undone.')) return;
+    this.workflowService.delete(id).subscribe({
+      next: () => {
+        this.loadData();
+      },
+      error: () => {
+        alert('Failed to delete workflow.');
+      }
+    });
+  }
+  
+  getCompletedInstances() {
+    return this.instances().filter(i => i.status === 'COMPLETED');
+  }
+  
+  getActiveInstances() {
+    return this.instances().filter(i => i.status !== 'COMPLETED');
   }
 }
