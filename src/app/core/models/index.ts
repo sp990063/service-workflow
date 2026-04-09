@@ -6,6 +6,14 @@ export interface User {
   department?: string;
 }
 
+export interface FormSection {
+  id: string;
+  title: string;
+  description?: string;
+  columns: 1 | 2 | 3 | 4;
+  order: number;
+}
+
 export interface FormElement {
   id: string;
   type: string;
@@ -15,6 +23,7 @@ export interface FormElement {
   options?: string[];
   helpText?: string;
   defaultValue?: string;
+  sectionId?: string; // Which section this element belongs to
   // Text/Textarea specific
   minLength?: number;
   maxLength?: number;
@@ -65,6 +74,7 @@ export interface Form {
   name: string;
   description?: string;
   elements: FormElement[];
+  sections?: FormSection[];
   version?: number;
   createdAt: Date;
   updatedAt: Date;
