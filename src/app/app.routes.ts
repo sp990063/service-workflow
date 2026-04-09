@@ -22,11 +22,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/admin-settings.component').then(m => m.AdminSettingsComponent),
     canActivate: [authGuard]
   },
-  {
-    path: 'delegations',
-    loadComponent: () => import('./features/delegations/delegations.component').then(m => m.DelegationsComponent),
-    canActivate: [authGuard]
-  },
+  // Delegations feature disabled until implemented
+  // {
+  //   path: 'delegations',
+  //   loadComponent: () => import('./features/delegations/delegations.component').then(m => m.DelegationsComponent),
+  //   canActivate: [authGuard]
+  // },
   {
     path: 'analytics',
     loadComponent: () => import('./features/analytics/analytics.component').then(m => m.AnalyticsComponent),

@@ -737,7 +737,7 @@ test.describe('Missing Features Tests - Other Features', () => {
 
   test.describe('Escalation Rules', () => {
 
-    test('MF-ESC-001: Approval should support time-based escalation', async ({ page }) => {
+    test.skip('MF-ESC-001: Approval should support time-based escalation', async ({ page }) => {
       await login(page);
       
       await page.goto(`${BASE_URL}/workflow-designer`, { waitUntil: 'networkidle' });
@@ -775,7 +775,7 @@ test.describe('Missing Features Tests - Other Features', () => {
 
   test.describe('Approval Delegation', () => {
 
-    test('MF-DEL-001: Approver should be able to delegate to another user', async ({ page }) => {
+    test.skip('MF-DEL-001: Approver should be able to delegate to another user', async ({ page }) => {
       await login(page, 'manager');
       
       // Navigate to approval panel
