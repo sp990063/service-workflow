@@ -1,5 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { StorageService } from './storage.service';
 import { User } from '../models';
@@ -57,5 +58,9 @@ export class AuthService {
     this.currentUser.set(null);
     this.storage.remove('user');
     this.router.navigate(['/login']);
+  }
+
+  searchUsers(query: string): Observable<{ id: string; name: string; email: string }[]> {
+    return this.api.post<{ id: string; name: string; email: string }[]>('/users/search', { query, limit: 10 });
   }
 }

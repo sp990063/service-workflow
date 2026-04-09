@@ -113,6 +113,7 @@ model User {
   workflowInstances WorkflowInstance[]
   notifications    Notification[]
   members          Member[]
+  comments         Comment[]
   delegations       Delegation[]  @relation("Delegator")
   delegatedTo      Delegation[]  @relation("Delegate")
 }
@@ -287,4 +288,22 @@ model FormTemplate {
 
   @@index([category])
   @@index([userId])
+}
+
+model Comment {
+  id               String   @id @default(uuid())
+  instanceId       String
+  authorId         String
+  author           User     @relation(fields: [authorId], references: [id])
+  content          String
+  parentCommentId  String?
+  parentComment    Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies          Comment[] @relation("CommentReplies")
+  mentionedUsers   String   @default("[]") // JSON array of user IDs
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([instanceId])
+  @@index([authorId])
+  @@index([parentCommentId])
 }

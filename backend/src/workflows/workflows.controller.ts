@@ -181,4 +181,14 @@ export class WorkflowInstancesController {
   ) {
     return this.workflowsService.rejectParallel(id, body.nodeId, body.approverId);
   }
+  
+  @Get('my-pending')
+  async getMyPending(@CurrentUser('id') userId: string) {
+    return this.workflowsService.getMyPendingInstances(userId);
+  }
+  
+  @Get('my-submitted')
+  async getMySubmitted(@CurrentUser('id') userId: string) {
+    return this.workflowsService.getMySubmittedInstances(userId);
+  }
 }

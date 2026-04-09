@@ -104,4 +104,20 @@ export class WorkflowService {
 
     return 'PENDING';
   }
+  
+  getInstanceComments(instanceId: string): Observable<any[]> {
+    return this.api.get<any[]>(`/instances/${instanceId}/thread`);
+  }
+  
+  addInstanceComment(instanceId: string, comment: { content: string; authorId: string; parentCommentId?: string | null }): Observable<any> {
+    return this.api.post<any>(`/instances/${instanceId}/thread`, comment);
+  }
+  
+  getMyPending(): Observable<any[]> {
+    return this.api.get<any[]>('/workflow-instances/my-pending');
+  }
+  
+  getMySubmitted(): Observable<any[]> {
+    return this.api.get<any[]>('/workflow-instances/my-submitted');
+  }
 }

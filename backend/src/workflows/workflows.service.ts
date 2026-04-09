@@ -186,6 +186,53 @@ export class WorkflowsService {
     }));
   }
 
+  async getMyPendingInstances(userId: string) {
+    // Get instances where user is the current approver (based on approval requests)
+    const approvalRequests = await this.prisma.approvalRequest.findMany({
+      where: {
+        OR: [
+          { originalApproverId: userId },
+          { actualApproverId: userId },
+        ],
+        status: 'PENDING',
+      },
+    });
+    
+    const instanceIds = [...new Set(approvalRequests.map(ar => ar.instanceId))];
+    
+    const instances = await this.prisma.workflowInstance.findMany({
+      where: { id: { in: instanceIds } },
+      include: {
+        workflow: { select: { id: true, name: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    return instances.map(i => ({
+      ...i,
+      workflow: this.parseJsonFields(i.workflow),
+      ...this.parseInstanceFields(i),
+    }));
+  }
+
+  async getMySubmittedInstances(userId: string) {
+    const instances = await this.prisma.workflowInstance.findMany({
+      where: { userId },
+      include: {
+        workflow: { select: { id: true, name: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    return instances.map(i => ({
+      ...i,
+      workflow: this.parseJsonFields(i.workflow),
+      ...this.parseInstanceFields(i),
+    }));
+  }
+
   async advanceInstance(id: string, nextNodeId: string, addToHistory: any) {
     const instance = await this.getInstanceById(id);
     if (!instance) {

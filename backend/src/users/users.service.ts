@@ -23,6 +23,19 @@ export class UsersService {
     });
   }
 
+  async search(query: string, limit = 10) {
+    return this.prisma.user.findMany({
+      where: {
+        OR: [
+          { name: { contains: query } },
+          { email: { contains: query } },
+        ],
+      },
+      select: { id: true, name: true, email: true },
+      take: limit,
+    });
+  }
+
   async update(id: string, data: { name?: string; role?: 'ADMIN' | 'MANAGER' | 'USER'; department?: string }) {
     return this.prisma.user.update({ where: { id }, data });
   }

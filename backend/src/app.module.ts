@@ -16,6 +16,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { FormTemplatesModule } from './form-templates/form-templates.module';
 import { LoggingModule } from './common/logging/logging.module';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.f
     EscalationsModule,
     AnalyticsModule,
     FormTemplatesModule,
+    CommentsModule,
   ],
   providers: [
     {

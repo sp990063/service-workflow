@@ -19,6 +19,13 @@ export class UsersController {
     return { id: user.id, email: user.email, name: user.name };
   }
 
+  @Post('search')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.USER)
+  async search(@Body() body: { query: string; limit?: number }) {
+    const users = await this.usersService.search(body.query, body.limit ?? 10);
+    return users;
+  }
+
   @Get()
   @Roles(Role.ADMIN) // Only admins can list all users
   async findAll() {

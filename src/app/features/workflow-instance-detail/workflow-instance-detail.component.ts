@@ -1,6 +1,8 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, ElementRef, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Workflow, WorkflowNode } from '../../core/models';
@@ -8,14 +10,38 @@ import { Workflow, WorkflowNode } from '../../core/models';
 // WorkflowInstance interface - defined locally since not exported from service
 interface WorkflowInstance {
   id: string;
+  displayId?: string;
   workflowId: string;
   userId: string;
   currentNodeId: string | null;
   status: string;
   formData: Record<string, any>;
-  history: Array<{nodeId: string; action: string; timestamp: string | Date}>;
+  history: Array<{nodeId: string; action: string; timestamp: string | Date; comment?: string}>;
   createdAt: string;
   updatedAt: string;
+  user?: { id: string; name: string; email: string };
+  workflow?: Workflow;
+}
+
+interface Comment {
+  id: string;
+  content: string;
+  userId: string;
+  parentCommentId: string | null;
+  author?: { id: string; name: string; email: string };
+  mentionedUsers?: Array<{ id: string; name: string; email: string }>;
+  createdAt: string;
+  replies?: Comment[];
+  replyCount?: number;
+}
+
+interface ApprovalHistoryEntry {
+  nodeId: string;
+  nodeLabel: string;
+  action: string;
+  timestamp: string | Date;
+  comment?: string;
+  approver?: string;
 }
 
 type NodeStatus = 'COMPLETED' | 'IN_PROGRESS' | 'PENDING';
@@ -29,7 +55,7 @@ interface WorkflowStep {
 @Component({
   selector: 'app-workflow-instance-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="instance-detail">
       @if (loading()) {
@@ -44,22 +70,45 @@ interface WorkflowStep {
         <!-- Header -->
         <header class="detail-header">
           <div class="header-info">
-            <h1>Workflow Instance #{{ instance()!.id.slice(0, 8) }}</h1>
-            <div class="header-meta">
+            <div class="header-row">
+              <h1>{{ instance()!.displayId || 'WF-' + instance()!.id.slice(0, 8) }}</h1>
               <span class="status-badge" [class]="getStatusClass(instance()!.status)">
                 {{ formatStatus(instance()!.status) }}
               </span>
-              <span class="current-step" *ngIf="currentStep()">
-                Current Step: <strong>{{ currentStep()!.node.data['label'] || currentStep()!.node.type }}</strong>
-              </span>
+            </div>
+            @if (instance()!.user) {
+              <div class="workflow-name">{{ instance()!.workflow?.name || 'Workflow' }}</div>
+            }
+          </div>
+          <a routerLink="/workflows" class="btn btn-secondary">← Back</a>
+        </header>
+
+        <!-- Applicant Info -->
+        <section class="applicant-section">
+          <h2>Applicant Information</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Applicant</span>
+              <span class="info-value">{{ instance()!.user?.name || 'Unknown' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email</span>
+              <span class="info-value">{{ instance()!.user?.email || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Submitted</span>
+              <span class="info-value">{{ instance()!.createdAt | date:'medium' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Last Updated</span>
+              <span class="info-value">{{ instance()!.updatedAt | date:'medium' }}</span>
             </div>
           </div>
-          <a routerLink="/workflows" class="btn btn-secondary">Back to Workflows</a>
-        </header>
+        </section>
 
         <!-- Workflow Steps -->
         <section class="workflow-steps">
-          <h2>Workflow Steps</h2>
+          <h2>Workflow Progress</h2>
           <div class="steps-timeline">
             @for (step of steps(); track step.node.id; let i = $index) {
               <div 
@@ -99,19 +148,156 @@ interface WorkflowStep {
 
         <!-- History Timeline -->
         <section class="history-section">
-          <h2>History</h2>
-          <div class="history-timeline">
-            @if (instance()!.history.length === 0) {
-              <p class="no-history">No history yet.</p>
+          <h2>Approval History</h2>
+          @if (approvalHistory().length === 0) {
+            <p class="no-history">No approvals yet.</p>
+          } @else {
+            <div class="approval-timeline">
+              @for (entry of approvalHistory(); track entry.timestamp) {
+                <div class="approval-entry">
+                  <div class="approval-icon" [class]="getApprovalIconClass(entry)">
+                    {{ getApprovalIcon(entry) }}
+                  </div>
+                  <div class="approval-content">
+                    <div class="approval-header">
+                      <span class="approval-action">{{ entry.action }}</span>
+                      <span class="approval-time">{{ entry.timestamp | date:'medium' }}</span>
+                    </div>
+                    @if (entry.nodeLabel) {
+                      <div class="approval-node">{{ entry.nodeLabel }}</div>
+                    }
+                    @if (entry.approver) {
+                      <div class="approval-approver">by {{ entry.approver }}</div>
+                    }
+                    @if (entry.comment) {
+                      <div class="approval-comment">"{{ entry.comment }}"</div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- Discussion Thread -->
+        <section class="discussion-section">
+          <h2>Discussion Thread</h2>
+          
+          <!-- Comment List -->
+          <div class="comment-list">
+            @if (comments().length === 0) {
+              <p class="no-comments">No comments yet. Start the discussion!</p>
             } @else {
-              @for (entry of instance()!.history; track entry.timestamp) {
-                <div class="history-entry">
-                  <span class="history-time">{{ entry.timestamp | date:'shortTime' }}</span>
-                  <span class="history-separator">-</span>
-                  <span class="history-action">{{ entry.action }}</span>
+              @for (comment of comments(); track comment.id) {
+                <div class="comment-item">
+                  <div class="comment-header">
+                    <span class="comment-author">{{ comment.author?.name || 'Unknown' }}</span>
+                    <span class="comment-time">{{ comment.createdAt | date:'medium' }}</span>
+                  </div>
+                  <div class="comment-body">{{ comment.content }}</div>
+                  @if (comment.mentionedUsers && comment.mentionedUsers.length > 0) {
+                    <div class="comment-mentions">
+                      @for (user of comment.mentionedUsers; track user.id) {
+                        <span class="mention-badge">{{ '@' + user.name }}</span>
+                      }
+                    </div>
+                  }
+                  <div class="comment-actions">
+                    <button class="reply-btn" (click)="startReply(comment)">Reply</button>
+                  </div>
+
+                  <!-- Replies -->
+                  @if (comment.replies && comment.replies.length > 0) {
+                    <div class="reply-list">
+                      @for (reply of comment.replies; track reply.id) {
+                        <div class="reply-item">
+                          <div class="comment-header">
+                            <span class="comment-author">{{ reply.author?.name || 'Unknown' }}</span>
+                            <span class="comment-time">{{ reply.createdAt | date:'short' }}</span>
+                          </div>
+                          <div class="comment-body">{{ reply.content }}</div>
+                          @if (reply.mentionedUsers && reply.mentionedUsers.length > 0) {
+                            <div class="comment-mentions">
+                              @for (user of reply.mentionedUsers; track user.id) {
+                                <span class="mention-badge">{{ '@' + user.name }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Reply Input -->
+                  @if (replyingTo() === comment.id) {
+                    <div class="reply-input-area">
+                      <div class="textarea-wrapper">
+                        <textarea 
+                          #replyTextarea
+                          [(ngModel)]="replyText" 
+                          (input)="onReplyInput($event)"
+                          placeholder="Write a reply... Use @name to mention"
+                          class="comment-textarea"
+                          rows="2"
+                        ></textarea>
+                        <!-- @mention dropdown for reply -->
+                        @if (showMentionDropdown() && activeMentionTextarea() === 'reply') {
+                          <div class="mention-dropdown">
+                            @if (mentionResults().length === 0) {
+                              <div class="mention-empty">No users found</div>
+                            } @else {
+                              @for (user of mentionResults(); track user.id) {
+                                <div class="mention-item" (click)="selectMention(user)">
+                                  <span class="mention-name">{{ user.name }}</span>
+                                  <span class="mention-email">{{ user.email }}</span>
+                                </div>
+                              }
+                            }
+                          </div>
+                        }
+                      </div>
+                      <div class="reply-actions">
+                        <button class="btn btn-sm btn-secondary" (click)="cancelReply()">Cancel</button>
+                        <button class="btn btn-sm btn-primary" (click)="submitReply(comment.id)" [disabled]="!replyText.trim()">Post Reply</button>
+                      </div>
+                    </div>
+                  }
                 </div>
               }
             }
+          </div>
+
+          <!-- New Comment Input -->
+          <div class="new-comment-area">
+            <div class="textarea-wrapper">
+              <textarea 
+                #newCommentTextarea
+                [(ngModel)]="newComment" 
+                (input)="onNewCommentInput($event)"
+                placeholder="Add a comment... Use @name to mention someone"
+                class="comment-textarea"
+                rows="3"
+              ></textarea>
+              <!-- @mention autocomplete dropdown -->
+              @if (showMentionDropdown() && activeMentionTextarea() === 'newComment') {
+                <div class="mention-dropdown">
+                  @if (mentionResults().length === 0) {
+                    <div class="mention-empty">No users found</div>
+                  } @else {
+                    @for (user of mentionResults(); track user.id) {
+                      <div class="mention-item" (click)="selectMention(user)">
+                        <span class="mention-name">{{ user.name }}</span>
+                        <span class="mention-email">{{ user.email }}</span>
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            </div>
+            <div class="comment-actions-row">
+              <span class="hint-text">Use &#64;username to mention someone</span>
+              <button class="btn btn-primary" (click)="submitComment()" [disabled]="!newComment.trim()">Post Comment</button>
+            </div>
           </div>
         </section>
 
@@ -313,6 +499,224 @@ interface WorkflowStep {
       font-style: italic;
     }
     
+    /* Approval History */
+    .approval-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .approval-entry {
+      display: flex;
+      gap: 1rem;
+      padding: 0.75rem;
+      background: var(--color-background);
+      border-radius: var(--radius-md);
+    }
+    .approval-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 0.875rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .approval-icon.approved { background: #d1fae5; color: #065f46; }
+    .approval-icon.rejected { background: #fee2e2; color: #991b1b; }
+    .approval-icon.info { background: #dbeafe; color: #1e40af; }
+    .approval-icon.started { background: #fef3c7; color: #92400e; }
+    .approval-icon.pending { background: #f3f4f6; color: #6b7280; }
+    .approval-content { flex: 1; }
+    .approval-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.25rem;
+    }
+    .approval-action { font-size: 0.875rem; font-weight: 500; }
+    .approval-time { font-size: 0.75rem; color: var(--color-text-muted); }
+    .approval-node { font-size: 0.8125rem; color: var(--color-text-muted); }
+    .approval-approver { font-size: 0.8125rem; color: var(--color-text-muted); font-style: italic; }
+    .approval-comment { font-size: 0.8125rem; color: var(--color-text); font-style: italic; margin-top: 0.25rem; }
+    
+    /* Applicant Info */
+    .applicant-section {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .applicant-section h2 {
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .info-label {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+    }
+    .info-value {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.25rem;
+    }
+    .workflow-name {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-top: 0.25rem;
+    }
+    
+    /* Discussion Thread */
+    .discussion-section {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .discussion-section h2 {
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+    }
+    .comment-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .no-comments {
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+      font-style: italic;
+      text-align: center;
+      padding: 2rem;
+    }
+    .comment-item {
+      padding: 1rem;
+      background: var(--color-background);
+      border-radius: var(--radius-md);
+    }
+    .comment-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .comment-author { font-weight: 600; font-size: 0.875rem; }
+    .comment-time { font-size: 0.75rem; color: var(--color-text-muted); }
+    .comment-body { font-size: 0.875rem; line-height: 1.5; margin-bottom: 0.5rem; white-space: pre-wrap; }
+    .comment-mentions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .mention-badge {
+      padding: 0.125rem 0.5rem;
+      background: #dbeafe;
+      color: #1e40af;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .comment-actions { display: flex; gap: 0.5rem; }
+    .reply-btn {
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .reply-btn:hover { text-decoration: underline; }
+    
+    .reply-list { margin-top: 0.75rem; margin-left: 1.5rem; }
+    .reply-item {
+      padding: 0.75rem;
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.5rem;
+      border-left: 2px solid #e5e7eb;
+    }
+    
+    .reply-input-area {
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+    }
+    .reply-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+    
+    .new-comment-area {
+      padding: 1rem;
+      background: var(--color-background);
+      border-radius: var(--radius-md);
+      border: 1px solid #e5e7eb;
+    }
+    .comment-textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-family: inherit;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    .comment-textarea:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+    .comment-actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+    .hint-text { font-size: 0.75rem; color: var(--color-text-muted); }
+    
+    /* @mention autocomplete */
+    .textarea-wrapper {
+      position: relative;
+    }
+    .mention-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      z-index: 100;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 0.25rem;
+    }
+    .mention-item {
+      display: flex;
+      flex-direction: column;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .mention-item:last-child { border-bottom: none; }
+    .mention-item:hover { background: var(--color-background); }
+    .mention-name { font-size: 0.875rem; font-weight: 500; }
+    .mention-email { font-size: 0.75rem; color: var(--color-text-muted); }
+    .mention-empty { padding: 0.5rem 0.75rem; font-size: 0.875rem; color: var(--color-text-muted); text-align: center; }
+    
     /* Actions */
     .action-buttons {
       display: flex;
@@ -342,10 +746,26 @@ interface WorkflowStep {
     }
   `]
 })
-export class WorkflowInstanceDetailComponent implements OnInit {
+export class WorkflowInstanceDetailComponent implements OnInit, OnDestroy {
+  @ViewChild('newCommentTextarea') newCommentTextarea?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('replyTextarea') replyTextarea?: ElementRef<HTMLTextAreaElement>;
+
   workflow = signal<Workflow | null>(null);
   instance = signal<WorkflowInstance | null>(null);
   loading = signal(true);
+  newComment = '';
+  replyText = '';
+  replyingTo = signal<string | null>(null);
+  comments = signal<Comment[]>([]);
+
+  // @mention autocomplete state
+  showMentionDropdown = signal(false);
+  mentionQuery = signal('');
+  mentionResults = signal<{ id: string; name: string; email: string }[]>([]);
+  mentionCursorPos = signal(0);
+  activeMentionTextarea = signal<'newComment' | 'reply' | null>(null);
+
+  private mentionSearch$ = new Subject<string>();
 
   steps = computed<WorkflowStep[]>(() => {
     const wf = this.workflow();
@@ -369,6 +789,24 @@ export class WorkflowInstanceDetailComponent implements OnInit {
     return this.steps().find(s => s.status === 'IN_PROGRESS') || null;
   });
 
+  approvalHistory = computed<ApprovalHistoryEntry[]>(() => {
+    const inst = this.instance();
+    const wf = this.workflow();
+    if (!inst || !wf) return [];
+
+    return inst.history.map(entry => {
+      const node = wf.nodes.find((n: WorkflowNode) => n.id === entry.nodeId);
+      return {
+        nodeId: entry.nodeId,
+        nodeLabel: (node?.data?.['label'] as string) || node?.type || '',
+        action: entry.action,
+        timestamp: entry.timestamp,
+        comment: entry.comment,
+        approver: this.extractApproverName(entry.action),
+      };
+    });
+  });
+
   isInProgress(): boolean {
     return this.instance()?.status === 'IN_PROGRESS';
   }
@@ -384,9 +822,29 @@ export class WorkflowInstanceDetailComponent implements OnInit {
     const instanceId = this.route.snapshot.paramMap.get('id');
     if (instanceId) {
       this.loadInstance(instanceId);
+      this.loadComments(instanceId);
     } else {
       this.loading.set(false);
     }
+
+    // Debounced mention search
+    this.mentionSearch$.pipe(
+      debounceTime(200),
+      distinctUntilChanged()
+    ).subscribe(query => {
+      if (query.length > 0) {
+        this.auth.searchUsers(query).subscribe({
+          next: (users) => this.mentionResults.set(users),
+          error: () => this.mentionResults.set([])
+        });
+      } else {
+        this.mentionResults.set([]);
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.mentionSearch$.complete();
   }
 
   loadInstance(instanceId: string) {
@@ -463,6 +921,29 @@ export class WorkflowInstanceDetailComponent implements OnInit {
 
   formatStatus(status: string): string {
     return status.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  getApprovalIcon(entry: ApprovalHistoryEntry): string {
+    const action = entry.action.toLowerCase();
+    if (action.includes('reject')) return '✗';
+    if (action.includes('approv')) return '✓';
+    if (action.includes('request') || action.includes('info')) return '?';
+    if (action.includes('start')) return '▶';
+    return '•';
+  }
+
+  getApprovalIconClass(entry: ApprovalHistoryEntry): string {
+    const action = entry.action.toLowerCase();
+    if (action.includes('reject')) return 'rejected';
+    if (action.includes('approv')) return 'approved';
+    if (action.includes('request') || action.includes('info')) return 'info';
+    if (action.includes('start')) return 'started';
+    return 'pending';
+  }
+
+  extractApproverName(action: string): string | undefined {
+    const match = action.match(/by (.+)$/i);
+    return match ? match[1] : undefined;
   }
 
   getParallelProgress(): string {
@@ -679,5 +1160,161 @@ export class WorkflowInstanceDetailComponent implements OnInit {
 
     this.instance.set({ ...inst });
     // TODO: Implement request info flow
+  }
+
+  // ---- @mention autocomplete ----
+  onNewCommentInput(event: Event) {
+    const textarea = event.target as HTMLTextAreaElement;
+    this.newComment = textarea.value;
+    this.activeMentionTextarea.set('newComment');
+    this.checkForMention(textarea);
+  }
+
+  onReplyInput(event: Event) {
+    const textarea = event.target as HTMLTextAreaElement;
+    this.replyText = textarea.value;
+    this.activeMentionTextarea.set('reply');
+    this.checkForMention(textarea);
+  }
+
+  private checkForMention(textarea: HTMLTextAreaElement) {
+    const cursorPos = textarea.selectionStart;
+    this.mentionCursorPos.set(cursorPos);
+    const textBeforeCursor = textarea.value.substring(0, cursorPos);
+
+    // Find the last @ that starts a potential mention
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+    if (atIndex === -1) {
+      this.showMentionDropdown.set(false);
+      this.mentionQuery.set('');
+      return;
+    }
+
+    // Check if there's a space between the @ and cursor (i.e., it's not a mention)
+    const textAfterAt = textBeforeCursor.substring(atIndex + 1);
+    if (textAfterAt.includes(' ') || textAfterAt.includes('\n')) {
+      this.showMentionDropdown.set(false);
+      this.mentionQuery.set('');
+      return;
+    }
+
+    // We're in a potential mention - show dropdown and search
+    this.mentionQuery.set(textAfterAt);
+    this.showMentionDropdown.set(true);
+    this.mentionSearch$.next(textAfterAt);
+  }
+
+  selectMention(user: { id: string; name: string; email: string }) {
+    const textarea = this.activeMentionTextarea() === 'reply'
+      ? this.replyTextarea?.nativeElement
+      : this.newCommentTextarea?.nativeElement;
+
+    if (!textarea) return;
+
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = textarea.value.substring(0, cursorPos);
+    const textAfterCursor = textarea.value.substring(cursorPos);
+
+    // Find the @ symbol position
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+    if (atIndex === -1) return;
+
+    const textBeforeAt = textarea.value.substring(0, atIndex);
+    const mention = `@${user.name} `;
+
+    if (this.activeMentionTextarea() === 'reply') {
+      this.replyText = textBeforeAt + mention + textAfterCursor;
+    } else {
+      this.newComment = textBeforeAt + mention + textAfterCursor;
+    }
+
+    this.showMentionDropdown.set(false);
+    this.mentionQuery.set('');
+
+    // Set cursor position after the inserted mention
+    setTimeout(() => {
+      const newPos = textBeforeAt.length + mention.length;
+      textarea.setSelectionRange(newPos, newPos);
+      textarea.focus();
+    });
+  }
+
+  closeMentionDropdown() {
+    this.showMentionDropdown.set(false);
+    this.mentionQuery.set('');
+  }
+  
+  loadComments(instanceId: string) {
+    this.workflowService.getInstanceComments(instanceId).subscribe({
+      next: (comments: any[]) => this.comments.set(comments),
+      error: () => this.comments.set([])
+    });
+  }
+  
+  submitComment() {
+    if (!this.newComment.trim()) return;
+    const instanceId = this.instance()?.id;
+    if (!instanceId) return;
+    
+    const currentUser = this.auth.user();
+    
+    this.workflowService.addInstanceComment(instanceId, {
+      content: this.newComment,
+      authorId: currentUser?.id || '',
+      parentCommentId: this.replyingTo() || null
+    }).subscribe({
+      next: () => {
+        this.newComment = '';
+        this.replyingTo.set(null);
+        this.replyText = '';
+        this.loadComments(instanceId);
+      },
+      error: () => alert('Failed to post comment')
+    });
+  }
+  
+  startReply(comment: any) {
+    this.replyingTo.set(comment.id);
+    setTimeout(() => {
+      this.replyTextarea?.nativeElement.focus();
+    }, 0);
+  }
+  
+  cancelReply() {
+    this.replyingTo.set(null);
+    this.replyText = '';
+  }
+  
+  submitReply(parentCommentId: string) {
+    if (!this.replyText.trim()) return;
+    const instanceId = this.instance()?.id;
+    if (!instanceId) return;
+    
+    const currentUser = this.auth.user();
+    
+    this.workflowService.addInstanceComment(instanceId, {
+      content: this.replyText,
+      authorId: currentUser?.id || '',
+      parentCommentId
+    }).subscribe({
+      next: () => {
+        this.replyText = '';
+        this.replyingTo.set(null);
+        this.loadComments(instanceId);
+      },
+      error: () => alert('Failed to post reply')
+    });
+  }
+  
+  canApprove(): boolean {
+    const inst = this.instance();
+    if (!inst || inst.status !== 'IN_PROGRESS') return false;
+    const currentUser = this.auth.user();
+    if (!currentUser) return false;
+    
+    // Check if user has pending approval for this instance
+    return inst.history?.some((h: any) => 
+      h.action?.includes('PENDING') && h.action?.includes(currentUser.id)
+    ) ?? false;
   }
 }

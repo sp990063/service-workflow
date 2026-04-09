@@ -2,7 +2,8 @@ import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WorkflowService } from '../../core/services/workflow.service';
-import { Workflow, WorkflowNode, WorkflowConnection } from '../../core/models';
+import { FormService } from '../../core/services/form.service';
+import { Workflow, WorkflowNode, WorkflowConnection, Form } from '../../core/models';
 
 const NODE_TYPES = [
   { type: 'start', label: 'Start', icon: '▶', color: '#10b981' },
@@ -134,6 +135,18 @@ const NODE_TYPES = [
                     (ngModelChange)="updateNodeData('description', $event)"
                     rows="3"
                   ></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Linked Form</label>
+                  <select 
+                    [ngModel]="selectedNode()!.data['formId']"
+                    (ngModelChange)="updateNodeData('formId', $event)"
+                  >
+                    <option value="">-- No form --</option>
+                    @for (form of forms(); track form.id) {
+                      <option [value]="form.id">{{ form.name }}</option>
+                    }
+                  </select>
                 </div>
               }
               @if (selectedNode()!.type === 'condition') {
@@ -477,6 +490,7 @@ export class WorkflowDesignerComponent {
   selectedNodeId = signal<string | null>(null);
   connectingFrom = signal<string | null>(null);
   workflows = signal<Workflow[]>([]);  // Available workflows for sub-workflow selection
+  forms = signal<Form[]>([]);  // Available forms for task/approval nodes
   
   private dragNode: WorkflowNode | null = null;
   private dragOffset = { x: 0, y: 0 };
@@ -486,10 +500,18 @@ export class WorkflowDesignerComponent {
     return id ? this.nodes().find(n => n.id === id) || null : null;
   });
   
-  constructor(private workflowService: WorkflowService) {
+  constructor(
+    private workflowService: WorkflowService,
+    private formService: FormService
+  ) {
     // Load existing workflows for sub-workflow selection
     this.workflowService.getAll().subscribe({
       next: (workflows) => this.workflows.set(workflows),
+      error: () => {}
+    });
+    // Load existing forms for task/approval node binding
+    this.formService.getAll().subscribe({
+      next: (forms) => this.forms.set(forms),
       error: () => {}
     });
   }

@@ -53,6 +53,21 @@ export interface Workflow {
   updatedAt: Date;
 }
 
+export interface WorkflowInstance {
+  id: string;
+  displayId?: string;
+  workflowId: string;
+  workflow?: Workflow;
+  userId: string;
+  user?: User;
+  currentNodeId?: string;
+  status: string;
+  formData?: Record<string, unknown>;
+  history?: any[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface DashboardStats {
   totalForms: number;
   totalWorkflows: number;
