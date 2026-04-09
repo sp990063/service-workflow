@@ -1,6 +1,7 @@
-import { Component, signal, computed, ChangeDetectorRef } from '@angular/core';
+import { Component, signal, computed, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormService } from '../../core/services/form.service';
 import { Form, FormElement } from '../../core/models';
 import { FormVersionsComponent } from './form-versions.component';
@@ -808,7 +809,7 @@ const ELEMENT_TYPES = [
     }
   `]
 })
-export class FormBuilderComponent {
+export class FormBuilderComponent implements OnInit {
   elementTypes = ELEMENT_TYPES;
   formName = 'Untitled Form';
   elements = signal<FormElement[]>([]);
@@ -816,6 +817,29 @@ export class FormBuilderComponent {
   formId = signal<string | null>(null);
   currentVersion = signal<number>(1);
   showVersions = signal<boolean>(false);
+  
+  ngOnInit() {
+    // Check if editing existing form via query param
+    const params = new URLSearchParams(window.location.search);
+    const formIdParam = params.get('id');
+    if (formIdParam) {
+      this.loadForm(formIdParam);
+    }
+  }
+  
+  loadForm(id: string) {
+    this.formService.getById(id).subscribe({
+      next: (form) => {
+        this.formId.set(form.id);
+        this.formName = form.name;
+        this.elements.set(form.elements || []);
+        this.currentVersion.set(form.version || 1);
+      },
+      error: () => {
+        // Form not found, stay on blank form
+      }
+    });
+  }
   optionsText = '';
   
   selectedElement = computed(() => {

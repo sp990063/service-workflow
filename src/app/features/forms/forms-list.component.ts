@@ -41,7 +41,7 @@ import { Form } from '../../core/models';
               </div>
               <div class="form-card-actions">
                 <a [routerLink]="['/form-fill', form.id]" class="btn btn-primary btn-sm">Fill Form</a>
-                <a [routerLink]="['/form-builder']" class="btn btn-secondary btn-sm">Edit</a>
+                <a [routerLink]="['/form-builder']" [queryParams]="{id: form.id}" class="btn btn-secondary btn-sm">Edit</a>
               </div>
             </div>
           }

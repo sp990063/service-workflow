@@ -14,7 +14,6 @@ import { AuthService } from './core/services/auth.service';
           <div class="logo">ServiceFlow</div>
           <nav>
             <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-            <a routerLink="/form-builder" routerLinkActive="active">Form Builder</a>
             <a routerLink="/forms" routerLinkActive="active">Forms</a>
             <a routerLink="/workflows" routerLinkActive="active">Workflows</a>
             <!-- Delegations feature disabled until implemented -->
