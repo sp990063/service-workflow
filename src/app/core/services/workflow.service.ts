@@ -19,7 +19,7 @@ export class WorkflowService {
     return this.api.post<Workflow>('/workflows', data);
   }
 
-  update(id: string, data: { name?: string; nodes?: any[]; connections?: any[] }): Observable<Workflow> {
+  update(id: string, data: { name?: string; description?: string; nodes?: any[]; connections?: any[] }): Observable<Workflow> {
     return this.api.put<Workflow>(`/workflows/${id}`, data);
   }
 

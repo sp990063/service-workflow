@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { FormService } from '../../core/services/form.service';
 import { Workflow, WorkflowNode, WorkflowConnection, Form } from '../../core/models';
@@ -590,7 +591,7 @@ const NODE_TYPES = [
     }
   `]
 })
-export class WorkflowDesignerComponent {
+export class WorkflowDesignerComponent implements OnInit {
   nodeTypes = NODE_TYPES;
   workflowName = 'Untitled Workflow';
   nodes = signal<WorkflowNode[]>([]);
@@ -599,8 +600,32 @@ export class WorkflowDesignerComponent {
   connectingFrom = signal<string | null>(null);
   workflows = signal<Workflow[]>([]);  // Available workflows for sub-workflow selection
   forms = signal<Form[]>([]);  // Available forms for task/approval nodes
+  workflowId = signal<string | null>(null);  // Current workflow ID for editing
   
   private dragNode: WorkflowNode | null = null;
+  
+  ngOnInit() {
+    // Check if editing existing workflow via query param
+    const params = new URLSearchParams(window.location.search);
+    const workflowIdParam = params.get('id');
+    if (workflowIdParam) {
+      this.loadWorkflow(workflowIdParam);
+    }
+  }
+  
+  loadWorkflow(id: string) {
+    this.workflowService.getById(id).subscribe({
+      next: (workflow) => {
+        this.workflowId.set(workflow.id);
+        this.workflowName = workflow.name;
+        this.nodes.set(workflow.nodes || []);
+        this.connections.set(workflow.connections || []);
+      },
+      error: () => {
+        // Workflow not found, stay on blank canvas
+      }
+    });
+  }
   private dragOffset = { x: 0, y: 0 };
   
   selectedNode = computed(() => {
@@ -775,17 +800,33 @@ export class WorkflowDesignerComponent {
   }
   
   saveWorkflow() {
-    this.workflowService.create({
+    const data = {
       name: this.workflowName,
       nodes: this.nodes(),
       connections: this.connections()
-    }).subscribe({
-      next: () => {
-        alert('Workflow saved!');
-      },
-      error: () => {
-        alert('Failed to save workflow.');
-      }
-    });
+    };
+    
+    if (this.workflowId()) {
+      // Update existing workflow
+      this.workflowService.update(this.workflowId()!, data).subscribe({
+        next: () => {
+          alert('Workflow updated!');
+        },
+        error: () => {
+          alert('Failed to update workflow.');
+        }
+      });
+    } else {
+      // Create new workflow
+      this.workflowService.create(data).subscribe({
+        next: (workflow) => {
+          this.workflowId.set(workflow.id);
+          alert('Workflow created!');
+        },
+        error: () => {
+          alert('Failed to save workflow.');
+        }
+      });
+    }
   }
 }

@@ -40,7 +40,7 @@ import { Workflow } from '../../core/models';
               </div>
               <div class="workflow-card-actions">
                 <a [routerLink]="['/workflow-player', workflow.id]" class="btn btn-primary btn-sm">Start Workflow</a>
-                <a [routerLink]="['/workflow-designer']" class="btn btn-secondary btn-sm">Edit</a>
+                <a [routerLink]="['/workflow-designer']" [queryParams]="{id: workflow.id}" class="btn btn-secondary btn-sm">Edit</a>
               </div>
             </div>
           }
