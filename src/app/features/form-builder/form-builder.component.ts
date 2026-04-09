@@ -200,6 +200,24 @@ const ELEMENT_TYPES = [
                 <label>Type</label>
                 <input type="text" [value]="selectedElement()!.type" disabled>
               </div>
+              <div class="form-group">
+                <label>Help Text</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="selectedElement()!.helpText"
+                  (ngModelChange)="updateElement()"
+                  placeholder="Additional instructions"
+                >
+              </div>
+              <div class="form-group">
+                <label>Default Value</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="selectedElement()!.defaultValue"
+                  (ngModelChange)="updateElement()"
+                  placeholder="Default value (optional)"
+                >
+              </div>
               <div class="form-group checkbox-group">
                 <label>
                   <input 
@@ -218,6 +236,322 @@ const ELEMENT_TYPES = [
                   (ngModelChange)="updateElement()"
                 >
               </div>
+              
+              <!-- Text/Textarea specific -->
+              @if (selectedElement()!.type === 'text' || selectedElement()!.type === 'textarea') {
+                <div class="form-group">
+                  <label>Min Length</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.minLength"
+                    (ngModelChange)="updateElement()"
+                    min="0"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Max Length</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.maxLength"
+                    (ngModelChange)="updateElement()"
+                    min="0"
+                  >
+                </div>
+              }
+              
+              <!-- Textarea specific -->
+              @if (selectedElement()!.type === 'textarea') {
+                <div class="form-group">
+                  <label>Rows</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.rows"
+                    (ngModelChange)="updateElement()"
+                    min="2"
+                    max="20"
+                  >
+                </div>
+              }
+              
+              <!-- Number specific -->
+              @if (selectedElement()!.type === 'number') {
+                <div class="form-group">
+                  <label>Min Value</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.min"
+                    (ngModelChange)="updateElement()"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Max Value</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.max"
+                    (ngModelChange)="updateElement()"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Step</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.step"
+                    (ngModelChange)="updateElement()"
+                    min="0.01"
+                  >
+                </div>
+              }
+              
+              <!-- Date specific -->
+              @if (selectedElement()!.type === 'date') {
+                <div class="form-group">
+                  <label>Min Date</label>
+                  <input 
+                    type="date" 
+                    [(ngModel)]="selectedElement()!.minDate"
+                    (ngModelChange)="updateElement()"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Max Date</label>
+                  <input 
+                    type="date" 
+                    [(ngModel)]="selectedElement()!.maxDate"
+                    (ngModelChange)="updateElement()"
+                  >
+                </div>
+              }
+              
+              <!-- Date Range specific -->
+              @if (selectedElement()!.type === 'daterange') {
+                <div class="form-group">
+                  <label>Min Days From Today</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.min"
+                    (ngModelChange)="updateElement()"
+                    min="0"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Max Days From Today</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.max"
+                    (ngModelChange)="updateElement()"
+                    min="0"
+                  >
+                </div>
+              }
+              
+              <!-- Time specific -->
+              @if (selectedElement()!.type === 'time') {
+                <div class="form-group">
+                  <label>Min Time</label>
+                  <input 
+                    type="time" 
+                    [(ngModel)]="selectedElement()!.minTime"
+                    (ngModelChange)="updateElement()"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Max Time</label>
+                  <input 
+                    type="time" 
+                    [(ngModel)]="selectedElement()!.maxTime"
+                    (ngModelChange)="updateElement()"
+                  >
+                </div>
+              }
+              
+              <!-- File/Image specific -->
+              @if (selectedElement()!.type === 'file' || selectedElement()!.type === 'image') {
+                <div class="form-group">
+                  <label>Allowed Types</label>
+                  <input 
+                    type="text" 
+                    [value]="selectedElement()!.allowedTypes?.join(', ')"
+                    (input)="updateAllowedTypes($event)"
+                    placeholder=".pdf, .doc, .docx"
+                  >
+                  <small>e.g., .pdf, .doc, .docx</small>
+                </div>
+                <div class="form-group">
+                  <label>Max Size (KB)</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.maxSize"
+                    (ngModelChange)="updateElement()"
+                    min="0"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Max Files</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.maxFiles"
+                    (ngModelChange)="updateElement()"
+                    min="1"
+                  >
+                </div>
+              }
+              
+              <!-- Dropdown/Multi-Select specific -->
+              @if (selectedElement()!.type === 'dropdown' || selectedElement()!.type === 'multiselect') {
+                <div class="form-group checkbox-group">
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      [(ngModel)]="selectedElement()!.allowMultiple"
+                      (ngModelChange)="updateElement()"
+                    >
+                    Allow Multiple Selection
+                  </label>
+                </div>
+                <div class="form-group checkbox-group">
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      [(ngModel)]="selectedElement()!.allowOther"
+                      (ngModelChange)="updateElement()"
+                    >
+                    Allow "Other" Option
+                  </label>
+                </div>
+              }
+              
+              <!-- Checkbox specific -->
+              @if (selectedElement()!.type === 'checkbox') {
+                <div class="form-group">
+                  <label>Min Selections</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.minSelect"
+                    (ngModelChange)="updateElement()"
+                    min="0"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Max Selections</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="selectedElement()!.maxSelect"
+                    (ngModelChange)="updateElement()"
+                    min="0"
+                  >
+                </div>
+              }
+              
+              <!-- User Picker specific -->
+              @if (selectedElement()!.type === 'userpicker') {
+                <div class="form-group">
+                  <label>Filter by Role</label>
+                  <select 
+                    [(ngModel)]="selectedElement()!.filterRole"
+                    (ngModelChange)="updateElement()"
+                  >
+                    <option value="">All Users</option>
+                    <option value="admin">Admin</option>
+                    <option value="manager">Manager</option>
+                    <option value="user">User</option>
+                  </select>
+                </div>
+              }
+              
+              <!-- Department Picker specific -->
+              @if (selectedElement()!.type === 'deptpicker') {
+                <div class="form-group checkbox-group">
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      [(ngModel)]="selectedElement()!.includeSubDepts"
+                      (ngModelChange)="updateElement()"
+                    >
+                    Include Sub-Departments
+                  </label>
+                </div>
+              }
+              
+              <!-- Calculated Field specific -->
+              @if (selectedElement()!.type === 'calculated') {
+                <div class="form-group">
+                  <label>Expression</label>
+                  <textarea 
+                    [(ngModel)]="selectedElement()!.expression"
+                    (ngModelChange)="updateElement()"
+                    rows="3"
+                    placeholder="e.g., field1 + field2 * 0.1"
+                  ></textarea>
+                  <small>Use field IDs in expression</small>
+                </div>
+              }
+              
+              <!-- Address specific -->
+              @if (selectedElement()!.type === 'address') {
+                <div class="form-group">
+                  <label>Address Fields</label>
+                  <select 
+                    multiple
+                    [(ngModel)]="selectedElement()!.addressFields"
+                    (ngModelChange)="updateElement()"
+                    size="5"
+                    class="multi-select"
+                  >
+                    <option value="street">Street Address</option>
+                    <option value="street2">Street Address 2</option>
+                    <option value="city">City</option>
+                    <option value="state">State/Province</option>
+                    <option value="postal">Postal Code</option>
+                    <option value="country">Country</option>
+                  </select>
+                  <small>Hold Ctrl/Cmd to select multiple</small>
+                </div>
+              }
+              
+              <!-- URL specific -->
+              @if (selectedElement()!.type === 'url') {
+                <div class="form-group">
+                  <label>Allowed Protocols</label>
+                  <select 
+                    multiple
+                    [(ngModel)]="selectedElement()!.allowedProtocols"
+                    (ngModelChange)="updateElement()"
+                    size="3"
+                    class="multi-select"
+                  >
+                    <option value="http">http://</option>
+                    <option value="https">https://</option>
+                    <option value="ftp">ftp://</option>
+                  </select>
+                  <small>Hold Ctrl/Cmd to select multiple</small>
+                </div>
+              }
+              
+              <!-- Rich Text specific -->
+              @if (selectedElement()!.type === 'richtext') {
+                <div class="form-group">
+                  <label>Toolbar Options</label>
+                  <select 
+                    multiple
+                    [(ngModel)]="selectedElement()!.toolbarOptions"
+                    (ngModelChange)="updateElement()"
+                    size="5"
+                    class="multi-select"
+                  >
+                    <option value="bold">Bold</option>
+                    <option value="italic">Italic</option>
+                    <option value="underline">Underline</option>
+                    <option value="strike">Strikethrough</option>
+                    <option value="list">Bullet List</option>
+                    <option value="numbered">Numbered List</option>
+                    <option value="link">Insert Link</option>
+                    <option value="image">Insert Image</option>
+                  </select>
+                  <small>Hold Ctrl/Cmd to select multiple</small>
+                </div>
+              }
+              
+              <!-- Options for select types -->
               @if (hasOptions()) {
                 <div class="form-group">
                   <label>Options (one per line)</label>
@@ -228,6 +562,18 @@ const ELEMENT_TYPES = [
                   ></textarea>
                 </div>
               }
+              
+              <!-- Custom validation error -->
+              <div class="form-group">
+                <label>Custom Validation Message</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="selectedElement()!.validation!.customError"
+                  (ngModelChange)="updateElement()"
+                  placeholder="Error message when validation fails"
+                >
+              </div>
+              
             </div>
           } @else {
             <p class="no-selection">Select an element to edit properties</p>
@@ -440,6 +786,20 @@ const ELEMENT_TYPES = [
     .checkbox-group input {
       width: auto;
     }
+    .multi-select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-background);
+      font-size: 0.875rem;
+    }
+    .form-group small {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+    }
     .no-selection {
       color: var(--color-text-muted);
       font-size: 0.875rem;
@@ -488,7 +848,8 @@ export class FormBuilderComponent {
         type,
         label,
         required: false,
-        placeholder: ''
+        placeholder: '',
+        validation: {}
       };
       this.elements.update(els => [...els, newElement]);
     }
@@ -506,6 +867,15 @@ export class FormBuilderComponent {
   
   updateElement() {
     this.elements.update(els => [...els]);
+  }
+  
+  updateAllowedTypes(event: Event) {
+    const el = this.selectedElement();
+    if (el) {
+      const value = (event.target as HTMLInputElement).value;
+      el.allowedTypes = value.split(',').map(s => s.trim()).filter(s => s);
+      this.updateElement();
+    }
   }
   
   updateOptions() {

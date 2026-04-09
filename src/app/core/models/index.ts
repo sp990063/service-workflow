@@ -13,10 +13,50 @@ export interface FormElement {
   required: boolean;
   placeholder?: string;
   options?: string[];
+  helpText?: string;
+  defaultValue?: string;
+  // Text/Textarea specific
+  minLength?: number;
+  maxLength?: number;
+  rows?: number;
+  // Number specific
+  min?: number;
+  max?: number;
+  step?: number;
+  // Date/Time specific
+  minDate?: string;
+  maxDate?: string;
+  minTime?: string;
+  maxTime?: string;
+  // File/Image specific
+  allowedTypes?: string[];
+  maxSize?: number; // in KB
+  maxFiles?: number;
+  // Select specific
+  allowMultiple?: boolean;
+  allowOther?: boolean;
+  // Checkbox/Radio specific
+  minSelect?: number;
+  maxSelect?: number;
+  // User/Dept picker specific
+  filterRole?: string;
+  includeSubDepts?: boolean;
+  // Rich text specific
+  toolbarOptions?: string[];
+  // Table specific
+  columns?: { name: string; type: string; width?: string }[];
+  // Calculated specific
+  expression?: string;
+  // Address specific
+  addressFields?: string[];
+  // URL specific
+  allowedProtocols?: string[];
+  // Validation
   validation?: {
     min?: number;
     max?: number;
     pattern?: string;
+    customError?: string;
   };
 }
 
