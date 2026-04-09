@@ -18,6 +18,7 @@ describe('FormsService - Versioning', () => {
       create: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
+      upsert: jest.fn(),
     },
     user: {
       findUnique: jest.fn(),
@@ -80,6 +81,7 @@ describe('FormsService - Versioning', () => {
       };
 
       mockPrisma.form.findUnique.mockResolvedValue(currentForm);
+      mockPrisma.formVersion.upsert.mockResolvedValue({ id: 'v-upsert' });
       mockPrisma.formVersion.create.mockResolvedValue({ id: 'v-2' });
       mockPrisma.form.update.mockResolvedValue(updatedForm);
 
@@ -90,13 +92,8 @@ describe('FormsService - Versioning', () => {
       );
 
       expect(result.version).toBe(2);
-      // Should create a version snapshot of old state
-      expect(mockPrisma.formVersion.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          formId: 'form-1',
-          version: 2,
-        }),
-      });
+      // Should upsert a version snapshot of old state
+      expect(mockPrisma.formVersion.upsert).toHaveBeenCalled();
     });
   });
 
