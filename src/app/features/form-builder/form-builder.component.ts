@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormService } from '../../core/services/form.service';
-import { Form, FormElement } from '../../core/models';
+import { Form, FormElement, FormSection } from '../../core/models';
 import { FormVersionsComponent } from './form-versions.component';
 
 const ELEMENT_TYPES = [
@@ -78,116 +78,216 @@ const ELEMENT_TYPES = [
           (dragover)="onDragOver($event)"
           (drop)="onDrop($event)"
         >
-          @if (elements().length === 0) {
+          <div class="canvas-toolbar">
+            <button class="btn btn-secondary" (click)="addSection()">+ Add Section</button>
+          </div>
+          
+          @if (sections().length === 0 && elements().length === 0) {
             <div class="empty-canvas">
               <p>Drag elements here to build your form</p>
+              <p class="hint">Or click "+ Add Section" to organize elements into groups</p>
             </div>
-          } @else {
-            <div class="form-elements">
-              @for (el of elements(); track el.id; let i = $index) {
-                <div 
-                  class="form-element" 
-                  [class.selected]="selectedElementId() === el.id"
-                  (click)="selectElement(el.id)"
-                >
-                  <div class="element-header">
-                    <span class="element-label">{{ el.label }}</span>
-                    <span class="element-type">{{ el.type }}</span>
-                    @if (el.required) {
-                      <span class="required-badge">Required</span>
-                    }
+          }
+          
+          <!-- Render sections -->
+          @for (section of sections(); track section.id) {
+            <div class="form-section" [class.selected]="selectedSectionId() === section.id" (click)="selectSection(section.id)">
+              <div class="section-header">
+                <h3>{{ section.title }}</h3>
+                @if (section.description) {
+                  <p>{{ section.description }}</p>
+                }
+              </div>
+              <div class="section-body" [class]="'cols-' + section.columns">
+                @for (el of getElementsForSection(section.id); track el.id) {
+                  <div 
+                    class="form-element" 
+                    [class.selected]="selectedElementId() === el.id"
+                    (click)="selectElement(el.id); $event.stopPropagation()"
+                  >
+                    <div class="element-header">
+                      <span class="element-label">{{ el.label }}</span>
+                      <span class="element-type">{{ el.type }}</span>
+                      @if (el.required) {
+                        <span class="required-badge">Required</span>
+                      }
+                    </div>
+                    <div class="element-preview">
+                      @switch (el.type) {
+                        @case ('text') {
+                          <input type="text" disabled placeholder="Text input">
+                        }
+                        @case ('textarea') {
+                          <textarea disabled placeholder="Multi-line text"></textarea>
+                        }
+                        @case ('number') {
+                          <input type="number" disabled placeholder="Number">
+                        }
+                        @case ('email') {
+                          <input type="email" disabled placeholder="email@example.com">
+                        }
+                        @case ('phone') {
+                          <input type="tel" disabled placeholder="(555) 555-5555">
+                        }
+                        @case ('date') {
+                          <input type="date" disabled>
+                        }
+                        @case ('daterange') {
+                          <div class="daterange-preview">
+                            <input type="date" disabled> - <input type="date" disabled>
+                          </div>
+                        }
+                        @case ('time') {
+                          <input type="time" disabled>
+                        }
+                        @case ('file') {
+                          <div class="file-preview">📎 Choose file...</div>
+                        }
+                        @case ('image') {
+                          <div class="file-preview">🖼 Choose image...</div>
+                        }
+                        @case ('signature') {
+                          <div class="signature-preview">✍ Sign here</div>
+                        }
+                        @case ('yesno') {
+                          <div class="toggle-preview">○ Yes  ○ No</div>
+                        }
+                        @case ('multiselect') {
+                          <div class="multiselect-preview">☐ Option 1 ☐ Option 2 ☐ Option 3</div>
+                        }
+                        @case ('richtext') {
+                          <div class="richtext-preview">Rich text editor...</div>
+                        }
+                        @case ('userpicker') {
+                          <div class="userpicker-preview">👤 Select user...</div>
+                        }
+                        @case ('deptpicker') {
+                          <div class="deptpicker-preview">🏢 Select department...</div>
+                        }
+                        @case ('table') {
+                          <div class="table-preview">⊞ Table/Grid</div>
+                        }
+                        @case ('calculated') {
+                          <div class="calculated-preview">∑ Calculated value</div>
+                        }
+                        @case ('address') {
+                          <div class="address-preview">📍 Address fields</div>
+                        }
+                        @case ('url') {
+                          <input type="url" disabled placeholder="https://example.com">
+                        }
+                        @case ('dropdown') {
+                          <select disabled><option>Select option...</option></select>
+                        }
+                        @case ('radio') {
+                          <div class="radio-preview">○ Option 1 • Option 2</div>
+                        }
+                        @case ('checkbox') {
+                          <div class="checkbox-preview">☐ Option 1 ☐ Option 2</div>
+                        }
+                        @default {
+                          <div class="default-preview">{{ el.type }}</div>
+                        }
+                      }
+                    </div>
+                    <button class="delete-btn" (click)="deleteElement(el.id, $event)">×</button>
                   </div>
-                  <div class="element-preview">
-                    @switch (el.type) {
-                      @case ('text') {
-                        <input type="text" disabled placeholder="Text input">
+                }
+              </div>
+            </div>
+          }
+          
+          <!-- Elements without a section (backward compatibility) -->
+          @if (getElementsForSection(null).length > 0) {
+            <div class="form-section default-section">
+              <div class="section-body cols-1">
+                @for (el of getElementsForSection(null); track el.id) {
+                  <div 
+                    class="form-element" 
+                    [class.selected]="selectedElementId() === el.id"
+                    (click)="selectElement(el.id)"
+                  >
+                    <div class="element-header">
+                      <span class="element-label">{{ el.label }}</span>
+                      <span class="element-type">{{ el.type }}</span>
+                      @if (el.required) {
+                        <span class="required-badge">Required</span>
                       }
-                      @case ('textarea') {
-                        <textarea disabled placeholder="Multi-line text"></textarea>
+                    </div>
+                    <div class="element-preview">
+                      @switch (el.type) {
+                        @case ('text') {
+                          <input type="text" disabled placeholder="Text input">
+                        }
+                        @case ('textarea') {
+                          <textarea disabled placeholder="Multi-line text"></textarea>
+                        }
+                        @case ('number') {
+                          <input type="number" disabled placeholder="Number">
+                        }
+                        @case ('email') {
+                          <input type="email" disabled placeholder="email@example.com">
+                        }
+                        @case ('phone') {
+                          <input type="tel" disabled placeholder="(555) 555-5555">
+                        }
+                        @case ('date') {
+                          <input type="date" disabled>
+                        }
+                        @case ('dropdown') {
+                          <select disabled><option>Select option...</option></select>
+                        }
+                        @default {
+                          <div class="default-preview">{{ el.type }}</div>
+                        }
                       }
-                      @case ('number') {
-                        <input type="number" disabled placeholder="Number">
-                      }
-                      @case ('email') {
-                        <input type="email" disabled placeholder="email@example.com">
-                      }
-                      @case ('phone') {
-                        <input type="tel" disabled placeholder="(555) 555-5555">
-                      }
-                      @case ('date') {
-                        <input type="date" disabled>
-                      }
-                      @case ('daterange') {
-                        <div class="daterange-preview">
-                          <input type="date" disabled> - <input type="date" disabled>
-                        </div>
-                      }
-                      @case ('time') {
-                        <input type="time" disabled>
-                      }
-                      @case ('file') {
-                        <div class="file-preview">📎 Choose file...</div>
-                      }
-                      @case ('image') {
-                        <div class="file-preview">🖼 Choose image...</div>
-                      }
-                      @case ('signature') {
-                        <div class="signature-preview">✍ Sign here</div>
-                      }
-                      @case ('yesno') {
-                        <div class="toggle-preview">○ Yes  ○ No</div>
-                      }
-                      @case ('multiselect') {
-                        <div class="multiselect-preview">☐ Option 1 ☐ Option 2 ☐ Option 3</div>
-                      }
-                      @case ('richtext') {
-                        <div class="richtext-preview">Rich text editor...</div>
-                      }
-                      @case ('userpicker') {
-                        <div class="userpicker-preview">👤 Select user...</div>
-                      }
-                      @case ('deptpicker') {
-                        <div class="deptpicker-preview">🏢 Select department...</div>
-                      }
-                      @case ('table') {
-                        <div class="table-preview">⊞ Table/Grid</div>
-                      }
-                      @case ('calculated') {
-                        <div class="calculated-preview">∑ Calculated value</div>
-                      }
-                      @case ('address') {
-                        <div class="address-preview">📍 Address fields</div>
-                      }
-                      @case ('url') {
-                        <input type="url" disabled placeholder="https://example.com">
-                      }
-                      @case ('dropdown') {
-                        <select disabled><option>Select option...</option></select>
-                      }
-                      @case ('radio') {
-                        <div class="radio-preview">○ Option 1 • Option 2</div>
-                      }
-                      @case ('checkbox') {
-                        <div class="checkbox-preview">☐ Option 1 ☐ Option 2</div>
-                      }
-                      @case ('yesno') {
-                        <div class="toggle-preview">○ Yes  ○ No</div>
-                      }
-                      @default {
-                        <div class="default-preview">{{ el.type }}</div>
-                      }
-                    }
+                    </div>
+                    <button class="delete-btn" (click)="deleteElement(el.id, $event)">×</button>
                   </div>
-                  <button class="delete-btn" (click)="deleteElement(el.id, $event)">×</button>
-                </div>
-              }
+                }
+              </div>
             </div>
           }
         </main>
         
         <aside class="properties">
           <h3>Properties</h3>
-          @if (selectedElement()) {
+          @if (selectedSection()) {
+            <div class="property-form section-properties">
+              <div class="form-group">
+                <label>Section Title</label>
+                <input 
+                  type="text" 
+                  [ngModel]="selectedSection()!.title"
+                  (ngModelChange)="updateSection(selectedSectionId()!, {title: $event})"
+                >
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input 
+                  type="text" 
+                  [ngModel]="selectedSection()!.description"
+                  (ngModelChange)="updateSection(selectedSectionId()!, {description: $event})"
+                  placeholder="Optional description"
+                >
+              </div>
+              <div class="form-group">
+                <label>Columns</label>
+                <select 
+                  [ngModel]="selectedSection()!.columns"
+                  (ngModelChange)="updateSectionColumns($event)"
+                >
+                  <option [value]="1">1 Column</option>
+                  <option [value]="2">2 Columns</option>
+                  <option [value]="3">3 Columns</option>
+                  <option [value]="4">4 Columns</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <button class="btn btn-danger" (click)="deleteSection(selectedSectionId()!)">Delete Section</button>
+              </div>
+            </div>
+          } @else if (selectedElement()) {
             <div class="property-form">
               <div class="form-group">
                 <label>Label</label>
@@ -678,14 +778,25 @@ const ELEMENT_TYPES = [
       padding: 1.5rem;
       overflow-y: auto;
     }
+    .canvas-toolbar {
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
     .empty-canvas {
       height: 100%;
+      min-height: 200px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       border: 2px dashed var(--color-border);
       border-radius: var(--radius-lg);
       color: var(--color-text-muted);
+    }
+    .empty-canvas .hint {
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
     }
     .form-elements {
       display: flex;
@@ -745,6 +856,48 @@ const ELEMENT_TYPES = [
       border-radius: var(--radius-sm);
       display: inline-block;
     }
+    
+    /* Section styles */
+    .form-section {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      border: 2px solid transparent;
+      border-radius: var(--radius-md);
+      transition: all var(--transition-fast);
+    }
+    .form-section:hover {
+      border-color: var(--color-border);
+    }
+    .form-section.selected {
+      border-color: var(--color-primary);
+      background: rgba(67, 97, 238, 0.05);
+    }
+    .section-header {
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .section-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .section-header p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    .section-body {
+      display: grid;
+      gap: 1rem;
+    }
+    .section-body.cols-1 { grid-template-columns: 1fr; }
+    .section-body.cols-2 { grid-template-columns: 1fr 1fr; }
+    .section-body.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .section-body.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .default-section {
+      margin-top: 1rem;
+    }
+    
     .delete-btn {
       position: absolute;
       top: 0.5rem;
@@ -813,10 +966,31 @@ export class FormBuilderComponent implements OnInit {
   elementTypes = ELEMENT_TYPES;
   formName = 'Untitled Form';
   elements = signal<FormElement[]>([]);
+  sections = signal<FormSection[]>([]);
   selectedElementId = signal<string | null>(null);
+  selectedSectionId = signal<string | null>(null);
   formId = signal<string | null>(null);
   currentVersion = signal<number>(1);
   showVersions = signal<boolean>(false);
+  
+  selectedSection = computed(() => {
+    const id = this.selectedSectionId();
+    return id ? this.sections().find(s => s.id === id) || null : null;
+  });
+  
+  // Get elements for a specific section
+  getElementsForSection(sectionId: string | null): FormElement[] {
+    if (!sectionId) {
+      // Elements without a section
+      return this.elements().filter(e => !e.sectionId);
+    }
+    return this.elements().filter(e => e.sectionId === sectionId);
+  }
+  
+  // Generate unique ID
+  private generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
   
   ngOnInit() {
     // Check if editing existing form via query param
@@ -833,6 +1007,7 @@ export class FormBuilderComponent implements OnInit {
         this.formId.set(form.id);
         this.formName = form.name;
         this.elements.set(form.elements || []);
+        this.sections.set(form.sections || []);
         this.currentVersion.set(form.version || 1);
       },
       error: () => {
@@ -925,7 +1100,7 @@ export class FormBuilderComponent implements OnInit {
   }
   
   saveForm() {
-    const data = { name: this.formName, elements: this.elements() };
+    const data = { name: this.formName, elements: this.elements(), sections: this.sections() };
     
     if (this.formId()) {
       // Update existing form
@@ -957,10 +1132,57 @@ export class FormBuilderComponent implements OnInit {
         next: (form) => {
           this.formName = form.name;
           this.elements.set(form.elements || []);
+          this.sections.set(form.sections || []);
           this.currentVersion.set(form.version ?? 1);
           this.cdr.detectChanges(); // Force Angular to re-render
         }
       });
+    }
+  }
+  
+  // Section methods
+  addSection() {
+    const newSection: FormSection = {
+      id: this.generateId(),
+      title: 'New Section',
+      description: '',
+      columns: 1,
+      order: this.sections().length
+    };
+    this.sections.update(sections => [...sections, newSection]);
+    this.selectedSectionId.set(newSection.id);
+    this.selectedElementId.set(null);
+  }
+  
+  selectSection(sectionId: string) {
+    this.selectedSectionId.set(sectionId);
+    this.selectedElementId.set(null);
+  }
+  
+  updateSectionColumns(columns: string) {
+    const sectionId = this.selectedSectionId();
+    if (sectionId) {
+      this.updateSection(sectionId, { columns: parseInt(columns) as 1|2|3|4 });
+    }
+  }
+  
+  updateSection(sectionId: string, updates: Partial<FormSection>) {
+    this.sections.update(sections => 
+      sections.map(s => s.id === sectionId ? { ...s, ...updates } : s)
+    );
+  }
+  
+  deleteSection(sectionId: string) {
+    if (!confirm('Delete this section and all its elements?')) return;
+    
+    // Remove elements in this section
+    this.elements.update(els => els.filter(e => e.sectionId !== sectionId));
+    
+    // Remove the section
+    this.sections.update(sections => sections.filter(s => s.id !== sectionId));
+    
+    if (this.selectedSectionId() === sectionId) {
+      this.selectedSectionId.set(null);
     }
   }
 }
