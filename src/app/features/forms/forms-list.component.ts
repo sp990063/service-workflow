@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormService } from '../../core/services/form.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Form } from '../../core/models';
 
 @Component({
@@ -41,7 +42,9 @@ import { Form } from '../../core/models';
               </div>
               <div class="form-card-actions">
                 <a [routerLink]="['/form-fill', form.id]" class="btn btn-primary btn-sm">Fill Form</a>
-                <a [routerLink]="['/form-builder']" [queryParams]="{id: form.id}" class="btn btn-secondary btn-sm">Edit</a>
+                @if (authService.isAdmin() || authService.user()?.role === 'manager') {
+                  <a [routerLink]="['/form-builder']" [queryParams]="{id: form.id}" class="btn btn-secondary btn-sm">Edit</a>
+                }
               </div>
             </div>
           }
@@ -127,7 +130,10 @@ export class FormsListComponent implements OnInit, OnDestroy {
   loading = signal(true);
   private refreshInterval: any;
   
-  constructor(private formService: FormService) {}
+  constructor(
+    private formService: FormService,
+    public authService: AuthService
+  ) {}
   
   ngOnInit() {
     this.loadForms();
