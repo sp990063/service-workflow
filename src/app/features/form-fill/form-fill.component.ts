@@ -432,7 +432,12 @@ export class FormFillComponent implements OnInit {
   getElementsForSection(sectionId: string | null): FormElement[] {
     const currentForm = this.form();
     if (!currentForm) return [];
-    return currentForm.elements.filter(e => e.sectionId === sectionId);
+    return currentForm.elements.filter(e => {
+      if (sectionId === null) {
+        return e.sectionId === null || e.sectionId === undefined;
+      }
+      return e.sectionId === sectionId;
+    });
   }
   
   // Get all sections sorted by order

@@ -123,6 +123,7 @@ model Form {
   name        String
   description String?
   elements    String   // JSON string for FormElement[]
+  sections     String?  // JSON string for FormSection[] (section/column layout)
   version     Int      @default(1)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())

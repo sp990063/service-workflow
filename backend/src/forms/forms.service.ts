@@ -10,7 +10,7 @@ export class FormsService {
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     });
-    return forms.map(f => ({ ...f, elements: JSON.parse(f.elements as string) }));
+    return forms.map(f => ({ ...f, elements: JSON.parse(f.elements as string), sections: f.sections ? JSON.parse(f.sections) : null }));
   }
 
   async findAllByUser(userId: string) {
@@ -18,23 +18,24 @@ export class FormsService {
       where: { isActive: true, userId },
       orderBy: { createdAt: 'desc' },
     });
-    return forms.map(f => ({ ...f, elements: JSON.parse(f.elements as string) }));
+    return forms.map(f => ({ ...f, elements: JSON.parse(f.elements as string), sections: f.sections ? JSON.parse(f.sections) : null }));
   }
 
   async findById(id: string) {
     const form = await this.prisma.form.findUnique({ where: { id } });
     if (form) {
-      return { ...form, elements: JSON.parse(form.elements as string) };
+      return { ...form, elements: JSON.parse(form.elements as string), sections: form.sections ? JSON.parse(form.sections) : null };
     }
     return null;
   }
 
-  async create(data: { name: string; description?: string; elements: any[]; userId: string }) {
+  async create(data: { name: string; description?: string; elements: any[]; sections?: any[]; userId: string }) {
     const form = await this.prisma.form.create({
       data: {
         name: data.name,
         description: data.description,
         elements: JSON.stringify(data.elements),
+        sections: data.sections ? JSON.stringify(data.sections) : undefined,
         userId: data.userId,
         version: 1,
       },
@@ -51,36 +52,45 @@ export class FormsService {
       },
     });
 
-    return { ...form, elements: JSON.parse(form.elements as string) };
+    return { ...form, elements: JSON.parse(form.elements as string), sections: form.sections ? JSON.parse(form.sections) : null };
   }
 
-  async update(id: string, data: { name?: string; description?: string; elements?: any[] }, userId: string) {
+  async update(id: string, data: { name?: string; description?: string; elements?: any[]; sections?: any[] }, userId: string) {
     // Get current form
     const currentForm = await this.prisma.form.findUnique({ where: { id } });
     if (!currentForm) {
       throw new Error('Form not found');
     }
 
-    // Create version snapshot BEFORE updating
-    const newVersion = currentForm.version + 1;
-    await this.prisma.formVersion.create({
-      data: {
+    // Create version snapshot BEFORE updating - save current state with current version
+    // Use upsert to handle case where version already exists
+    await this.prisma.formVersion.upsert({
+      where: { formId_version: { formId: id, version: currentForm.version } },
+      create: {
         formId: id,
-        version: newVersion,
+        version: currentForm.version,
         name: currentForm.name,
         elements: currentForm.elements,
         createdBy: userId,
       },
+      update: {
+        name: currentForm.name,
+        elements: currentForm.elements,
+      },
     });
 
     // Update form with new content
+    const newVersion = currentForm.version + 1;
     const updateData: any = { ...data, version: newVersion };
     if (data.elements !== undefined) {
       updateData.elements = JSON.stringify(data.elements);
     }
+    if (data.sections !== undefined) {
+      updateData.sections = JSON.stringify(data.sections);
+    }
 
     const updated = await this.prisma.form.update({ where: { id }, data: updateData });
-    return { ...updated, elements: JSON.parse(updated.elements as string) };
+    return { ...updated, elements: JSON.parse(updated.elements as string), sections: updated.sections ? JSON.parse(updated.sections) : null };
   }
 
   async delete(id: string) {
@@ -172,7 +182,7 @@ export class FormsService {
       },
     });
 
-    return { ...updated, elements: JSON.parse(updated.elements as string) };
+    return { ...updated, elements: JSON.parse(updated.elements as string), sections: updated.sections ? JSON.parse(updated.sections) : null };
   }
 
   // ============ Submissions ============

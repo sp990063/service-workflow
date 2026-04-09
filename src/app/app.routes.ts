@@ -59,7 +59,7 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
-    path: 'workflow-player/:id',
+    path: 'workflow-player/:id/:instanceId?',
     loadComponent: () => import('./features/workflow-player/workflow-player.component').then(m => m.WorkflowPlayerComponent),
     canActivate: [authGuard]
   },
