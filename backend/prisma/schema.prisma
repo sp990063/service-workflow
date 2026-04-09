@@ -211,8 +211,10 @@ model ApprovalRequest {
   nodeId      String
   userId      String   // Original approver
   user        User     @relation("ApprovalOriginalApprover", fields: [userId], references: [id])
+  originalApproverId String? // Original approver ID (for escalation tracking)
   actualApproverId String? // Who actually approved (original or delegate)
   actualApprover User? @relation("ApprovalActualApprover", fields: [actualApproverId], references: [id])
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
   decision    String?
   comment     String?
   createdAt   DateTime @default(now())
