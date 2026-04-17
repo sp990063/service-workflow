@@ -15,6 +15,7 @@ A persistent, compounding knowledge base for the ServiceFlow codebase. Built and
 - [[Form Builder]] — 22 element types and form submission flow
 - [[Approval System]] — Approval processing, delegation, and escalation
 - [[RBAC System]] — Role-based access control model
+- [[Improvement Plan]] — No-code usability enhancements and implementation roadmap
 
 ## Business Workflows
 - [[Form Creation Workflow]] — How forms are created, versioned, and published

@@ -20,7 +20,8 @@
       "Bash(curl -sL https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/skills/karpathy-guidelines/SKILL.md)",
       "Bash(npm ls:*)",
       "WebFetch(domain:gist.githubusercontent.com)",
-      "Bash(curl -sL \"https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw/llm-wiki.md\")"
+      "Bash(curl -sL \"https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw/llm-wiki.md\")",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
