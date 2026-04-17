@@ -120,9 +120,9 @@ const NODE_TYPES = [
                 <input type="text" [value]="selectedNode()!.type" disabled>
               </div>
               <div class="form-group">
-                <label>Label</label>
-                <input 
-                  type="text" 
+                <label>Label <span class="required">*</span></label>
+                <input
+                  type="text"
                   [ngModel]="selectedNode()!.data['label']"
                   (ngModelChange)="updateNodeLabel($event)"
                   placeholder="Enter label"
@@ -131,15 +131,15 @@ const NODE_TYPES = [
               @if (selectedNode()!.type === 'task' || selectedNode()!.type === 'approval') {
                 <div class="form-group">
                   <label>Description</label>
-                  <textarea 
+                  <textarea
                     [ngModel]="selectedNode()!.data['description']"
                     (ngModelChange)="updateNodeData('description', $event)"
                     rows="3"
                   ></textarea>
                 </div>
                 <div class="form-group">
-                  <label>Linked Form</label>
-                  <select 
+                  <label>Linked Form <span class="required">*</span></label>
+                  <select
                     [ngModel]="selectedNode()!.data['formId']"
                     (ngModelChange)="updateNodeData('formId', $event)"
                   >
@@ -152,8 +152,8 @@ const NODE_TYPES = [
               }
               @if (selectedNode()!.type === 'approval') {
                 <div class="form-group">
-                  <label>Approver</label>
-                  <select 
+                  <label>Approver <span class="required">*</span></label>
+                  <select
                     [ngModel]="selectedNode()!.data['approver']"
                     (ngModelChange)="updateNodeData('approver', $event)"
                   >
@@ -166,8 +166,11 @@ const NODE_TYPES = [
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Approval Action</label>
-                  <select 
+                  <label>
+                    Approval Action
+                    <span class="tooltip-icon" title="OR: Any one approver can approve. AND: All approvers must approve.">?</span>
+                  </label>
+                  <select
                     [ngModel]="selectedNode()!.data['approvalMode']"
                     (ngModelChange)="updateNodeData('approvalMode', $event)"
                   >
@@ -178,8 +181,8 @@ const NODE_TYPES = [
               }
               @if (selectedNode()!.type === 'parallel') {
                 <div class="form-group">
-                  <label>Parallel Approvers</label>
-                  <select 
+                  <label>Parallel Approvers <span class="required">*</span></label>
+                  <select
                     multiple
                     [ngModel]="selectedNode()!.data['parallelApprovers']"
                     (ngModelChange)="updateNodeData('parallelApprovers', $event)"
@@ -195,8 +198,11 @@ const NODE_TYPES = [
                   <small>Hold Ctrl/Cmd to select multiple</small>
                 </div>
                 <div class="form-group">
-                  <label>Parallel Mode</label>
-                  <select 
+                  <label>
+                    Parallel Mode
+                    <span class="tooltip-icon" title="AND: All approvers must approve before continuing. OR: Any one approver can approve to continue.">?</span>
+                  </label>
+                  <select
                     [ngModel]="selectedNode()!.data['parallelMode']"
                     (ngModelChange)="updateNodeData('parallelMode', $event)"
                   >
@@ -207,8 +213,11 @@ const NODE_TYPES = [
               }
               @if (selectedNode()!.type === 'join') {
                 <div class="form-group">
-                  <label>Join Mode</label>
-                  <select 
+                  <label>
+                    Join Mode
+                    <span class="tooltip-icon" title="AND: Wait for ALL incoming branches to complete. OR: Wait for ANY one branch to complete.">?</span>
+                  </label>
+                  <select
                     [ngModel]="selectedNode()!.data['joinMode']"
                     (ngModelChange)="updateNodeData('joinMode', $event)"
                   >
@@ -219,17 +228,20 @@ const NODE_TYPES = [
               }
               @if (selectedNode()!.type === 'condition') {
                 <div class="form-group">
-                  <label>Field</label>
-                  <input 
-                    type="text" 
+                  <label>Field <span class="required">*</span></label>
+                  <input
+                    type="text"
                     [ngModel]="selectedNode()!.data['field']"
                     (ngModelChange)="updateNodeData('field', $event)"
                     placeholder="e.g., formData.amount"
                   >
                 </div>
                 <div class="form-group">
-                  <label>Operator</label>
-                  <select 
+                  <label>
+                    Operator
+                    <span class="tooltip-icon" title="gt: greater than, lt: less than, eq: equals, contains: includes value">?</span>
+                  </label>
+                  <select
                     [ngModel]="selectedNode()!.data['operator']"
                     (ngModelChange)="updateNodeData('operator', $event)"
                   >
@@ -243,9 +255,9 @@ const NODE_TYPES = [
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Value</label>
-                  <input 
-                    type="text" 
+                  <label>Value <span class="required">*</span></label>
+                  <input
+                    type="text"
                     [ngModel]="selectedNode()!.data['value']"
                     (ngModelChange)="updateNodeData('value', $event)"
                     placeholder="e.g., 5000"
@@ -253,7 +265,7 @@ const NODE_TYPES = [
                 </div>
                 <div class="form-group">
                   <label>Branch Logic</label>
-                  <select 
+                  <select
                     [ngModel]="selectedNode()!.data['logic']"
                     (ngModelChange)="updateNodeData('logic', $event)"
                   >
@@ -547,10 +559,47 @@ const NODE_TYPES = [
       gap: 1rem;
     }
     .form-group label {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
       font-size: 0.75rem;
       font-weight: 500;
       margin-bottom: 0.25rem;
+    }
+    .required {
+      color: var(--color-danger);
+      font-weight: 600;
+    }
+    .tooltip-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      background: var(--color-text-muted);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.625rem;
+      font-weight: 700;
+      cursor: help;
+      position: relative;
+    }
+    .tooltip-icon:hover::after {
+      content: attr(title);
+      position: absolute;
+      left: 50%;
+      bottom: 100%;
+      transform: translateX(-50%);
+      background: var(--color-text);
+      color: white;
+      padding: 0.375rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.7rem;
+      font-weight: 400;
+      white-space: nowrap;
+      max-width: 200px;
+      white-space: normal;
+      z-index: 10;
     }
     .multi-select {
       width: 100%;

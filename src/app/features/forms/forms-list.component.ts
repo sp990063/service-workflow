@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { FormService } from '../../core/services/form.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Form } from '../../core/models';
+import { EmptyStateComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-forms-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, EmptyStateComponent],
   template: `
     <div class="forms-list-page">
       <header class="page-header">
@@ -18,16 +19,11 @@ import { Form } from '../../core/models';
         </div>
         <a routerLink="/form-builder" class="btn btn-primary">+ New Form</a>
       </header>
-      
+
       @if (loading()) {
-        <div class="empty-state">
-          <p>Loading forms...</p>
-        </div>
+        <app-empty-state icon="⏳" title="Loading forms..." message="Please wait while we load your forms."></app-empty-state>
       } @else if (forms().length === 0) {
-        <div class="empty-state">
-          <p>No forms yet.</p>
-          <a routerLink="/form-builder" class="btn btn-secondary">Create your first form</a>
-        </div>
+        <app-empty-state icon="📋" title="No forms yet" message="Create your first form to get started with service requests." actionLabel="Create your first form" actionLink="/form-builder"></app-empty-state>
       } @else {
         <div class="forms-grid">
           @for (form of forms(); track form.id) {

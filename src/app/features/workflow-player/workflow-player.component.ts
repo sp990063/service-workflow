@@ -295,39 +295,40 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
     <ng-template #parallelTemplate>
       <div class="parallel-section">
         <h4>Parallel Approval</h4>
-        <p>All approvers must approve for the workflow to continue (AND logic).</p>
+        <p class="parallel-mode-hint">
+          @if (currentNode()!.data['parallelMode'] === 'any') {
+            Any approver can approve to continue (OR logic).
+          } @else {
+            All approvers must approve for the workflow to continue (AND logic).
+          }
+        </p>
         @if (currentNode()!.data['approvers']) {
           <div class="approvers-list">
-            <h5>Required Approvers:</h5>
+            <h5>Required Approvers ({{ getParallelApprovalProgress() }}):</h5>
             @for (approver of $any(currentNode()!.data['approvers']); track approver) {
               <div class="approver-item" [class.approved]="isApproverApproved(approver)">
-                <span class="approver-status">
-                  @if (isApproverApproved(approver)) {
-                    ✓
-                  } @else {
-                    ○
-                  }
-                </span>
-                <span class="approver-name">{{ approver }}</span>
-                <span class="approver-badge" [class.badge-approved]="isApproverApproved(approver)" [class.badge-pending]="!isApproverApproved(approver)">
-                  @if (isApproverApproved(approver)) {
-                    Approved
-                  } @else {
-                    Pending
-                  }
-                </span>
+                <div class="approver-avatar" [class.avatar-approved]="isApproverApproved(approver)">
+                  {{ getApproverInitials(approver) }}
+                </div>
+                <div class="approver-info">
+                  <span class="approver-name">{{ getApproverDisplayName(approver) }}</span>
+                  <span class="approver-status-text">
+                    @if (isApproverApproved(approver)) {
+                      <span class="status-approved">✓ Approved</span>
+                    } @else {
+                      <span class="status-pending">○ Pending</span>
+                    }
+                  </span>
+                </div>
               </div>
             }
           </div>
-        }
-        @if (getParallelApprovalProgress()) {
-          <p class="approval-progress">{{ getParallelApprovalProgress() }}</p>
         }
         <div class="parallel-actions">
           @if (canCurrentUserApprove()) {
             <button class="btn btn-success" (click)="completeParallel()">✓ Approve</button>
           } @else {
-            <p class="already-approved">You have already approved this step</p>
+            <div class="already-approved-badge">✓ You have already approved this step</div>
           }
         </div>
       </div>
@@ -612,6 +613,49 @@ const NODE_TYPE_CONFIGS: Record<WorkflowNodeType, NodeTypeConfig> = {
       margin-bottom: 0.75rem;
     }
     .parallel-section { background: #ecfdf5; border: 1px solid #10b981; }
+    .parallel-mode-hint { font-size: 0.875rem; color: var(--color-text-muted); margin-bottom: 1rem; }
+    .approvers-list { margin: 1rem 0; }
+    .approvers-list h5 { font-size: 0.875rem; margin-bottom: 0.75rem; }
+    .approver-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      margin-bottom: 0.5rem;
+    }
+    .approver-item.approved { background: #d1fae5; }
+    .approver-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--color-secondary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .approver-avatar.avatar-approved { background: var(--color-success); }
+    .approver-info { flex: 1; }
+    .approver-name { font-weight: 500; display: block; }
+    .approver-status-text { font-size: 0.75rem; }
+    .status-approved { color: var(--color-success); font-weight: 600; }
+    .status-pending { color: var(--color-text-muted); }
+    .already-approved-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 1rem;
+      background: #d1fae5;
+      color: #065f46;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
     .condition-section { background: #fffbeb; border: 1px solid #f59e0b; }
     .join-section { background: #eff6ff; border: 1px solid #3b82f6; }
     .approval-progress, .form-value { font-size: 0.875rem; color: var(--color-text-muted); margin-top: 0.5rem; }
@@ -1182,6 +1226,25 @@ export class WorkflowPlayerComponent implements OnInit {
     const inst = this.instance();
     const localApprovals = inst?.parallelApprovals?.approvals || [];
     return localApprovals.includes(approverName);
+  }
+
+  getApproverInitials(approverName: string): string {
+    if (!approverName) return '?';
+    if (approverName.startsWith('role:')) {
+      // Format role names nicely
+      const role = approverName.replace('role:', '');
+      return role.charAt(0).toUpperCase();
+    }
+    return approverName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2);
+  }
+
+  getApproverDisplayName(approverName: string): string {
+    if (!approverName) return 'Unknown';
+    if (approverName.startsWith('role:')) {
+      const role = approverName.replace('role:', '');
+      return role.charAt(0).toUpperCase() + role.slice(1) + ' (by role)';
+    }
+    return approverName;
   }
 
   getParallelApprovalProgress(): string {

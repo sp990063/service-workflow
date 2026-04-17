@@ -83,6 +83,32 @@ interface WorkflowStep {
           <a routerLink="/workflows" class="btn btn-secondary">← Back</a>
         </header>
 
+        <!-- Sticky Action Bar - shows when user has pending approval actions -->
+        @if (isInProgress() && currentStep() && (currentStep()!.node.type === 'approval' || currentStep()!.node.type === 'parallel' || currentStep()!.node.type === 'task')) {
+          <div class="sticky-action-bar">
+            <div class="sticky-action-content">
+              <div class="action-info">
+                <span class="action-label">Pending Your Action</span>
+                <span class="action-detail">{{ currentStep()!.node.data['label'] || currentStep()!.node.type }} - {{ getNodeTypeLabel(currentStep()!.node.type) }}</span>
+              </div>
+              <div class="action-buttons-sticky">
+                @if (currentStep()!.node.type === 'parallel') {
+                  <span class="parallel-info">{{ getParallelProgress() }}</span>
+                  @if (canApproveParallel()) {
+                    <button class="btn btn-success" (click)="approve()">✓ Approve</button>
+                  } @else {
+                    <span class="already-approved-badge">✓ You approved</span>
+                  }
+                } @else {
+                  <button class="btn btn-success" (click)="approve()">✓ Approve</button>
+                  <button class="btn btn-danger" (click)="reject()">✗ Reject</button>
+                  <button class="btn btn-secondary" (click)="requestInfo()">? Request Info</button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
         <!-- Applicant Info -->
         <section class="applicant-section">
           <h2>Applicant Information</h2>
@@ -108,23 +134,32 @@ interface WorkflowStep {
 
         <!-- Workflow Steps -->
         <section class="workflow-steps">
-          <h2>Workflow Progress</h2>
+          <div class="steps-header">
+            <h2>Workflow Progress</h2>
+            <span class="step-counter">{{ getCurrentStepNumber() }} of {{ steps().length }} steps</span>
+          </div>
           <div class="steps-timeline">
             @for (step of steps(); track step.node.id; let i = $index) {
-              <div 
+              <div
                 class="step-card"
                 [class.completed]="step.status === 'COMPLETED'"
                 [class.in-progress]="step.status === 'IN_PROGRESS'"
                 [class.pending]="step.status === 'PENDING'"
+                [class.rejected]="step.status === 'REJECTED'"
               >
                 <div class="step-indicator">
                   @if (step.status === 'COMPLETED') {
                     <span class="icon completed-icon">✓</span>
                   } @else if (step.status === 'IN_PROGRESS') {
                     <span class="icon in-progress-icon">⟳</span>
+                  } @else if (step.status === 'REJECTED') {
+                    <span class="icon rejected-icon">✗</span>
                   } @else {
                     <span class="icon pending-icon">⏳</span>
                   }
+                </div>
+                <div class="step-avatar" [class.has-assignee]="getStepAssignee(step)">
+                  {{ getInitials(getStepAssignee(step)) }}
                 </div>
                 <div class="step-content">
                   <div class="step-name">
@@ -132,14 +167,14 @@ interface WorkflowStep {
                   </div>
                   <div class="step-type">{{ getNodeTypeLabel(step.node.type) }}</div>
                   @if (step.completedAt) {
-                    <div class="step-time">{{ step.completedAt | date:'short' }}</div>
+                    <div class="step-time">Completed {{ step.completedAt | date:'short' }}</div>
                   }
                   @if (step.status === 'IN_PROGRESS') {
                     <div class="current-marker">← Current</div>
                   }
                 </div>
                 <div class="step-status-badge" [class]="step.status.toLowerCase()">
-                  {{ step.status }}
+                  {{ step.status === 'IN_PROGRESS' ? 'IN PROGRESS' : step.status }}
                 </div>
               </div>
             }
@@ -301,26 +336,6 @@ interface WorkflowStep {
           </div>
         </section>
 
-        <!-- Action Buttons (if in-progress and current step is approval, parallel, or task) -->
-        @if (isInProgress() && currentStep() && (currentStep()!.node.type === 'approval' || currentStep()!.node.type === 'parallel' || currentStep()!.node.type === 'task')) {
-          <section class="action-buttons">
-            @if (currentStep()!.node.type === 'parallel') {
-              <!-- Parallel approval: show progress and button -->
-              <div class="parallel-progress">
-                <span>{{ getParallelProgress() }}</span>
-              </div>
-              @if (canApproveParallel()) {
-                <button class="btn btn-success" (click)="approve()">✓ Approve</button>
-              } @else {
-                <span class="already-approved">You have already approved</span>
-              }
-            } @else {
-              <button class="btn btn-success" (click)="approve()">✓ Approve</button>
-              <button class="btn btn-danger" (click)="reject()">✗ Reject</button>
-              <button class="btn btn-secondary" (click)="requestInfo()">? Request Info</button>
-            }
-          </section>
-        }
       }
     </div>
   `,
@@ -375,9 +390,22 @@ interface WorkflowStep {
       padding: 1.5rem;
       margin-bottom: 1.5rem;
     }
+    .steps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
     .workflow-steps h2 {
       font-size: 1.125rem;
-      margin-bottom: 1rem;
+      margin: 0;
+    }
+    .step-counter {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      background: var(--color-background);
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--radius-sm);
     }
     .steps-timeline {
       display: flex;
@@ -395,15 +423,18 @@ interface WorkflowStep {
     }
     .step-card.completed {
       border-left-color: var(--color-success);
-      opacity: 0.85;
     }
     .step-card.in-progress {
-      border-left-color: var(--color-primary);
-      background: #eff6ff;
+      border-left-color: var(--color-warning);
+      background: #fffbeb;
     }
     .step-card.pending {
       border-left-color: #d1d5db;
       opacity: 0.7;
+    }
+    .step-card.rejected {
+      border-left-color: var(--color-danger);
+      background: #fef2f2;
     }
     .step-indicator {
       width: 40px;
@@ -413,18 +444,39 @@ interface WorkflowStep {
       justify-content: center;
       border-radius: 50%;
       font-size: 1.25rem;
+      flex-shrink: 0;
     }
     .completed-icon {
       background: var(--color-success);
       color: white;
     }
     .in-progress-icon {
-      background: var(--color-primary);
+      background: var(--color-warning);
       color: white;
     }
     .pending-icon {
       background: #d1d5db;
       color: #6b7280;
+    }
+    .rejected-icon {
+      background: var(--color-danger);
+      color: white;
+    }
+    .step-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--color-secondary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .step-avatar.has-assignee {
+      background: var(--color-primary);
     }
     .step-content {
       flex: 1;
@@ -459,6 +511,7 @@ interface WorkflowStep {
     .step-status-badge.completed { background: #d1fae5; color: #065f46; }
     .step-status-badge.in_progress { background: #dbeafe; color: #1e40af; }
     .step-status-badge.pending { background: #f3f4f6; color: #6b7280; }
+    .step-status-badge.rejected { background: #fee2e2; color: #991b1b; }
     
     /* History */
     .history-section {
@@ -717,25 +770,6 @@ interface WorkflowStep {
     .mention-email { font-size: 0.75rem; color: var(--color-text-muted); }
     .mention-empty { padding: 0.5rem 0.75rem; font-size: 0.875rem; color: var(--color-text-muted); text-align: center; }
     
-    /* Actions */
-    .action-buttons {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      align-items: center;
-      padding: 1rem;
-      background: var(--color-surface);
-      border-radius: var(--radius-lg);
-    }
-    .action-buttons .parallel-progress {
-      font-size: 0.875rem;
-      color: var(--color-text-muted);
-    }
-    .action-buttons .already-approved {
-      font-size: 0.875rem;
-      color: var(--color-text-muted);
-      font-style: italic;
-    }
     .btn-success {
       background: var(--color-success);
       color: white;
@@ -743,6 +777,60 @@ interface WorkflowStep {
     .btn-danger {
       background: var(--color-danger);
       color: white;
+    }
+
+    /* Sticky Action Bar */
+    .sticky-action-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--color-surface);
+      border-bottom: 2px solid var(--color-primary);
+      padding: 1rem 1.5rem;
+      margin: 0 -2rem 1.5rem -2rem;
+      box-shadow: var(--shadow-md);
+    }
+    .sticky-action-content {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .action-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .action-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+    .action-detail {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+    .action-buttons-sticky {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .parallel-info {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    .already-approved-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 1rem;
+      background: #d1fae5;
+      color: #065f46;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 500;
     }
   `]
 })
@@ -913,6 +1001,43 @@ export class WorkflowInstanceDetailComponent implements OnInit, OnDestroy {
       'sub-workflow': 'Sub-Workflow'
     };
     return labels[type] || type;
+  }
+
+  getCurrentStepNumber(): number {
+    const steps = this.steps();
+    const index = steps.findIndex(s => s.status === 'IN_PROGRESS');
+    if (index >= 0) {
+      return index + 1;
+    }
+    // No step in progress - check if workflow is completed or not yet started
+    if (steps.length > 0 && steps[steps.length - 1].status === 'COMPLETED') {
+      return steps.length; // All completed, show final step number
+    }
+    return 0; // Not started yet
+  }
+
+  getStepAssignee(step: WorkflowStep): string {
+    // Handle single approver
+    const approver = step.node.data['approver'] as string | undefined;
+    if (approver) {
+      return approver.replace('role:', '');
+    }
+    // Handle parallel approvers (array)
+    const approvers = step.node.data['approvers'] as string[] | undefined;
+    if (approvers && approvers.length > 0) {
+      return approvers.map(a => a.replace('role:', '')).join(', ');
+    }
+    // Handle parallelApprovers field
+    const parallelApprovers = step.node.data['parallelApprovers'] as string[] | undefined;
+    if (parallelApprovers && parallelApprovers.length > 0) {
+      return parallelApprovers.map(a => a.replace('role:', '')).join(', ');
+    }
+    return '';
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   }
 
   getStatusClass(status: string): string {

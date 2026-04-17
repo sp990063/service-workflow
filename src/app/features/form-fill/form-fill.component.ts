@@ -28,8 +28,32 @@ import { Form, FormElement, FormSection } from '../../core/models';
         
         <form class="form-content" (ngSubmit)="submitForm()">
           @if (hasSections()) {
-            <!-- Render sections with column layout -->
-            @for (section of getSections(); track section.id) {
+            <!-- Section Progress Indicator -->
+            <div class="form-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="getProgressPercent()"></div>
+              </div>
+              <div class="progress-info">
+                <span class="progress-text">Section {{ getCurrentSectionIndex() + 1 }} of {{ getSections().length }}</span>
+                <span class="section-name">{{ getSections()[getCurrentSectionIndex()]?.title }}</span>
+              </div>
+            </div>
+            <div class="section-navigation">
+              <button type="button" class="btn btn-secondary" (click)="previousSection()" [disabled]="getCurrentSectionIndex() === 0">
+                ← Previous
+              </button>
+              <span class="section-indicator">
+                @for (s of getSections(); track s.id; let i = $index) {
+                  <span class="dot" [class.active]="i === getCurrentSectionIndex()" [class.completed]="i < getCurrentSectionIndex()"></span>
+                }
+              </span>
+              <button type="button" class="btn btn-secondary" (click)="nextSection()" [disabled]="getCurrentSectionIndex() >= getSections().length - 1">
+                Next →
+              </button>
+            </div>
+
+            <!-- Render current section only -->
+            @if (getSections()[getCurrentSectionIndex()]; as section) {
               <div class="form-section">
                 <div class="section-header">
                   <h3>{{ section.title }}</h3>
@@ -319,6 +343,66 @@ import { Form, FormElement, FormSection } from '../../core/models';
     .form-section {
       margin-bottom: 2rem;
     }
+    .form-progress {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background: var(--color-background);
+      border-radius: var(--radius-md);
+    }
+    .progress-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--color-border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--color-primary);
+      transition: width 0.3s ease;
+    }
+    .progress-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.125rem;
+      min-width: 120px;
+    }
+    .progress-text {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+    .section-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .section-navigation {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .section-indicator {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-border);
+      transition: all 0.2s ease;
+    }
+    .dot.active {
+      background: var(--color-primary);
+      transform: scale(1.2);
+    }
+    .dot.completed {
+      background: var(--color-success);
+    }
     .section-header {
       margin-bottom: 1rem;
       padding-bottom: 0.75rem;
@@ -389,6 +473,7 @@ export class FormFillComponent implements OnInit {
   submitted = signal(false);
   formData: Record<string, any> = {};
   fieldErrors = signal<Record<string, string>>({});
+  currentSectionIndex = signal(0);
   
   
   constructor(
@@ -408,6 +493,7 @@ export class FormFillComponent implements OnInit {
   }
   
   loadForm(formId: string) {
+    this.currentSectionIndex.set(0); // Reset to first section
     this.formService.getById(formId).subscribe({
       next: (form) => {
         this.form.set(form);
@@ -452,7 +538,32 @@ export class FormFillComponent implements OnInit {
     const currentForm = this.form();
     return (currentForm?.sections?.length ?? 0) > 0;
   }
-  
+
+  getCurrentSectionIndex(): number {
+    return this.currentSectionIndex();
+  }
+
+  getProgressPercent(): number {
+    const sections = this.getSections();
+    if (sections.length === 0) return 0;
+    return Math.round(((this.currentSectionIndex() + 1) / sections.length) * 100);
+  }
+
+  previousSection(): void {
+    const current = this.currentSectionIndex();
+    if (current > 0) {
+      this.currentSectionIndex.set(current - 1);
+    }
+  }
+
+  nextSection(): void {
+    const sections = this.getSections();
+    const current = this.currentSectionIndex();
+    if (current < sections.length - 1) {
+      this.currentSectionIndex.set(current + 1);
+    }
+  }
+
   toggleCheckbox(elementId: string, option: string, event: Event) {
     const checked = (event.target as HTMLInputElement).checked;
     if (!this.formData[elementId]) {

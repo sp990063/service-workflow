@@ -2,11 +2,12 @@ import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
+import { ToastComponent } from './shared/components';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ToastComponent],
   template: `
     <div class="app-container">
       @if (authService.isAuthenticated()) {
@@ -25,6 +26,7 @@ import { AuthService } from './core/services/auth.service';
       <main class="main-content">
         <router-outlet></router-outlet>
       </main>
+      <app-toast></app-toast>
     </div>
   `,
   styles: [`
