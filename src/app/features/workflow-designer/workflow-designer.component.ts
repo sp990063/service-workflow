@@ -4,7 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { FormService } from '../../core/services/form.service';
+import { ToastService } from '../../shared/components/toast/toast.service';
 import { Workflow, WorkflowNode, WorkflowConnection, Form } from '../../core/models';
+import { ConditionBuilderComponent, ConditionConfig, FieldType } from '../../shared/components/condition-builder/condition-builder.component';
+import { DeadlockDetectionService, ValidationIssue } from './services/deadlock-detection.service';
+import { SimulationPanelComponent } from './components/simulation-panel/simulation-panel.component';
+import { SubWorkflowMapperComponent, SubWorkflowMappingConfig, SubWorkflowMappingMode } from '../../shared/components/sub-workflow-mapper/sub-workflow-mapper.component';
 
 const NODE_TYPES = [
   { type: 'start', label: 'Start', icon: '▶', color: '#10b981' },
@@ -23,7 +28,7 @@ const NODE_TYPES = [
 @Component({
   selector: 'app-workflow-designer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConditionBuilderComponent, SimulationPanelComponent, SubWorkflowMapperComponent],
   template: `
     <div class="workflow-designer">
       <div class="designer-header">
@@ -38,6 +43,7 @@ const NODE_TYPES = [
         <div class="header-actions">
           <button class="btn btn-secondary" (click)="clearWorkflow()">Clear</button>
           <button class="btn btn-secondary" (click)="addStartNode()">+ Start</button>
+          <button class="btn btn-secondary" (click)="openSimulationPanel()">▶ Simulate</button>
           <button class="btn btn-primary" (click)="saveWorkflow()">Save Workflow</button>
         </div>
       </div>
@@ -87,16 +93,20 @@ const NODE_TYPES = [
           } @else {
             <div class="nodes-container">
               @for (node of nodes(); track node.id) {
-                <div 
+                <div
                   class="workflow-node"
                   [class.selected]="selectedNodeId() === node.id"
                   [style.left.px]="node.position.x"
                   [style.top.px]="node.position.y"
+                  [style.background]="branchColors().get(node.id) || '#ffffff'"
                   (click)="selectNode(node.id, $event)"
                   (mousedown)="startDrag($event, node)"
                 >
                   <div class="node-header" [style.background]="getNodeColor(node.type)">
                     {{ getNodeLabel(node.type) }}
+                    @if (getNodeIssues(node.id).length > 0) {
+                      <span class="node-warning" [title]="getNodeIssues(node.id)[0].message">⚠</span>
+                    }
                   </div>
                   <div class="node-body">
                     {{ node.data['label'] || node.type }}
@@ -227,52 +237,12 @@ const NODE_TYPES = [
                 </div>
               }
               @if (selectedNode()!.type === 'condition') {
-                <div class="form-group">
-                  <label>Field <span class="required">*</span></label>
-                  <input
-                    type="text"
-                    [ngModel]="selectedNode()!.data['field']"
-                    (ngModelChange)="updateNodeData('field', $event)"
-                    placeholder="e.g., formData.amount"
-                  >
-                </div>
-                <div class="form-group">
-                  <label>
-                    Operator
-                    <span class="tooltip-icon" title="gt: greater than, lt: less than, eq: equals, contains: includes value">?</span>
-                  </label>
-                  <select
-                    [ngModel]="selectedNode()!.data['operator']"
-                    (ngModelChange)="updateNodeData('operator', $event)"
-                  >
-                    <option value="gt">&gt; (greater than)</option>
-                    <option value="gte">&gt;= (greater than or equal)</option>
-                    <option value="lt">&lt; (less than)</option>
-                    <option value="lte">&lt;= (less than or equal)</option>
-                    <option value="eq">= (equals)</option>
-                    <option value="neq">≠ (not equals)</option>
-                    <option value="contains">contains</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Value <span class="required">*</span></label>
-                  <input
-                    type="text"
-                    [ngModel]="selectedNode()!.data['value']"
-                    (ngModelChange)="updateNodeData('value', $event)"
-                    placeholder="e.g., 5000"
-                  >
-                </div>
-                <div class="form-group">
-                  <label>Branch Logic</label>
-                  <select
-                    [ngModel]="selectedNode()!.data['logic']"
-                    (ngModelChange)="updateNodeData('logic', $event)"
-                  >
-                    <option value="true">True branch (condition met)</option>
-                    <option value="false">False branch (condition not met)</option>
-                  </select>
-                </div>
+                <app-condition-builder
+                  [config]="getConditionConfig()"
+                  [availableFields]="availableFormFields"
+                  (save)="onConditionSave($event)"
+                  (cancel)="onConditionCancel()"
+                ></app-condition-builder>
               }
               @if (selectedNode()!.type === 'sub-workflow') {
                 <div class="form-group">
@@ -297,14 +267,19 @@ const NODE_TYPES = [
                 </div>
                 <div class="form-group checkbox">
                   <label>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       [ngModel]="selectedNode()!.data['waitForCompletion']"
                       (ngModelChange)="updateNodeData('waitForCompletion', $event)"
                     >
                     <span>Wait for completion</span>
                   </label>
                 </div>
+                <app-sub-workflow-mapper
+                  [config]="getSubWorkflowMapping()"
+                  (save)="onSubWorkflowMappingSave($event)"
+                  (cancel)="onSubWorkflowMappingCancel()"
+                ></app-sub-workflow-mapper>
               }
               @if (selectedNode()!.type === 'script') {
                 <div class="form-group">
@@ -379,6 +354,13 @@ const NODE_TYPES = [
           }
         </aside>
       </div>
+
+      <app-simulation-panel
+        *ngIf="simulationPanelOpen()"
+        [isOpen]="simulationPanelOpen()"
+        [workflowId]="workflowId() || ''"
+        (closePanel)="simulationPanelOpen.set(false)"
+      ></app-simulation-panel>
     </div>
   `,
   styles: [`
@@ -520,6 +502,14 @@ const NODE_TYPES = [
       font-weight: 600;
       text-align: center;
       border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .node-warning {
+      font-size: 0.875rem;
+      cursor: help;
     }
     .node-body {
       padding: 0.75rem;
@@ -650,9 +640,15 @@ export class WorkflowDesignerComponent implements OnInit {
   workflows = signal<Workflow[]>([]);  // Available workflows for sub-workflow selection
   forms = signal<Form[]>([]);  // Available forms for task/approval nodes
   workflowId = signal<string | null>(null);  // Current workflow ID for editing
-  
+  validationIssues = signal<ValidationIssue[]>([]);  // Validation issues for the current workflow
+  simulationPanelOpen = signal(false);  // Simulation panel visibility
+
+  openSimulationPanel() {
+    this.simulationPanelOpen.set(true);
+  }
+
   private dragNode: WorkflowNode | null = null;
-  
+
   ngOnInit() {
     // Check if editing existing workflow via query param
     const params = new URLSearchParams(window.location.search);
@@ -681,10 +677,86 @@ export class WorkflowDesignerComponent implements OnInit {
     const id = this.selectedNodeId();
     return id ? this.nodes().find(n => n.id === id) || null : null;
   });
-  
+
+  availableFormFields: { field: string; label: string; type: FieldType; options?: { value: string; label: string }[] }[] = [
+    { field: 'formData.amount', label: 'Amount', type: FieldType.NUMBER },
+    { field: 'formData.department', label: 'Department', type: FieldType.DROPDOWN, options: [{ value: 'IT', label: 'IT' }, { value: 'HR', label: 'HR' }, { value: 'Finance', label: 'Finance' }] },
+    { field: 'formData.priority', label: 'Priority', type: FieldType.DROPDOWN, options: [{ value: 'Low', label: 'Low' }, { value: 'Medium', label: 'Medium' }, { value: 'High', label: 'High' }] },
+    { field: 'formData.description', label: 'Description', type: FieldType.TEXT },
+    { field: 'formData.startDate', label: 'Start Date', type: FieldType.DATE },
+    { field: 'formData.urgent', label: 'Is Urgent', type: FieldType.YES_NO },
+  ];
+
+  branchColors = computed(() => {
+    const graph = {
+      nodes: this.nodes().map(n => ({ id: n.id, type: n.type, label: (n.data['label'] as string) || n.type, position: n.position, config: n.data })),
+      connections: this.connections().map(c => ({ id: c.id, sourceNodeId: c.source, targetNodeId: c.target }))
+    };
+    return this.deadlockDetection.assignBranchColors(graph);
+  });
+
+  getConditionConfig(): any {
+    const node = this.selectedNode();
+    if (!node) return { rootGroup: { id: 'group_1', combinator: 'AND', rules: [], groups: [] } };
+    if (node.data?.['conditionConfig']) {
+      return node.data['conditionConfig'];
+    }
+    // Convert legacy format to ConditionConfig
+    if (node.data?.['field']) {
+      return {
+        rootGroup: {
+          id: 'group_1',
+          combinator: 'AND',
+          rules: [{
+            id: 'rule_1',
+            field: node.data['field'],
+            fieldType: node.data['fieldType'] || 'text',
+            fieldLabel: node.data['fieldLabel'] || node.data['field'],
+            operator: node.data['operator'] || 'eq',
+            value: node.data['value'],
+            valueEnd: node.data['valueEnd'],
+          }]
+        }
+      };
+    }
+    return { rootGroup: { id: 'group_1', combinator: 'AND', rules: [], groups: [] } };
+  }
+
+  onConditionSave(config: any) {
+    const node = this.selectedNode();
+    if (node) {
+      this.updateNodeData('conditionConfig', config);
+    }
+  }
+
+  onConditionCancel() {
+    // Just close the builder - no action needed
+  }
+
+  getSubWorkflowMapping(): SubWorkflowMappingConfig {
+    const node = this.selectedNode();
+    if (!node) return { mode: SubWorkflowMappingMode.INHERIT };
+    const mapping = node.data?.['mapping'] as SubWorkflowMappingConfig | undefined;
+    return mapping?.mode ? mapping : { mode: SubWorkflowMappingMode.INHERIT };
+  }
+
+  onSubWorkflowMappingSave(config: SubWorkflowMappingConfig) {
+    const node = this.selectedNode();
+    if (node) {
+      node.data['mapping'] = config;
+      this.nodes.update(ns => [...ns]);
+    }
+  }
+
+  onSubWorkflowMappingCancel() {
+    // Just close the mapper - no action needed
+  }
+
   constructor(
     private workflowService: WorkflowService,
-    private formService: FormService
+    private formService: FormService,
+    private deadlockDetection: DeadlockDetectionService,
+    private toastService: ToastService
   ) {
     // Load existing workflows for sub-workflow selection
     this.workflowService.getAll().subscribe({
@@ -696,6 +768,20 @@ export class WorkflowDesignerComponent implements OnInit {
       next: (forms) => this.forms.set(forms),
       error: () => {}
     });
+  }
+
+  validateWorkflow() {
+    const graph = {
+      nodes: this.nodes().map(n => ({ id: n.id, type: n.type, label: (n.data['label'] as string) || n.type, position: n.position, config: n.data })),
+      connections: this.connections().map(c => ({ id: c.id, sourceNodeId: c.source, targetNodeId: c.target }))
+    };
+    const issues = this.deadlockDetection.validate(graph);
+    this.validationIssues.set(issues);
+    return issues;
+  }
+
+  getNodeIssues(nodeId: string): ValidationIssue[] {
+    return this.validationIssues().filter(i => i.nodeId === nodeId);
   }
   
   getNodeColor(type: string): string {
@@ -849,20 +935,51 @@ export class WorkflowDesignerComponent implements OnInit {
   }
   
   saveWorkflow() {
+    // Validate before saving
+    const issues = this.validateWorkflow();
+    const errors = issues.filter(i => i.type === 'error');
+
+    if (errors.length > 0) {
+      const errorMessages = errors.map(e => e.message).join('\n');
+      this.toastService.show('Workflow validation failed:\n' + errorMessages, 'error');
+      return;
+    }
+
+    // Call backend validation for existing workflows
+    if (this.workflowId()) {
+      this.workflowService.validate(this.workflowId()!).subscribe({
+        next: (result) => {
+          if (!result.valid) {
+            this.toastService.show('Workflow validation failed:\n' + result.errors.join('\n'), 'error');
+            return;
+          }
+          this.doSave();
+        },
+        error: () => {
+          // Backend validation failed, but continue with local validation pass
+          this.doSave();
+        }
+      });
+    } else {
+      this.doSave();
+    }
+  }
+
+  private doSave() {
     const data = {
       name: this.workflowName,
       nodes: this.nodes(),
       connections: this.connections()
     };
-    
+
     if (this.workflowId()) {
       // Update existing workflow
       this.workflowService.update(this.workflowId()!, data).subscribe({
         next: () => {
-          alert('Workflow updated!');
+          this.toastService.show('Workflow updated!', 'success');
         },
         error: () => {
-          alert('Failed to update workflow.');
+          this.toastService.show('Failed to update workflow.', 'error');
         }
       });
     } else {
@@ -870,10 +987,10 @@ export class WorkflowDesignerComponent implements OnInit {
       this.workflowService.create(data).subscribe({
         next: (workflow) => {
           this.workflowId.set(workflow.id);
-          alert('Workflow created!');
+          this.toastService.show('Workflow created!', 'success');
         },
         error: () => {
-          alert('Failed to save workflow.');
+          this.toastService.show('Failed to save workflow.', 'error');
         }
       });
     }

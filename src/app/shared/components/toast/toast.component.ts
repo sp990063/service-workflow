@@ -145,9 +145,11 @@ import { ToastService, Toast } from './toast.service';
   `]
 })
 export class ToastComponent {
-  toasts = this.toastService.getToasts();
+  toasts: ReturnType<ToastService['getToasts']>;
 
-  constructor(private toastService: ToastService) {}
+  constructor(private toastService: ToastService) {
+    this.toasts = this.toastService.getToasts();
+  }
 
   dismiss(id: string) {
     this.toastService.dismiss(id);

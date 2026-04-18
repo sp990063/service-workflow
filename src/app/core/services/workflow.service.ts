@@ -79,6 +79,13 @@ export class WorkflowService {
     return this.api.post<{ instance: any; rejected: boolean }>(`/workflow-instances/${id}/parallel-reject`, { nodeId, approverId });
   }
 
+  validate(workflowId: string): Observable<{ valid: boolean; errors: string[]; warnings: string[] }> {
+    return this.api.post<{ valid: boolean; errors: string[]; warnings: string[] }>(
+      `/workflows/${workflowId}/validate`,
+      {}
+    );
+  }
+
   /**
    * Get step status from workflow instance history
    * Returns: COMPLETED, IN_PROGRESS, or PENDING

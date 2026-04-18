@@ -44,7 +44,7 @@ interface ApprovalHistoryEntry {
   approver?: string;
 }
 
-type NodeStatus = 'COMPLETED' | 'IN_PROGRESS' | 'PENDING';
+type NodeStatus = 'COMPLETED' | 'IN_PROGRESS' | 'PENDING' | 'REJECTED';
 
 interface WorkflowStep {
   node: WorkflowNode;

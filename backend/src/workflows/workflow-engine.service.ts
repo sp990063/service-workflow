@@ -11,6 +11,8 @@
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { ConditionEvaluatorService } from './condition-evaluator.service';
+import { ConditionConfig } from './interfaces/condition-config.interface';
 
 export interface WorkflowNode {
   id: string;
@@ -94,9 +96,21 @@ export class WorkflowEngineService {
 
   /**
    * Evaluate a condition node
+   * Supports both new ConditionConfig format and legacy format
    */
   evaluateCondition(node: WorkflowNode, formData: Record<string, any>): boolean {
-    if (node.type !== 'condition' || !node.data.conditions) {
+    if (node.type !== 'condition') {
+      return true;
+    }
+
+    // New ConditionConfig format
+    if (node.data?.conditionConfig) {
+      const evaluator = new ConditionEvaluatorService();
+      return evaluator.evaluate(node.data.conditionConfig as ConditionConfig, formData);
+    }
+
+    // Legacy format support
+    if (!node.data?.conditions) {
       return true; // No conditions means proceed
     }
 
@@ -142,8 +156,8 @@ export class WorkflowEngineService {
    * Get next node based on connections
    */
   getNextNode(currentNodeId: string, connections: any[], formData?: Record<string, any>, currentNode?: WorkflowNode): string | null {
-    const outgoingConnections = connections.filter(c => c.from === currentNodeId);
-    
+    const outgoingConnections = connections.filter(c => c.sourceNodeId === currentNodeId);
+
     if (outgoingConnections.length === 0) {
       return null;
     }
@@ -151,23 +165,20 @@ export class WorkflowEngineService {
     // If it's a condition node, evaluate and pick the right branch
     if (currentNode?.type === 'condition') {
       const conditionMet = this.evaluateCondition(currentNode, formData || {});
-      
-      // Assuming connections are labeled with true/false or we use first for true, second for false
-      const trueBranch = outgoingConnections.find(c => c.label === 'true' || c.data?.conditionResult === true);
-      const falseBranch = outgoingConnections.find(c => c.label === 'false' || c.data?.conditionResult === false);
-      
+
+      const trueBranch = outgoingConnections.find(c => c.sourceHandle === 'true');
+      const falseBranch = outgoingConnections.find(c => c.sourceHandle === 'false');
+
       if (conditionMet && trueBranch) {
-        return trueBranch.to;
+        return trueBranch.targetNodeId;
       } else if (!conditionMet && falseBranch) {
-        return falseBranch.to;
+        return falseBranch.targetNodeId;
       }
-      
-      // Fallback: just return the first connection
-      return outgoingConnections[0]?.to || null;
+      return null;
     }
 
-    // For other nodes, return the first connection's target
-    return outgoingConnections[0]?.to || null;
+    // Default: return first connection's target
+    return outgoingConnections[0].targetNodeId;
   }
 
   /**
@@ -293,7 +304,7 @@ export class WorkflowEngineService {
 
     // Find the join node (should come after parallel)
     const connections = workflow.connections;
-    const parallelOutConnections = connections.filter((c: any) => c.from === node.id);
+    const parallelOutConnections = connections.filter((c: any) => c.sourceNodeId === node.id);
     
     if (parallelOutConnections.length === 0) {
       return { success: false, nextNodeId: null, error: 'Parallel node has no outgoing connections' };
@@ -311,7 +322,7 @@ export class WorkflowEngineService {
     // For AND join, we need to track all branches
     // For OR join, we just proceed after first branch
     if (joinType === 'OR') {
-      const firstBranch = parallelOutConnections[0]?.to;
+      const firstBranch = parallelOutConnections[0]?.targetNodeId;
       if (firstBranch) {
         await this.advanceTo(instance.id, firstBranch);
         return { success: true, nextNodeId: firstBranch, parallelBranches: branches };
@@ -319,7 +330,7 @@ export class WorkflowEngineService {
     }
 
     // For AND join, we proceed to the join node
-    const joinNodeId = parallelOutConnections[0]?.to;
+    const joinNodeId = parallelOutConnections[0]?.targetNodeId;
     if (joinNodeId) {
       // Mark that we're waiting for parallel completion
       await this.addHistory(instance.id, {

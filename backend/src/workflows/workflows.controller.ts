@@ -2,12 +2,18 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } fro
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../common/guards/roles.guard';
 import { WorkflowsService } from './workflows.service';
+import { WorkflowValidatorService } from './validators/workflow-validator.service';
+import { SimulationEngineService } from './simulation-engine.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('workflows')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WorkflowsController {
-  constructor(private workflowsService: WorkflowsService) {}
+  constructor(
+    private workflowsService: WorkflowsService,
+    private workflowValidator: WorkflowValidatorService,
+    private simulationEngine: SimulationEngineService,
+  ) {}
 
   @Get()
   async findAll(@CurrentUser('id') userId: string, @CurrentUser('role') role: string) {
@@ -78,11 +84,28 @@ export class WorkflowsController {
   async getInstances(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: string) {
     const workflow = await this.workflowsService.findById(id);
     if (!workflow) throw new Error('Workflow not found');
-    
+
     if (role === Role.USER && workflow.userId !== userId) {
       throw new Error('Access denied');
     }
     return this.workflowsService.getInstances(id);
+  }
+
+  @Post(':id/validate')
+  async validateWorkflow(@Param('id') id: string) {
+    const workflow = await this.workflowsService.findById(id);
+    if (!workflow) throw new Error('Workflow not found');
+    return this.workflowValidator.validate(workflow);
+  }
+
+  @Post(':id/simulate')
+  async simulateWorkflow(
+    @Param('id') id: string,
+    @Body() body: { initialData: Record<string, any> },
+  ) {
+    const workflow = await this.workflowsService.findById(id);
+    if (!workflow) throw new Error('Workflow not found');
+    return this.simulationEngine.simulate(workflow, body.initialData);
   }
 }
 
