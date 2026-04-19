@@ -21,7 +21,14 @@
       "Bash(npm ls:*)",
       "WebFetch(domain:gist.githubusercontent.com)",
       "Bash(curl -sL \"https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw/llm-wiki.md\")",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(npx tsc *)",
+      "Bash(npx nest *)",
+      "Bash(npx ng *)",
+      "Bash(xxd)",
+      "Bash(node -e ' *)",
+      "Bash(docker compose *)",
+      "Bash(npx playwright *)"
     ]
   }
 }

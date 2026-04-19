@@ -6,3 +6,6 @@ test-results/
 
 # Test reports
 tests/e2e/reports/*.png
+
+# Local dev database
+backend/prisma/dev.db-*
